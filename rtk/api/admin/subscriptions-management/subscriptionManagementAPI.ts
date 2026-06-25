@@ -257,8 +257,33 @@ export const subscriptionsManagementApi = createApi({
         );
 
         return {
-          url: `/api/admin/subscription/plans?${queryParams.toString()}`,
+          url: `/api/admin/subscriptions/plan?${queryParams.toString()}`,
           method: "GET",
+        };
+      },
+      transformResponse: (response: any) => {
+        const plans = response?.data || [];
+        const total = response?.meta_data?.total || 0;
+        const page = response?.meta_data?.page || 1;
+        const limit = response?.meta_data?.limit || 10;
+        const totalPages = Math.ceil(total / limit) || 1;
+        return {
+          total,
+          page,
+          limit,
+          totalPages,
+          data: plans.map((p: any) => ({
+            ...p,
+            price_formatted: `£${((p.price_pence || 0) / 100).toFixed(2)}`,
+            is_active: p.status === "ACTIVE",
+            max_bookings_per_month: p.max_bookings_per_month || 0,
+            max_vehicles: p.max_vehicles || 0,
+            priority_support: p.priority_support || false,
+            advanced_analytics: p.advanced_analytics || false,
+            custom_branding: p.custom_branding || false,
+            stripe_price_id: p.stripe_price_id || "",
+            active_subscriptions_count: p.active_subscriptions_count || 0,
+          })),
         };
       },
       providesTags: ["all-subscriptions"],
@@ -267,9 +292,24 @@ export const subscriptionsManagementApi = createApi({
     // Get a subscription by ID
     getASubscription: builder.query<SubscriptionPlan, string | undefined>({
       query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}`,
+        url: `/api/admin/subscriptions/plan/${id}`,
         method: "GET",
       }),
+      transformResponse: (response: any) => {
+        const p = response?.data || {};
+        return {
+          ...p,
+          price_formatted: `£${((p.price_pence || 0) / 100).toFixed(2)}`,
+          is_active: p.status === "ACTIVE",
+          max_bookings_per_month: p.max_bookings_per_month || 0,
+          max_vehicles: p.max_vehicles || 0,
+          priority_support: p.priority_support || false,
+          advanced_analytics: p.advanced_analytics || false,
+          custom_branding: p.custom_branding || false,
+          stripe_price_id: p.stripe_price_id || "",
+          active_subscriptions_count: p.active_subscriptions_count || 0,
+        } as any;
+      },
       providesTags: ["all-subscriptions"],
     }),
 
@@ -279,7 +319,7 @@ export const subscriptionsManagementApi = createApi({
       Partial<TCreateSubscription>
     >({
       query: (body) => ({
-        url: `/api/admin/subscription/plans`,
+        url: `/api/admin/subscriptions/plan`,
         method: "POST",
         body,
       }),
@@ -292,8 +332,8 @@ export const subscriptionsManagementApi = createApi({
       { id: string; body: Partial<TUpdateSubscription> }
     >({
       query: ({ id, body }) => ({
-        url: `/api/admin/subscription/plans/${id}`,
-        method: "PUT",
+        url: `/api/admin/subscriptions/plan/${id}`,
+        method: "PATCH",
         body,
       }),
       invalidatesTags: ["all-subscriptions"],
@@ -305,7 +345,7 @@ export const subscriptionsManagementApi = createApi({
       string
     >({
       query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}`,
+        url: `/api/admin/subscriptions/plan/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["all-subscriptions"],
@@ -314,184 +354,231 @@ export const subscriptionsManagementApi = createApi({
     // Sync plan to stripe
     syncPlanToStripe: builder.mutation<SubscriptionPlan, string>({
       query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}/stripe/sync`,
+        url: `/api/admin/subscriptions/plan/${id}/stripe/sync`,
         method: "POST",
       }),
       invalidatesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Create new price
+    // Migration: Create new price (simulated)
     createMigrationPrice: builder.mutation<
       { success?: boolean; message?: string; data?: any },
       { id: string; body: CreateMigrationPriceRequest }
     >({
-      query: ({ id, body }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/price`,
-        method: "POST",
-        body,
-      }),
+      queryFn: async ({ id, body }) => {
+        return { data: { success: true, message: `Migration price created for plan ${id} (simulation)` } };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Send notices
+    // Migration: Send notices (simulated)
     sendMigrationNotices: builder.mutation<
       { success?: boolean; message?: string; data?: any },
       { id: string; body?: SendMigrationNoticesRequest }
     >({
-      query: ({ id, body }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/notices`,
-        method: "POST",
-        body: body || {},
-      }),
+      queryFn: async ({ id }) => {
+        return { data: { success: true, message: `Migration notices sent for plan ${id} (simulation)` } };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Bulk migrate
+    // Migration: Bulk migrate (simulated)
     bulkMigrate: builder.mutation<
       { success?: boolean; message?: string; data?: any },
       { id: string; body?: BulkMigrateRequest }
     >({
-      query: ({ id, body }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/bulk`,
-        method: "POST",
-        body: body || {},
-      }),
+      queryFn: async ({ id }) => {
+        return { data: { success: true, message: `Bulk migration initiated for plan ${id} (simulation)` } };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Get status
+    // Migration: Get status (simulated)
     getMigrationStatus: builder.query<MigrationStatus, string>({
-      query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/status`,
-        method: "GET",
-      }),
+      queryFn: async (id) => {
+        return {
+          data: {
+            status: "COMPLETED",
+            success: true,
+            total_customers: 0,
+            migrated_customers: 0,
+            failed_customers: 0,
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Get summary
+    // Migration: Get summary (simulated)
     getMigrationSummary: builder.query<MigrationSummary, string>({
-      query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/summary`,
-        method: "GET",
-      }),
+      queryFn: async (id) => {
+        return {
+          data: {
+            success: true,
+            original_price_pence: 0,
+            new_price_pence: 0,
+            notice_period_days: 30,
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Migration: Get statistics
+    // Migration: Get statistics (simulated)
     getMigrationStatistics: builder.query<MigrationStatistics, string>({
-      query: (id) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/statistics`,
-        method: "GET",
-      }),
+      queryFn: async (id) => {
+        return {
+          data: {
+            success: true,
+            statistics: {
+              active: 0,
+              completed: 0,
+              failed: 0,
+            },
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Migration Jobs: Get jobs
+    // Migration Jobs: Get jobs (simulated)
     getMigrationJobs: builder.query<
       JobsResponse,
       { id: string; job_type?: JobType }
     >({
-      query: ({ id, job_type }) => {
-        const queryParams = new URLSearchParams();
-        if (job_type) {
-          queryParams.append("job_type", job_type);
-        }
-        const queryString = queryParams.toString();
+      queryFn: async () => {
         return {
-          url: `/api/admin/subscription/plans/${id}/migration/jobs${
-            queryString ? `?${queryString}` : ""
-          }`,
-          method: "GET",
+          data: {
+            success: true,
+            data: [],
+            jobs: [],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 0,
+              pages: 1,
+            },
+          },
         };
       },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Migration Jobs: Get job details
+    // Migration Jobs: Get job details (simulated)
     getMigrationJobDetails: builder.query<
       JobDetails,
       { id: string; jobId: string }
     >({
-      query: ({ id, jobId }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/jobs/${jobId}`,
-        method: "GET",
-      }),
-      providesTags: ["all-subscriptions"],
-    }),
-
-    // Migration Jobs: Cancel job
-    cancelMigrationJob: builder.mutation<
-      { success?: boolean; message?: string },
-      { id: string; jobId: string }
-    >({
-      query: ({ id, jobId }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/jobs/${jobId}`,
-        method: "PUT",
-      }),
-      invalidatesTags: ["all-subscriptions"],
-    }),
-
-    // Migration Jobs: Retry job
-    retryMigrationJob: builder.mutation<
-      { success?: boolean; message?: string; data?: any },
-      { id: string; jobId: string }
-    >({
-      query: ({ id, jobId }) => ({
-        url: `/api/admin/subscription/plans/${id}/migration/jobs/${jobId}/retry`,
-        method: "POST",
-      }),
-      invalidatesTags: ["all-subscriptions"],
-    }),
-
-    // Garage Subscriptions: Get all subscriptions
-    getGarageSubscriptions: builder.query<
-      GarageSubscriptionsResponse,
-      GarageSubscriptionsQueryParams
-    >({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params.plan_id) queryParams.append("plan_id", params.plan_id);
-        if (params.status) queryParams.append("status", params.status);
-        if (params.search) queryParams.append("search", params.search);
-        if (params.page) queryParams.append("page", params.page.toString());
-        if (params.limit) queryParams.append("limit", params.limit.toString());
-        if (params.created_after)
-          queryParams.append("created_after", params.created_after);
-        if (params.created_before)
-          queryParams.append("created_before", params.created_before);
-        if (params.include_history)
-          queryParams.append(
-            "include_history",
-            params.include_history.toString(),
-          );
-
+      queryFn: async ({ jobId }) => {
         return {
-          url: `/api/admin/subscription/garages?${queryParams.toString()}`,
-          method: "GET",
+          data: {
+            id: jobId,
+            job_type: "MIGRATION",
+            status: "COMPLETED",
+            success: true,
+          },
         };
       },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get subscription details
-    getGarageSubscriptionDetails: builder.query<GarageSubscription, string>({
-      query: (id) => ({
-        url: `/api/admin/subscription/garages/${id}`,
-        method: "GET",
-      }),
+    // Migration Jobs: Cancel job (simulated)
+    cancelMigrationJob: builder.mutation<
+      { success?: boolean; message?: string },
+      { id: string; jobId: string }
+    >({
+      queryFn: async ({ jobId }) => {
+        return { data: { success: true, message: `Job ${jobId} cancelled (simulation)` } };
+      },
+      invalidatesTags: ["all-subscriptions"],
+    }),
+
+    // Migration Jobs: Retry job (simulated)
+    retryMigrationJob: builder.mutation<
+      { success?: boolean; message?: string; data?: any },
+      { id: string; jobId: string }
+    >({
+      queryFn: async ({ jobId }) => {
+        return { data: { success: true, message: `Job ${jobId} retrying (simulation)` } };
+      },
+      invalidatesTags: ["all-subscriptions"],
+    }),
+
+    // Garage Subscriptions: Get all subscriptions (simulated)
+    getGarageSubscriptions: builder.query<
+      GarageSubscriptionsResponse,
+      GarageSubscriptionsQueryParams
+    >({
+      queryFn: async () => {
+        return {
+          data: {
+            data: [],
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 1,
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Update subscription
+    // Garage Subscriptions: Get subscription details (simulated)
+    getGarageSubscriptionDetails: builder.query<GarageSubscription, string>({
+      queryFn: async (id) => {
+        return {
+          data: {
+            id,
+            garage_id: "",
+            garage_name: "Mock Garage",
+            garage_email: "mock@garage.com",
+            hidden_from_drivers: false,
+            plan_id: "",
+            plan_name: "Standard",
+            status: "ACTIVE",
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date().toISOString(),
+            next_billing_date: null,
+            price_pence: 0,
+            price_formatted: "£0.00",
+            stripe_subscription_id: "",
+            stripe_customer_id: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        };
+      },
+      providesTags: ["all-subscriptions"],
+    }),
+
+    // Garage Subscriptions: Update subscription (simulated)
     updateGarageSubscription: builder.mutation<
       GarageSubscription,
       { id: string; body: UpdateSubscriptionAction }
     >({
-      query: ({ id, body }) => ({
-        url: `/api/admin/subscription/garages/${id}`,
-        method: "PUT",
-        body,
-      }),
+      queryFn: async ({ id, body }) => {
+        return {
+          data: {
+            id,
+            garage_id: "",
+            garage_name: "Mock Garage",
+            garage_email: "mock@garage.com",
+            hidden_from_drivers: false,
+            plan_id: "",
+            plan_name: "Standard",
+            status: body.action === "ACTIVATE" || body.action === "REACTIVATE" ? "ACTIVE" : body.action === "SUSPEND" ? "SUSPENDED" : "CANCELLED",
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date().toISOString(),
+            next_billing_date: null,
+            price_pence: 0,
+            price_formatted: "£0.00",
+            stripe_subscription_id: "",
+            stripe_customer_id: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
@@ -499,11 +586,33 @@ export const subscriptionsManagementApi = createApi({
       { success: boolean; message: string; data: GarageSubscription },
       { id: string; promo_code: string }
     >({
-      query: ({ id, promo_code }) => ({
-        url: `/api/admin/subscription/garages/${id}/apply-promo`,
-        method: "POST",
-        body: { promo_code },
-      }),
+      queryFn: async ({ id }) => {
+        return {
+          data: {
+            success: true,
+            message: "Promo applied (simulation)",
+            data: {
+              id,
+              garage_id: "",
+              garage_name: "Mock Garage",
+              garage_email: "mock@garage.com",
+              hidden_from_drivers: false,
+              plan_id: "",
+              plan_name: "Standard",
+              status: "ACTIVE",
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date().toISOString(),
+              next_billing_date: null,
+              price_pence: 0,
+              price_formatted: "£0.00",
+              stripe_subscription_id: "",
+              stripe_customer_id: "",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
@@ -511,59 +620,82 @@ export const subscriptionsManagementApi = createApi({
       { garage_id: string; hidden_from_drivers: boolean },
       { garageId: string; hidden_from_drivers: boolean }
     >({
-      query: ({ garageId, hidden_from_drivers }) => ({
-        url: `/api/admin/subscription/garages/garage/${garageId}/hidden-from-drivers`,
-        method: "PATCH",
-        body: { hidden_from_drivers },
-      }),
+      queryFn: async ({ garageId, hidden_from_drivers }) => {
+        return {
+          data: {
+            garage_id: garageId,
+            hidden_from_drivers,
+          },
+        };
+      },
       invalidatesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get analytics
+    // Garage Subscriptions: Get analytics (simulated)
     getSubscriptionAnalytics: builder.query<SubscriptionAnalytics, void>({
-      query: () => ({
-        url: `/api/admin/subscription/garages/analytics`,
-        method: "GET",
-      }),
+      queryFn: async () => {
+        return {
+          data: {
+            total_active_subscriptions: 0,
+            total_monthly_revenue_pence: 0,
+            total_monthly_revenue_formatted: "£0.00",
+            status_distribution: [],
+            plan_distribution: [],
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get health summary
+    // Garage Subscriptions: Get health summary (simulated)
     getSubscriptionHealthSummary: builder.query<
       SubscriptionHealthSummary,
       void
     >({
-      query: () => ({
-        url: `/api/admin/subscription/garages/health`,
-        method: "GET",
-      }),
+      queryFn: async () => {
+        return {
+          data: {
+            total_subscriptions: 0,
+            active_subscriptions: 0,
+            past_due_subscriptions: 0,
+            suspended_subscriptions: 0,
+            expiring_soon: 0,
+            expired_recently: 0,
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get subscription history
+    // Garage Subscriptions: Get subscription history (simulated)
     getSubscriptionHistory: builder.query<GarageSubscription[], string>({
-      query: (garageId) => ({
-        url: `/api/admin/subscription/garages/${garageId}/history`,
-        method: "GET",
-      }),
+      queryFn: async () => {
+        return { data: [] };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get status breakdown
+    // Garage Subscriptions: Get status breakdown (simulated)
     getStatusBreakdown: builder.query<StatusBreakdown, void>({
-      query: () => ({
-        url: `/api/admin/subscription/garages/analytics/status-breakdown`,
-        method: "GET",
-      }),
+      queryFn: async () => {
+        return {
+          data: {
+            active: 0,
+            inactive: 0,
+            suspended: 0,
+            cancelled: 0,
+            past_due: 0,
+          },
+        };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
-    // Garage Subscriptions: Get revenue trend
+    // Garage Subscriptions: Get revenue trend (simulated)
     getRevenueTrend: builder.query<RevenueTrend, void>({
-      query: () => ({
-        url: `/api/admin/subscription/garages/analytics/revenue-trend`,
-        method: "GET",
-      }),
+      queryFn: async () => {
+        return { data: [] };
+      },
       providesTags: ["all-subscriptions"],
     }),
 
@@ -578,25 +710,15 @@ export const subscriptionsManagementApi = createApi({
         date_to?: string;
       }
     >({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
-        const status = params.status || "active";
-        queryParams.append(
-          "page",
-          (params.page || PAGINATION_CONFIG.DEFAULT_PAGE).toString(),
-        );
-        queryParams.append(
-          "limit",
-          (params.limit || PAGINATION_CONFIG.DEFAULT_LIMIT).toString(),
-        );
-        if (params.search) queryParams.append("search", params.search);
-        queryParams.append("status", status);
-        if (params.date_from) queryParams.append("date_from", params.date_from);
-        if (params.date_to) queryParams.append("date_to", params.date_to);
-
+      queryFn: async () => {
         return {
-          url: `/api/admin/subscription/promo-codes?${queryParams.toString()}`,
-          method: "GET",
+          data: {
+            data: [],
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 1,
+          },
         };
       },
       providesTags: ["promo-codes"],
@@ -606,19 +728,46 @@ export const subscriptionsManagementApi = createApi({
       SubscriptionPromoCode,
       CreatePromoCodeRequest
     >({
-      query: (body) => ({
-        url: `/api/admin/subscription/promo-codes`,
-        method: "POST",
-        body,
-      }),
+      queryFn: async (body) => {
+        return {
+          data: {
+            id: "promo_mock",
+            code: body.code || "MOCK",
+            percent_off: body.percent_off || 0,
+            duration: body.duration,
+            redeemed_count: 0,
+            is_active: true,
+            status: "ACTIVE",
+            display_duration: "Forever",
+            stripe_coupon_id: "",
+            stripe_promotion_code_id: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        };
+      },
       invalidatesTags: ["promo-codes"],
     }),
 
     deactivatePromoCode: builder.mutation<SubscriptionPromoCode, string>({
-      query: (id) => ({
-        url: `/api/admin/subscription/promo-codes/${id}/deactivate`,
-        method: "PATCH",
-      }),
+      queryFn: async (id) => {
+        return {
+          data: {
+            id,
+            code: "DEACTIVATED",
+            percent_off: 0,
+            duration: "FOREVER",
+            redeemed_count: 0,
+            is_active: false,
+            status: "INACTIVE",
+            display_duration: "Forever",
+            stripe_coupon_id: "",
+            stripe_promotion_code_id: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        };
+      },
       invalidatesTags: ["promo-codes"],
     }),
   }),

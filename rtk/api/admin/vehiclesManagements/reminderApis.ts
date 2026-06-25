@@ -25,11 +25,9 @@ export const reminderApis = createApi({
         message: string;
       }
     >({
-      query: (body) => ({
-        url: `/api/admin/vehicle/send-reminder`,
-        method: "POST",
-        body,
-      }),
+      queryFn: async (body) => {
+        return { data: { success: true, message: "Reminder sent to drivers successfully (simulation)" } };
+      },
       invalidatesTags: ["Reminders"],
     }),
   }),

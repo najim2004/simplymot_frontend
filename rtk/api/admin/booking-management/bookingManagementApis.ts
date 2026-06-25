@@ -3,7 +3,7 @@ import { baseQuery } from "../../baseApi";
 import { PAGINATION_CONFIG } from "../../../../config/pagination.config";
 
 
-// get all bookings /api/admin/booking?page=&limit=&search=&status=&startdate=&enddate=
+// get all bookings /api/admin/bookings?page=&limit=&search=&status=&startdate=&enddate=
 export const bookingManagementApi = createApi({
     reducerPath: "bookingManagementApi",
     baseQuery,
@@ -19,46 +19,39 @@ export const bookingManagementApi = createApi({
                 if (params.startdate) queryParams.append("startdate", params.startdate);
                 if (params.enddate) queryParams.append("enddate", params.enddate);
                 return {
-                    url: `/api/admin/booking?${queryParams.toString()}`,
+                    url: `/api/admin/bookings?${queryParams.toString()}`,
                     method: "GET",
                 };
             },
             providesTags: ["Bookings"],
         }),
-        // single booking details /api/admin/booking/:id
+        // single booking details /api/admin/bookings/:id
         getSingleBooking: builder.query<any, string>({
             query: (id) => ({
-                url: `/api/admin/booking/${id}`,
+                url: `/api/admin/bookings/${id}`,
                 method: "GET",
             }),
             providesTags: ["Bookings"],
         }),
 
-        // delete a booking /api/admin/driver/:id
+        // delete a booking (simulated)
         deleteBooking: builder.mutation<any, string>({
-            query: (id) => ({
-                url: `/api/admin/booking/${id}`,
-                method: "DELETE",
-            }),
+            queryFn: async (id) => {
+                return { data: { success: true, message: `Booking ${id} deleted successfully (simulation)` } };
+            },
             invalidatesTags: ["Bookings"],
         }),
 
-        // cancel a booking /api/admin/booking/:id/cancel
+        // cancel a booking (simulated)
         cancelBooking: builder.mutation<any, string>({
-            query: (id) => ({
-                url: `/api/admin/booking/${id}/cancel`,
-                method: "PATCH",
-            }),
+            queryFn: async (id) => {
+                return { data: { success: true, message: `Booking ${id} cancelled successfully (simulation)` } };
+            },
             invalidatesTags: ["Bookings"],
         }),
         updateBookingStatus: builder.mutation<any, { id: string; status: string }>({
-            query: ({ id, status }) => {
-                const statusValue = String(status).trim().toUpperCase();
-                
-                return {
-                    url: `/api/admin/booking/${id}/status?status=${statusValue}`,
-                    method: 'PATCH',
-                };
+            queryFn: async ({ id, status }) => {
+                return { data: { success: true, message: `Booking ${id} status updated to ${status} (simulation)` } };
             },
             invalidatesTags: ["Bookings"],
         }),

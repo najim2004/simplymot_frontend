@@ -18,20 +18,20 @@ export const garageDriverApis = createApi({
             providesTags: ["GarageDriverNotifications"],
             keepUnusedDataFor: 0,
         }),
-        //    /api/notification/unread-count
+        //    /api/notification/unread_count
         getUnreadCount: builder.query<any, void>({
             query: () => ({
-                url: "/api/notification/unread-count",
+                url: "/api/notification/unread_count",
                 method: "GET",
             }),
             providesTags: ["GarageDriverNotifications"],
             keepUnusedDataFor: 0,
         }),
 
-        // /api/notification/read-all
+        // /api/notification/read_all
         readAllNotifications: builder.mutation<any, void>({
             query: () => ({
-                url: "/api/notification/read-all",
+                url: "/api/notification/read_all",
                 method: "PATCH",
             }),
             invalidatesTags: ["GarageDriverNotifications"],

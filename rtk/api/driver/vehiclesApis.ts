@@ -70,7 +70,7 @@ export const vehiclesApis = createApi({
   endpoints: (builder) => ({
     addVehicle: builder.mutation<any, { registration_number: string }>({
       query: (body) => ({
-        url: `/api/vehicles`,
+        url: `/api/vehicle`,
         method: "POST",
         body,
       }),
@@ -79,7 +79,7 @@ export const vehiclesApis = createApi({
     // get vehicle api/vehicles
     getVehicles: builder.query<VehiclesResponse, void>({
       query: () => ({
-        url: `/api/vehicles`,
+        url: `/api/vehicle`,
         method: "GET",
       }),
       providesTags: ["Vehicles"],
@@ -88,7 +88,7 @@ export const vehiclesApis = createApi({
     // delete vehicle api/vehicles/:id
     deleteVehicle: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/api/vehicles/${id}`,
+        url: `/api/vehicle/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Vehicles"],
@@ -99,7 +99,7 @@ export const vehiclesApis = createApi({
       { id: string; limit: number; page: number; status: string }
     >({
       query: ({ id, limit, page, status }) => ({
-        url: `/api/vehicles/${id}/mot-reports`,
+        url: `/api/vehicle/${id}/mot_history`,
         method: "GET",
         params: { limit, page, status },
       }),
@@ -108,10 +108,9 @@ export const vehiclesApis = createApi({
 
     // refresh mot reports api/vehicles/cmio2vx5o0001zz0m9ew7c7ok/mot-reports/refresh
     refreshMotReports: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `/api/vehicles/${id}/mot-reports/refresh`,
-        method: "PATCH",
-      }),
+      queryFn: async (id) => {
+        return { data: { success: true, message: "MOT history refreshed successfully (simulation)" } };
+      },
       invalidatesTags: ["Vehicles"],
     }),
   }),

@@ -144,25 +144,139 @@ export const bookMyMotApi = createApi({
   endpoints: (builder) => ({
     searchVehiclesAndGarages: builder.query<SearchResponse, SearchRequest>({
       query: (params) => ({
-        url: `/api/vehicles/search-garages`,
+        url: `/api/garages/discover`,
         method: "GET",
         params: {
-          registration_number: params.registration_number,
-          postcode: params.postcode,
+          vehicle_registration_number: params.registration_number,
+          post_code: params.postcode,
           page: params.page,
           limit: params.limit,
-          sort_by: params.sort_by,
+          sort: params.sort_by === "PRICE_LOW_TO_HIGH" ? "price" : params.sort_by === "PRICE_HIGH_TO_LOW" ? "price" : "distance",
+          sort_order: params.sort_by === "PRICE_HIGH_TO_LOW" ? "DESC" : "ASC",
         },
       }),
+      transformResponse: (response: any) => {
+        const data = response?.data || {};
+        const vehicle = data.vehicle || {};
+        const garages = data.garages || [];
+        const total = response?.meta_data?.total || 0;
+        const postcode = response?.meta_data?.post_code || "";
+
+        return {
+          success: true,
+          data: {
+            vehicle: {
+              registration_number: vehicle.registration_number || "",
+              make: vehicle.make || "",
+              model: vehicle.model || "",
+              color: vehicle.color || "",
+              fuel_type: vehicle.fuel_type || "",
+              mot_expiry_date: vehicle.mot_expiry_date || "",
+              exists_in_account: vehicle.exists_in_account ?? false,
+              vehicle_id: vehicle.id || "",
+            },
+            garages: garages.map((g: any) => ({
+              id: g.id,
+              garage_name: g.garage_name,
+              address: g.address,
+              postcode: g.post_code,
+              vts_number: g.vts_number,
+              primary_contact: g.primary_contact || "",
+              phone_number: g.phone_number,
+              avatar: g.garage_image || undefined,
+              distance_miles: g.distance_miles || 0,
+              mot_price: g.mot_price ? g.mot_price / 100 : 0,
+              has_class7: g.has_class7 ?? false,
+            })),
+          },
+          meta_data: {
+            total_count: total,
+            search_postcode: postcode,
+          },
+        };
+      },
       providesTags: ["BookMyMot"],
     }),
 
     // garage details
     getGarageServices: builder.query<GarageServicesResponse, string>({
       query: (id) => ({
-        url: `/api/vehicles/garages/${id}/services`,
+        url: `/api/garages/discover/${id}`,
         method: "GET",
       }),
+      transformResponse: (response: any) => {
+        const garage = response?.data || {};
+        const servicesData = garage.services || {};
+        const scheduleData = garage.schedule || {};
+
+        const services: Service[] = [];
+        if (servicesData.mot) {
+          services.push({
+            id: servicesData.mot.id,
+            name: servicesData.mot.title || "MOT Test",
+            type: "MOT",
+            price: servicesData.mot.price ? servicesData.mot.price / 100 : 0,
+            class_number: 4,
+          });
+        }
+        if (servicesData.mot_retest) {
+          services.push({
+            id: servicesData.mot_retest.id,
+            name: servicesData.mot_retest.title || "MOT Retest",
+            type: "RETEST",
+            price: servicesData.mot_retest.price ? servicesData.mot_retest.price / 100 : 0,
+            class_number: 4,
+          });
+        }
+
+        const additionals: Additional[] = (servicesData.other_services || []).map((s: any) => ({
+          id: s.id,
+          name: s.title || s.name || "",
+          type: "ADDITIONAL",
+          price: s.price ? s.price / 100 : 0,
+        }));
+
+        const intervals = scheduleData.schedule_intervals || [];
+        const daily_hours: Record<string, DailyHours> = {};
+        intervals.forEach((item: any) => {
+          const dayKey = item.day_of_week.toLowerCase();
+          daily_hours[dayKey] = {
+            is_closed: item.is_closed,
+            slot_duration: item.slot_duration,
+            intervals: [
+              {
+                start_time: item.open_time,
+                end_time: item.close_time,
+              },
+            ],
+          };
+        });
+
+        return {
+          garage: {
+            id: garage.id,
+            garage_name: garage.garage_name,
+            address: garage.address,
+            zip_code: garage.post_code,
+            vts_number: garage.vts_number,
+            primary_contact: garage.primary_contact || "",
+            phone_number: garage.phone_number,
+            email: garage.contact_email,
+            avatar: garage.garage_image || undefined,
+          },
+          services,
+          additionals,
+          schedule: {
+            id: scheduleData.id || "",
+            start_time: "",
+            end_time: "",
+            slot_duration: intervals[0]?.slot_duration || 60,
+            restrictions: [],
+            daily_hours,
+            is_active: true,
+          },
+        };
+      },
       providesTags: ["BookMyMot"],
       keepUnusedDataFor: 0,
     }),
@@ -173,7 +287,7 @@ export const bookMyMotApi = createApi({
       { id: string; date: string }
     >({
       query: ({ id, date }) => ({
-        url: `/api/vehicles/garages/${id}/slots?date=${date}`,
+        url: `/api/garages/${id}/slots?date=${date}`,
         method: "GET",
       }),
       transformResponse: (response: any, _meta, arg) => {
@@ -190,12 +304,10 @@ export const bookMyMotApi = createApi({
           has_id: !!slot?.id,
         });
 
-        // Array response
         if (Array.isArray(response)) {
           return { slots: response.map(toSlot) };
         }
 
-        // { success: true, message: "...", data: [...] } format
         if (
           response?.success &&
           response?.data &&
@@ -204,12 +316,10 @@ export const bookMyMotApi = createApi({
           return { slots: response.data.map(toSlot) };
         }
 
-        // { slots: [...] }
         if (response?.slots && Array.isArray(response.slots)) {
           return { slots: response.slots.map(toSlot) };
         }
 
-        // { data: [...] } or other wrapped formats
         if (response?.data && Array.isArray(response.data)) {
           return { slots: response.data.map(toSlot) };
         }
@@ -220,7 +330,7 @@ export const bookMyMotApi = createApi({
       keepUnusedDataFor: 0,
     }),
 
-    // book slot /api/vehicles/book-slot
+    // book slot /api/bookings
     bookSlot: builder.mutation<
       ApiResponse,
       {
@@ -235,32 +345,69 @@ export const bookMyMotApi = createApi({
       }
     >({
       query: (body) => ({
-        url: `/api/vehicles/book-slot`,
+        url: `/api/bookings`,
         method: "POST",
         body: body,
       }),
       invalidatesTags: ["BookMyMot"],
     }),
 
-    // get my bookings /api/vehicles/my-bookings?search=&status=&page=&limit=  pending, accepted, rejected
+    // get my bookings /api/bookings  pending, accepted, rejected
     getMyBookings: builder.query<
       ApiResponse,
       { search: string; status: string; page: number; limit: number }
     >({
-      query: ({ search, status, page, limit }) => ({
-        url: `/api/vehicles/my-bookings?search=${search}&status=${status}&page=${page}&limit=${limit}`,
-        method: "GET",
-      }),
+      query: ({ search, status, page, limit }) => {
+        const params = new URLSearchParams();
+        if (search) params.append("search", search);
+        if (status && status !== "all") params.append("status", status.toUpperCase());
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        return {
+          url: `/api/bookings?${params.toString()}`,
+          method: "GET",
+        };
+      },
       transformResponse: (response: any) => {
-        // API returns: { bookings: [], pagination: {}, filters: {} }
-        // Wrap it in ApiResponse format
-        if (response?.bookings) {
-          return {
-            success: true,
-            data: response,
-          };
-        }
-        return response;
+        const bookings = response?.data || [];
+        const total = response?.meta_data?.total || 0;
+        const page = response?.meta_data?.page || 1;
+        const limit = response?.meta_data?.limit || 10;
+        const pages = Math.ceil(total / limit) || 1;
+
+        return {
+          success: true,
+          message: response?.message || "Bookings fetched successfully",
+          bookings: bookings.map((b: any) => ({
+            id: b.id,
+            created_at: b.created_at,
+            order_date: b.order_date || b.created_at,
+            status: b.status,
+            total_amount: b.total_amount ? `£${(Number(b.total_amount) / 100).toFixed(2)}` : "£0.00",
+            garage_id: b.garage_id,
+            additional_services: b.additional_services,
+            vehicle: {
+              id: b.vehicle?.id || "",
+              registration_number: b.vehicle?.registration_number || "",
+              make: b.vehicle?.make || "",
+              model: b.vehicle?.model || "",
+            },
+            garage: {
+              id: b.garage?.id || "",
+              garage_name: b.garage?.garage_name || "Garage",
+              address: b.garage?.address || "",
+              phone_number: b.garage?.phone_number || "",
+              avatar: b.garage?.garage_image || "",
+            },
+            slot: b.slot,
+          })),
+          pagination: {
+            page,
+            limit,
+            total,
+            pages,
+          },
+        } as any;
       },
       providesTags: ["BookMyMot"],
     }),
@@ -271,7 +418,7 @@ export const bookMyMotApi = createApi({
       { id: string; reason: string }
     >({
       query: ({ id, reason }) => ({
-        url: `/api/vehicles/my-bookings/${id}/cancel`,
+        url: `/api/bookings/${id}/cancel`,
         method: "PATCH",
         body: { reason },
       }),
@@ -291,7 +438,7 @@ export const bookMyMotApi = createApi({
       }
     >({
       query: ({ id, ...body }) => ({
-        url: `/api/vehicles/my-bookings/${id}/reschedule`,
+        url: `/api/bookings/${id}/reschedule`,
         method: "PATCH",
         body,
       }),

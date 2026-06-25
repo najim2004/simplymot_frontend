@@ -28,11 +28,13 @@ import { subscriptionsMeApi } from "./api/garage/subscriptionsMeApis";
 import { invoicesApi } from "./api/garage/invoiceApis";
 import { garageDriverApis } from "./api/notification/garageDriverApis";
 import { adminNotificationApis } from "./api/notification/adminNotificationApis";
+import { authApi } from "./api/auth/authApis";
 import authReducer from "./slices/authSlice";
 
 // Combine all reducers
 const appReducer = combineReducers({
   auth: authReducer,
+  [authApi.reducerPath]: authApi.reducer,
   [subscriptionApi.reducerPath]: subscriptionApi.reducer,
   [usersManagementApi.reducerPath]: usersManagementApi.reducer,
   [roleManagementApi.reducerPath]: roleManagementApi.reducer,
@@ -80,6 +82,7 @@ export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
+      authApi.middleware,
       subscriptionApi.middleware,
       usersManagementApi.middleware,
       roleManagementApi.middleware,

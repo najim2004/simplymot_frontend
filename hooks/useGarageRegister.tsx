@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { registerApi } from '@/apis/auth/registerApis';
+import { useState } from "react";
+import { useRegisterMutation } from "@/rtk/api/auth/authApis";
 
 interface GarageRegisterFormData {
   nameOfGarage: string;
@@ -11,10 +11,11 @@ interface GarageRegisterFormData {
 }
 
 export function useGarageRegister() {
+  const [register] = useRegisterMutation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState<string>('');
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
 
   const registerGarage = async (formData: GarageRegisterFormData) => {
     setIsLoading(true);
@@ -28,17 +29,17 @@ export function useGarageRegister() {
         email: formData.email,
         phone_number: formData.contactNumber,
         password: formData.password,
-        type: 'GARAGE',
+        type: "GARAGE",
         name: formData.primaryContactPerson,
       };
-      const result = await registerApi(payload);
-      if (result.success || result.status === 'success') {
+      const result = await register(payload).unwrap();
+      if (result.success || result.status === "success") {
         setRegisteredEmail(formData.email);
         setShowVerificationModal(true);
       }
-      return result; 
+      return result;
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || "Registration failed");
       throw err;
     } finally {
       setIsLoading(false);
@@ -47,22 +48,22 @@ export function useGarageRegister() {
 
   const handleVerificationSuccess = () => {
     setShowVerificationModal(false);
-    setRegisteredEmail('');
+    setRegisteredEmail("");
     // You can add navigation logic here if needed
   };
 
   const closeVerificationModal = () => {
     setShowVerificationModal(false);
-    setRegisteredEmail('');
+    setRegisteredEmail("");
   };
 
-  return { 
-    registerGarage, 
-    isLoading, 
+  return {
+    registerGarage,
+    isLoading,
     error,
     showVerificationModal,
     registeredEmail,
     handleVerificationSuccess,
-    closeVerificationModal
+    closeVerificationModal,
   };
-} 
+}

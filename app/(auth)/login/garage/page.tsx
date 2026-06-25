@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { EmailVerificationModal } from "@/components/reusable/EmailVerificationModal";
-import { resendEmailVerificationApi } from "@/apis/auth/registerApis";
+import { useResendVerificationEmailMutation } from "@/rtk/api/auth/authApis";
 
 interface FormData {
   email: string;
@@ -41,6 +41,7 @@ const data = [
 ];
 export default function GarageLogin() {
   const [showPassword, setShowPassword] = useState(false);
+  const [resendVerificationEmail] = useResendVerificationEmailMutation();
   const {
     register,
     handleSubmit,
@@ -74,9 +75,11 @@ export default function GarageLogin() {
     }
     setIsSendingOtp(true);
     try {
-      const response = await resendEmailVerificationApi({ email });
-      if (response.success || response.status === "success") {
-        toast.success(response?.message || "Verification code sent to your email");
+      const response = await resendVerificationEmail({ email }).unwrap();
+      if (response.success || (response as any).status === "success") {
+        toast.success(
+          response?.message || "Verification code sent to your email",
+        );
         openVerificationModal(email);
       } else {
         toast.error(response?.message || "Failed to send verification code");
@@ -102,7 +105,7 @@ export default function GarageLogin() {
           result.message.toLowerCase().includes("verification")
         ) {
           try {
-            await resendEmailVerificationApi({ email: data.email });
+            await resendVerificationEmail({ email: data.email }).unwrap();
           } catch (resendError) {
             console.error("Failed to auto-send OTP:", resendError);
           }
@@ -116,7 +119,7 @@ export default function GarageLogin() {
         error.message?.toLowerCase().includes("verification")
       ) {
         try {
-          await resendEmailVerificationApi({ email: data.email });
+          await resendVerificationEmail({ email: data.email }).unwrap();
         } catch (resendError) {
           console.error("Failed to auto-send OTP:", resendError);
         }
@@ -312,7 +315,9 @@ export default function GarageLogin() {
                   disabled={isSendingOtp}
                   className="text-sm text-gray-500 hover:text-[#19CA32] hover:underline transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isSendingOtp ? "Sending..." : "Need to verify your email? Click here"}
+                  {isSendingOtp
+                    ? "Sending..."
+                    : "Need to verify your email? Click here"}
                 </button>
               </div>
             </form>

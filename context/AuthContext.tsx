@@ -7,7 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { loginApi, AuthMeApi } from "@/apis/auth/authApis";
+import { useLoginMutation, useLazyGetMeQuery } from "@/rtk/api/auth/authApis";
 import { resetReduxStore } from "@/lib/resetReduxStore";
 
 // Types
@@ -33,7 +33,7 @@ interface AuthContextType {
   loginWithType: (
     email: string,
     password: string,
-    expectedType: "DRIVER" | "GARAGE" | "ADMIN"
+    expectedType: "DRIVER" | "GARAGE" | "ADMIN",
   ) => Promise<LoginResult>;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -41,7 +41,7 @@ interface AuthContextType {
 
 // Context
 export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 // Hook
@@ -90,13 +90,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [login] = useLoginMutation();
+  const [triggerAuthMe] = useLazyGetMeQuery();
+
   const isAuthenticated = !!user;
 
   // Login with type validation
   const loginWithType = async (
     email: string,
     password: string,
-    expectedType: "DRIVER" | "GARAGE" | "ADMIN"
+    expectedType: "DRIVER" | "GARAGE" | "ADMIN",
   ): Promise<LoginResult> => {
     try {
       setIsLoading(true);
@@ -111,11 +114,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // Perform login with type
-      const loginResponse = await loginApi({
+      const loginResponse = await login({
         email,
         password,
         type: expectedType,
-      });
+      }).unwrap();
 
       // If login successful, set token and user state
       localStorage.setItem("token", loginResponse.authorization.token);
@@ -123,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Get user details for complete user data
       let userDetails = null;
       try {
-        userDetails = await AuthMeApi();
+        userDetails = await triggerAuthMe().unwrap();
       } catch (authMeError) {
         // If AuthMeApi fails, create fallback user
         console.warn("AuthMeApi failed, using fallback user data");
@@ -171,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      const userDetails = await AuthMeApi();
+      const userDetails = await triggerAuthMe().unwrap();
       setUser(createUserFromResponse(userDetails));
     } catch (error) {
       localStorage.removeItem("token");

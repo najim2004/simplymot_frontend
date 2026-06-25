@@ -13,51 +13,61 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import axiosClient from "@/helper/axisoClients";
+import { useVerifySubscriptionSuccessQuery } from "@/rtk/api/garage/subscriptionsMeApis";
 
 function SubscriptionSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const sessionId = useMemo(
     () => searchParams.get("session_id"),
-    [searchParams]
+    [searchParams],
   );
   const [isVerifying, setIsVerifying] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any | null>(null);
   const [apiMessage, setApiMessage] = useState<string | null>(null);
 
+  const {
+    data: payload,
+    error: apiError,
+    isLoading: isQueryLoading,
+  } = useVerifySubscriptionSuccessQuery(
+    { session_id: sessionId ?? "" },
+    { skip: !sessionId },
+  );
+
   useEffect(() => {
-    const run = async () => {
-      if (!sessionId) {
-        setErrorMessage("Missing session_id in URL.");
-        setIsVerifying(false);
-        return;
+    if (!sessionId) {
+      setErrorMessage("Missing session_id in URL.");
+      setIsVerifying(false);
+      return;
+    }
+
+    if (isQueryLoading) {
+      setIsVerifying(true);
+      return;
+    }
+
+    if (apiError) {
+      const msg =
+        (apiError as any)?.data?.message ||
+        (apiError as any)?.message ||
+        "Verification failed.";
+      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
+      setIsVerifying(false);
+      return;
+    }
+
+    if (payload) {
+      if (payload.success) {
+        setSubscription(payload.data?.subscription || null);
+        setApiMessage(payload.message || null);
+      } else {
+        setErrorMessage(payload.message || "Unable to verify subscription.");
       }
-      try {
-        const res = await axiosClient.get(
-          `/api/garage-dashboard/subscription/success`,
-          {
-            params: { session_id: sessionId },
-          }
-        );
-        const payload = res?.data;
-        if (payload?.success) {
-          setSubscription(payload?.data?.subscription || null);
-          setApiMessage(payload?.message || null);
-        } else {
-          setErrorMessage(payload?.message || "Unable to verify subscription.");
-        }
-      } catch (e: any) {
-        const msg =
-          e?.response?.data?.message || e?.message || "Verification failed.";
-        setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-    run();
-  }, [sessionId]);
+      setIsVerifying(false);
+    }
+  }, [sessionId, payload, apiError, isQueryLoading]);
 
   const lottieSrc = (() => {
     const status = subscription?.status;
@@ -77,23 +87,23 @@ function SubscriptionSuccessContent() {
   const accentBar = isCancelled
     ? "from-red-400 via-red-500 to-rose-500"
     : isWarning
-    ? "from-amber-400 via-amber-500 to-orange-500"
-    : "from-green-400 via-green-500 to-emerald-500";
+      ? "from-amber-400 via-amber-500 to-orange-500"
+      : "from-green-400 via-green-500 to-emerald-500";
   const badgeClass = isCancelled
     ? "bg-red-100 text-red-700 border-red-200"
     : isWarning
-    ? "bg-amber-100 text-amber-700 border-amber-200"
-    : "bg-emerald-100 text-emerald-700 border-emerald-200";
+      ? "bg-amber-100 text-amber-700 border-amber-200"
+      : "bg-emerald-100 text-emerald-700 border-emerald-200";
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-gradient-to-b from-emerald-50 to-white dark:from-slate-950 dark:to-slate-950">
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-linear-to-b from-emerald-50 to-white dark:from-slate-950 dark:to-slate-950">
       {/* decorative background blobs */}
       <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-emerald-400/10 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 right-1/3 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
 
       <div className="max-w-2xl w-full max-h-[90svh] overflow-auto">
-        <Card className="overflow-hidden pb-4  supports-[backdrop-filter]:bg-background/80">
-          <div className={`h-1 w-full bg-gradient-to-r ${accentBar}`} />
+        <Card className="overflow-hidden pb-4  supports-backdrop-filter:bg-background/80">
+          <div className={`h-1 w-full bg-linear-to-r ${accentBar}`} />
           <CardHeader className="pb-2">
             <div className="flex items-start gap-4">
               <div
@@ -101,8 +111,8 @@ function SubscriptionSuccessContent() {
                   isCancelled
                     ? "bg-red-50"
                     : isWarning
-                    ? "bg-amber-50"
-                    : "bg-emerald-50"
+                      ? "bg-amber-50"
+                      : "bg-emerald-50"
                 }`}
               >
                 {isCancelled ? (
@@ -118,8 +128,8 @@ function SubscriptionSuccessContent() {
                   {isCancelled
                     ? "Subscription cancelled"
                     : isWarning
-                    ? "Subscription attention needed"
-                    : "Subscription activated"}
+                      ? "Subscription attention needed"
+                      : "Subscription activated"}
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Payment status and next steps
@@ -136,7 +146,7 @@ function SubscriptionSuccessContent() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="mx-auto mb-6 flex items-center justify-center">
-              <div className="h-[200px] w-[200px] rounded-2xl bg-gradient-to-br from-black/0 via-black/0 to-black/5 p-3 ring-1 ring-black/5">
+              <div className="h-[200px] w-[200px] rounded-2xl bg-linear-to-br from-black/0 via-black/0 to-black/5 p-3 ring-1 ring-black/5">
                 <DotLottieReact src={lottieSrc} loop autoplay />
               </div>
             </div>
@@ -200,7 +210,7 @@ function SubscriptionSuccessContent() {
                           <p>
                             Access until:{" "}
                             {new Date(
-                              subscription.status_details.access_until
+                              subscription.status_details.access_until,
                             ).toLocaleDateString()}
                           </p>
                         )}
@@ -209,7 +219,7 @@ function SubscriptionSuccessContent() {
                             <p>
                               Cancellation date:{" "}
                               {new Date(
-                                subscription.status_details.cancellation_date
+                                subscription.status_details.cancellation_date,
                               ).toLocaleDateString()}
                             </p>
                           )}
@@ -240,7 +250,7 @@ function SubscriptionSuccessContent() {
                             <p className="text-xs text-muted-foreground">
                               Trial ends:{" "}
                               {new Date(
-                                subscription.trial_information.trial_end
+                                subscription.trial_information.trial_end,
                               ).toLocaleDateString()}
                             </p>
                           )}
@@ -289,7 +299,7 @@ export default function SubscriptionSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-gradient-to-b from-emerald-50 to-white dark:from-slate-950 dark:to-slate-950">
+        <div className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-linear-to-b from-emerald-50 to-white dark:from-slate-950 dark:to-slate-950">
           <div className="max-w-2xl w-full">
             <Card className="overflow-hidden pb-4">
               <CardContent className="pt-6">

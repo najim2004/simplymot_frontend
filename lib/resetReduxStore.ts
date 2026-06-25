@@ -18,6 +18,7 @@ import { bookMyMotApi } from "@/rtk/api/driver/bookMyMotApi";
 import { bookingManagementApi } from "@/rtk/api/admin/booking-management/bookingManagementApis";
 import { subscriptionsMeApi } from "@/rtk/api/garage/subscriptionsMeApis";
 import { invoicesApi } from "@/rtk/api/garage/invoiceApis";
+import { authApi } from "@/rtk/api/auth/authApis";
 import { logout } from "@/rtk/slices/authSlice";
 
 /**
@@ -45,6 +46,7 @@ export const resetReduxStore = (): void => {
   store.dispatch(bookingManagementApi.util.resetApiState());
   store.dispatch(subscriptionsMeApi.util.resetApiState());
   store.dispatch(invoicesApi.util.resetApiState());
+  store.dispatch(authApi.util.resetApiState());
 
   // Dispatch logout action to reset all slices (via rootReducer)
   store.dispatch(logout());

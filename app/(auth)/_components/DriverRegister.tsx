@@ -114,7 +114,7 @@ export default function DriverRegister() {
               className="flex justify-start cursor-pointer border border-white  rounded-full p-2 w-fit group"
             >
               <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white flex-shrink-0" />
+                <ArrowLeft className="w-4 h-4 text-white shrink-0" />
               </div>
             </button>
 
@@ -129,8 +129,8 @@ export default function DriverRegister() {
               </h2>
               {data.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 lg:w-5 lg:h-5 text-white flex-shrink-0" />
-                  <span className="text-sm md:text-base lg:text-lg font-[400]">
+                  <Check className="w-4 h-4 lg:w-5 lg:h-5 text-white shrink-0" />
+                  <span className="text-sm md:text-base lg:text-lg font-normal">
                     {item.title}
                   </span>
                 </div>
@@ -153,8 +153,8 @@ export default function DriverRegister() {
       {/* Right Side - Form */}
       <div className="flex-1 lg:flex-1 flex items-center justify-center rounded-2xl">
         <div className="w-full max-w-full  lg:max-w-lg xl:max-w-xl">
-          <div className="bg-white rounded-xl border border-[#19CA32]  p-8 sm:p-10 lg:p-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10">
+          <div className="bg-white rounded-xl border border-[#19CA32] p-8 sm:p-10 lg:p-12">
+            <h2 className="text-xl text-center sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10">
               Let's create your account.
             </h2>
 
@@ -174,7 +174,7 @@ export default function DriverRegister() {
                   id="name"
                   placeholder="Enter your name"
                   type="text"
-                  className="mt-2 py-5 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
+                  className="mt-2 py-6 border focus-visible:border-[#19CA32] focus-visible:ring-0 text-base px-4 rounded-md"
                   {...register("name", { required: "Name is required" })}
                 />
                 {errors.name && (
@@ -196,7 +196,7 @@ export default function DriverRegister() {
                   id="email"
                   type="email"
                   placeholder="Enter your email"
-                  className="mt-2 py-5 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
+                  className="mt-2 py-6 border focus-visible:border-[#19CA32] focus-visible:ring-0 text-base px-4 rounded-md"
                   {...register("email", {
                     required: "Email is required",
                     pattern: {
@@ -224,7 +224,7 @@ export default function DriverRegister() {
                   id="phoneNumber"
                   type="tel"
                   placeholder="Enter your phone number"
-                  className="mt-2 py-5 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
+                  className="mt-2 py-6 border focus-visible:border-[#19CA32] focus-visible:ring-0 text-base px-4 rounded-md"
                   {...register("phoneNumber", {
                     required: "Phone number is required",
                   })}
@@ -249,7 +249,7 @@ export default function DriverRegister() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    className="py-5 pr-12 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
+                    className="py-6 pr-12 border focus-visible:border-[#19CA32] focus-visible:ring-0 text-base px-4 rounded-md"
                     {...register("password", {
                       required: "Password is required",
                       minLength: {

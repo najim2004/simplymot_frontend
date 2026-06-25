@@ -8,10 +8,10 @@ export const adminNotificationApis = createApi({
   baseQuery,
   tagTypes: ["AdminNotifications"],
   endpoints: (builder) => ({
-    // get all notification /api/admin/notifications?limit=&page=
+    // get all notification /api/notification?limit=&page=
     getNotifications: builder.query<any, { page: number; limit: number }>({
       query: ({ page, limit }) => ({
-        url: "/api/admin/notifications",
+        url: "/api/notification",
         method: "GET",
         params: { page, limit },
       }),
@@ -21,7 +21,7 @@ export const adminNotificationApis = createApi({
     // unread
     getUnreadCount: builder.query<any, void>({
       query: () => ({
-        url: "/api/admin/notifications/unread/count",
+        url: "/api/notification/unread_count",
         method: "GET",
       }),
       providesTags: ["AdminNotifications"],
@@ -30,7 +30,7 @@ export const adminNotificationApis = createApi({
     // read all
     readAllNotifications: builder.mutation<any, void>({
       query: () => ({
-        url: "/api/admin/notifications/read-all",
+        url: "/api/notification/read_all",
         method: "PATCH",
       }),
       invalidatesTags: ["AdminNotifications"],
@@ -38,23 +38,23 @@ export const adminNotificationApis = createApi({
     // read
     readNotification: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/api/admin/notifications/${id}/read`,
+        url: `/api/notification/${id}/read`,
         method: "PATCH",
       }),
       invalidatesTags: ["AdminNotifications"],
     }),
-    // delete /api/admin/notifications all notifications
+    // delete all notifications
     deleteAllNotifications: builder.mutation<any, void>({
       query: () => ({
-        url: "/api/admin/notifications/all",
+        url: "/api/notification/all",
         method: "DELETE",
       }),
       invalidatesTags: ["AdminNotifications"],
     }),
-    // /api/admin/notifications one notification
+    // delete one notification
     deleteNotification: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/api/admin/notifications/${id}`,
+        url: `/api/notification/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["AdminNotifications"],

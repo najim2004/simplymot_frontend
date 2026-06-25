@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { registerApi } from '@/apis/auth/registerApis';
+import { useState } from "react";
+import { useRegisterMutation } from "@/rtk/api/auth/authApis";
 
 interface DriverRegisterFormData {
   name: string;
@@ -9,10 +9,11 @@ interface DriverRegisterFormData {
 }
 
 export function useDriverRegister() {
+  const [register] = useRegisterMutation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState<string>('');
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
 
   const registerDriver = async (formData: DriverRegisterFormData) => {
     setIsLoading(true);
@@ -24,17 +25,17 @@ export function useDriverRegister() {
         email: formData.email,
         phone_number: formData.phoneNumber,
         password: formData.password,
-        type: 'DRIVER',
+        type: "DRIVER",
       };
-      const result = await registerApi(payload);
-      
-      if (result.success || result.status === 'success') {
+      const result = await register(payload).unwrap();
+
+      if (result.success || result.status === "success") {
         setRegisteredEmail(formData.email);
         setShowVerificationModal(true);
       }
-      return result; 
+      return result;
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || "Registration failed");
       throw err;
     } finally {
       setIsLoading(false);
@@ -43,22 +44,22 @@ export function useDriverRegister() {
 
   const handleVerificationSuccess = () => {
     setShowVerificationModal(false);
-    setRegisteredEmail('');
+    setRegisteredEmail("");
     // You can add navigation logic here if needed
   };
 
   const closeVerificationModal = () => {
     setShowVerificationModal(false);
-    setRegisteredEmail('');
+    setRegisteredEmail("");
   };
 
-  return { 
-    registerDriver, 
-    isLoading, 
+  return {
+    registerDriver,
+    isLoading,
     error,
     showVerificationModal,
     registeredEmail,
     handleVerificationSuccess,
-    closeVerificationModal
+    closeVerificationModal,
   };
 }

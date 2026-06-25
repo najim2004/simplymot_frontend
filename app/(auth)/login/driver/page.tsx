@@ -14,7 +14,7 @@ import { toast } from "react-toastify";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { EmailVerificationModal } from "@/components/reusable/EmailVerificationModal";
-import { resendEmailVerificationApi } from "@/apis/auth/registerApis";
+import { useResendVerificationEmailMutation } from "@/rtk/api/auth/authApis";
 
 interface FormData {
   email: string;
@@ -46,6 +46,7 @@ const data = [
 ];
 function DriverSignInForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [resendVerificationEmail] = useResendVerificationEmailMutation();
   const {
     register,
     handleSubmit,
@@ -80,9 +81,11 @@ function DriverSignInForm() {
     }
     setIsSendingOtp(true);
     try {
-      const response = await resendEmailVerificationApi({ email });
-      if (response.success || response.status === "success") {
-        toast.success(response?.message || "Verification code sent to your email");
+      const response = await resendVerificationEmail({ email }).unwrap();
+      if (response.success || (response as any).status === "success") {
+        toast.success(
+          response?.message || "Verification code sent to your email",
+        );
         openVerificationModal(email);
       } else {
         toast.error(response?.message || "Failed to send verification code");
@@ -133,7 +136,7 @@ function DriverSignInForm() {
           result.message.toLowerCase().includes("verification")
         ) {
           try {
-            await resendEmailVerificationApi({ email: data.email });
+            await resendVerificationEmail({ email: data.email }).unwrap();
           } catch (resendError) {
             console.error("Failed to auto-send OTP:", resendError);
           }
@@ -147,7 +150,7 @@ function DriverSignInForm() {
         error.message?.toLowerCase().includes("verification")
       ) {
         try {
-          await resendEmailVerificationApi({ email: data.email });
+          await resendVerificationEmail({ email: data.email }).unwrap();
         } catch (resendError) {
           console.error("Failed to auto-send OTP:", resendError);
         }
@@ -185,7 +188,7 @@ function DriverSignInForm() {
               className="flex justify-start cursor-pointer border border-white  rounded-full p-2 w-fit group"
             >
               <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white flex-shrink-0" />
+                <ArrowLeft className="w-4 h-4 text-white shrink-0" />
               </div>
             </button>
 
@@ -200,8 +203,8 @@ function DriverSignInForm() {
               </h2>
               {data.map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 lg:w-5 lg:h-5 text-white flex-shrink-0" />
-                  <span className="text-sm md:text-base lg:text-lg font-[400]">
+                  <Check className="w-4 h-4 lg:w-5 lg:h-5 text-white shrink-0" />
+                  <span className="text-sm md:text-base lg:text-lg font-normal">
                     {item.title}
                   </span>
                 </div>
@@ -351,7 +354,9 @@ function DriverSignInForm() {
                   disabled={isSendingOtp}
                   className="text-sm text-gray-500 hover:text-[#19CA32] hover:underline transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isSendingOtp ? "Sending..." : "Need to verify your email? Click here"}
+                  {isSendingOtp
+                    ? "Sending..."
+                    : "Need to verify your email? Click here"}
                 </button>
               </div>
             </form>

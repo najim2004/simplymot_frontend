@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/rtk/api/contact/contactApi";
 import { useAuth } from "@/hooks/useAuth";
-import { AuthMeApi } from "@/apis/auth/authApis";
+import { useGetMeQuery } from "@/rtk/api/auth/authApis";
 
 type ContactFormValues = {
   garage_name: string;
@@ -24,6 +24,7 @@ export default function ContactUs() {
   const [createContactMessage, { isLoading }] =
     useCreateContactMessageMutation();
   const { user, isAuthenticated } = useAuth();
+  const { data: authMeData } = useGetMeQuery(undefined, { skip: !isAuthenticated });
   const [userData, setUserData] = useState<any>(null);
 
   const {
@@ -42,28 +43,19 @@ export default function ContactUs() {
   });
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (isAuthenticated) {
-        try {
-          const response = await AuthMeApi();
-          if (response.success && response.data) {
-            setUserData(response.data);
-            // Pre-fill form with user data
-            reset({
-              garage_name: response.data.garage_name || "",
-              primary_contact_person_name: response.data.primary_contact || "",
-              email: response.data.email || "",
-              phone_number: response.data.phone_number || "",
-              message: "",
-            });
-          }
-        } catch (error) {
-          console.error("Failed to fetch user data:", error);
-        }
-      }
-    };
-    fetchUserData();
-  }, [isAuthenticated, reset]);
+    if (isAuthenticated && authMeData?.success && authMeData?.data) {
+      const responseData = authMeData.data;
+      setUserData(responseData);
+      // Pre-fill form with user data
+      reset({
+        garage_name: responseData.garage_name || "",
+        primary_contact_person_name: responseData.primary_contact || "",
+        email: responseData.email || "",
+        phone_number: responseData.phone_number || "",
+        message: "",
+      });
+    }
+  }, [isAuthenticated, authMeData, reset]);
 
   const onSubmit = async (data: ContactFormValues) => {
     try {

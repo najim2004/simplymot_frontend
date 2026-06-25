@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function SubscriptionCancelPage() {
   const router = useRouter();
@@ -27,16 +27,22 @@ export default function SubscriptionCancelPage() {
               autoplay
             />
           </div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-red-600">Payment Cancelled</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold text-red-600">
+            Payment Cancelled
+          </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-md">
-            Your payment has been cancelled. Please try again or contact support if you have any issues.
+            Your payment has been cancelled. Please try again or contact support
+            if you have any issues.
           </p>
 
-          <Button onClick={handleGoHome} className="mt-2 cursor-pointer bg-black hover:bg-black/90">Go to plan</Button>
-
+          <Button
+            onClick={handleGoHome}
+            className="mt-2 cursor-pointer bg-black hover:bg-black/90"
+          >
+            Go to plan
+          </Button>
         </div>
       </div>
     </div>
   );
 }
-

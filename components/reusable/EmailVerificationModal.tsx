@@ -12,9 +12,9 @@ import { OTPInput } from "@/components/ui/otp-input";
 import { Loader2, Mail, Clock } from "lucide-react";
 import { toast } from "react-toastify";
 import {
-  emailVerificationApi,
-  resendEmailVerificationApi,
-} from "@/apis/auth/registerApis";
+  useVerifyEmailMutation,
+  useResendVerificationEmailMutation,
+} from "@/rtk/api/auth/authApis";
 
 interface EmailVerificationModalProps {
   isOpen: boolean;
@@ -29,6 +29,9 @@ export function EmailVerificationModal({
   email,
   onVerificationSuccess,
 }: EmailVerificationModalProps) {
+  const [verifyEmail] = useVerifyEmailMutation();
+  const [resendEmailVerification] = useResendVerificationEmailMutation();
+
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
@@ -80,8 +83,8 @@ export function EmailVerificationModal({
 
     setIsVerifying(true);
     try {
-      const response = await emailVerificationApi({ email, token: otp });
-      if (response.success || response.status === "success") {
+      const response = await verifyEmail({ email, token: otp }).unwrap();
+      if (response.success || (response as any).status === "success") {
         toast.success(response?.message || "Email verified successfully!");
         onVerificationSuccess();
         onClose();
@@ -97,14 +100,14 @@ export function EmailVerificationModal({
 
   const handleResendCode = async () => {
     try {
-      const response = await resendEmailVerificationApi({ email });
-      if (response.success || response.status === "success") {
+      const response = await resendEmailVerification({ email }).unwrap();
+      if (response.success || (response as any).status === "success") {
         setTimeLeft(300);
         setIsExpired(false);
         setOtp("");
         setTimerKey((prev) => prev + 1);
         toast.success(
-          response?.message || "Verification code resent to your email"
+          response?.message || "Verification code resent to your email",
         );
       } else {
         toast.error(response?.message || "Failed to resend code");

@@ -57,78 +57,153 @@ export const pricingApi = createApi({
   baseQuery,
   tagTypes: ["Pricing"],
   endpoints: (builder) => ({
-    // Create or Update Pricing - POST /api/garage-dashboard/service-price
+    // Create or Update Pricing - PUT /api/garages/:garage_id/services
     createPricing: builder.mutation<CreatePricingResponse, CreatePricingRequest>({
-      query: (body) => ({
-        url: "/api/garage-dashboard/service-price",
-        method: "POST",
-        body,
-      }),
+      queryFn: async (body, api, extraOptions, baseQuery) => {
+        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
+        if (authRes.error) return { error: authRes.error };
+
+        const user = (authRes.data as any)?.data || {};
+        const garageId = user.garages?.[0]?.id;
+        if (!garageId) {
+          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
+        }
+
+        const services: any[] = [];
+        const motObj = body.class4?.mot || body.mot;
+        if (motObj) {
+          services.push({
+            type: "MOT",
+            price: Math.round(Number(motObj.price) * 100),
+          });
+        }
+        const retestObj = body.class4?.retest || body.retest;
+        if (retestObj) {
+          services.push({
+            type: "RETEST",
+            price: Math.round(Number(retestObj.price) * 100),
+          });
+        }
+        if (body.additionals) {
+          body.additionals.forEach((s: any) => {
+            services.push({
+              id: s.id,
+              title: s.name,
+              type: "ADDITIONAL",
+              price: s.price ? Math.round(Number(s.price) * 100) : 0,
+            });
+          });
+        }
+
+        const upsertRes = await baseQuery({
+          url: `/api/garages/${garageId}/services`,
+          method: "PUT",
+          body: { services },
+        });
+        if (upsertRes.error) return { error: upsertRes.error };
+
+        const updatedData = (upsertRes.data as any)?.data || [];
+
+        const responseMot = updatedData.find((s: any) => s.type === "MOT") || {};
+        const responseRetest = updatedData.find((s: any) => s.type === "RETEST") || {};
+        const responseAdditionals = updatedData.filter((s: any) => s.type === "ADDITIONAL").map((s: any) => ({
+          id: s.id,
+          name: s.title || s.name || "",
+          price: s.price !== null && s.price !== undefined ? Number(s.price) / 100 : null,
+          type: "ADDITIONAL"
+        }));
+
+        return {
+          data: {
+            success: true,
+            message: "Services updated successfully",
+            data: {
+              mot: { ...responseMot, price: responseMot.price !== null && responseMot.price !== undefined ? Number(responseMot.price) / 100 : null },
+              retest: { ...responseRetest, price: responseRetest.price !== null && responseRetest.price !== undefined ? Number(responseRetest.price) / 100 : null },
+              class4: {
+                mot: { ...responseMot, price: responseMot.price !== null && responseMot.price !== undefined ? Number(responseMot.price) / 100 : null },
+                retest: { ...responseRetest, price: responseRetest.price !== null && responseRetest.price !== undefined ? Number(responseRetest.price) / 100 : null },
+              },
+              class7: {
+                enabled: false,
+                mot: null,
+                retest: null,
+              },
+              additionals: responseAdditionals,
+            },
+          },
+        };
+      },
       invalidatesTags: ["Pricing"],
     }),
 
-    // Get All Pricing - GET /api/garage-dashboard/services
+    // Get All Pricing - GET /api/garages/:garage_id/services
     getPricing: builder.query<PricingResponsePayload, void>({
-      query: () => "/api/garage-dashboard/services",
-      transformResponse: (response: any): PricingResponsePayload => {
-        // API returns: { success: true, data: { mot, retest, additionals } }
-        if (response?.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-          const mot = response.data.class4?.mot || response.data.mot || { name: "MOT Test", price: null, type: "MOT", class_number: 4 };
-          const retest = response.data.class4?.retest || response.data.retest || { name: "MOT Retest", price: null, type: "RETEST", class_number: 4 };
-          const class7Mot = response.data.class7?.mot || null;
-          const class7Retest = response.data.class7?.retest || null;
-          // Response is already in the correct format
-          return {
-            mot,
-            retest,
-            class4: response.data.class4 || { mot, retest },
-            class7: {
-              enabled: Boolean(response.data.class7?.enabled || class7Mot || class7Retest),
-              mot: class7Mot,
-              retest: class7Retest,
-            },
-            additionals: response.data.additionals || [],
-          };
+      queryFn: async (arg, api, extraOptions, baseQuery) => {
+        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
+        if (authRes.error) return { error: authRes.error };
+
+        const user = (authRes.data as any)?.data || {};
+        const garageId = user.garages?.[0]?.id;
+        if (!garageId) {
+          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
         }
-        
-        // Fallback: if response is an array (old format)
-        const servicesArray = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
-        
-        // Find MOT service
-        const motService = servicesArray.find((s: PricingService) => s.type === "MOT" && (s.class_number === 4 || s.class_number == null));
-        // Find RETEST service
-        const retestService = servicesArray.find((s: PricingService) => s.type === "RETEST" && (s.class_number === 4 || s.class_number == null));
-        const class7Mot = servicesArray.find((s: PricingService) => s.type === "MOT" && s.class_number === 7) || null;
-        const class7Retest = servicesArray.find((s: PricingService) => s.type === "RETEST" && s.class_number === 7) || null;
-        // Find all ADDITIONAL services
-        const additionalServices = servicesArray.filter((s: PricingService) => s.type === "ADDITIONAL");
-        
-        // Return with safe defaults if fields are missing
-        return {
-          mot: motService || { name: "MOT Test", price: null, type: "MOT", class_number: 4 },
-          retest: retestService || { name: "MOT Retest", price: null, type: "RETEST", class_number: 4 },
+
+        const servicesRes = await baseQuery({ url: `/api/garages/${garageId}/services`, method: "GET" });
+        if (servicesRes.error) return { error: servicesRes.error };
+
+        const data = (servicesRes.data as any)?.data || {};
+
+        const mot = data.mot || { name: "MOT Test", price: null, type: "MOT" };
+        const retest = data.mot_retest || { name: "MOT Retest", price: null, type: "RETEST" };
+        const additionals = (data.other_services || []).map((s: any) => ({
+          id: s.id,
+          name: s.title || s.name || "",
+          price: s.price !== null && s.price !== undefined ? Number(s.price) / 100 : null,
+          type: "ADDITIONAL"
+        }));
+
+        const pricingPayload: PricingResponsePayload = {
+          mot: { ...mot, price: mot.price !== null && mot.price !== undefined ? Number(mot.price) / 100 : null },
+          retest: { ...retest, price: retest.price !== null && retest.price !== undefined ? Number(retest.price) / 100 : null },
           class4: {
-            mot: motService || { name: "MOT Test", price: null, type: "MOT", class_number: 4 },
-            retest: retestService || { name: "MOT Retest", price: null, type: "RETEST", class_number: 4 },
+            mot: { ...mot, price: mot.price !== null && mot.price !== undefined ? Number(mot.price) / 100 : null },
+            retest: { ...retest, price: retest.price !== null && retest.price !== undefined ? Number(retest.price) / 100 : null },
           },
           class7: {
-            enabled: Boolean(class7Mot || class7Retest),
-            mot: class7Mot,
-            retest: class7Retest,
+            enabled: false,
+            mot: null,
+            retest: null,
           },
-          additionals: additionalServices || [],
+          additionals,
         };
+
+        return { data: pricingPayload };
       },
       providesTags: ["Pricing"],
       keepUnusedDataFor: 0,
     }),
 
-    // Delete Service - DELETE /api/garage-dashboard/services/:id
+    // Delete Service - DELETE /api/garages/:garage_id/services/:id
     deleteService: builder.mutation<ApiResponse, string>({
-      query: (id) => ({
-        url: `/api/garage-dashboard/services/${id}`,
-        method: "DELETE",
-      }),
+      queryFn: async (id, api, extraOptions, baseQuery) => {
+        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
+        if (authRes.error) return { error: authRes.error };
+
+        const user = (authRes.data as any)?.data || {};
+        const garageId = user.garages?.[0]?.id;
+        if (!garageId) {
+          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
+        }
+
+        const deleteRes = await baseQuery({
+          url: `/api/garages/${garageId}/services/${id}`,
+          method: "DELETE",
+        });
+        if (deleteRes.error) return { error: deleteRes.error };
+
+        return { data: deleteRes.data as any };
+      },
       invalidatesTags: ["Pricing"],
     }),
   }),

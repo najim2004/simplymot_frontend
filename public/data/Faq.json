@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "question": "How Much Does Membership Cost?",
+    "answer": "Membership is just £49 per calendar month- that’s it! No hidden fees, no commission. It's simple, straightforward monthly billing."
+  },
+  {
+    "id": 2,
+    "question": "What Is Included In The Memberhsip?",
+    "answer": "Unlimited opportunity to receive MOT bookings – 24/7. You’re in control: you set your prices, your hours, and your availability. Get seen by customers actively looking to book MOTs. Plus, there’s a big opportunity to upsell and offer extra services!"
+  },
+  {
+    "id": 3,
+    "question": "Who Is Eligible To Sign Up?",
+    "answer": "Our service is open to all active mot vehicle testing stations. At this time, we do not provide membership to freelancers or garages that outsource their mot testing."
+  },
+  {
+    "id": 4,
+    "question": "What Happens After I Sign Up?",
+    "answer": "After you sign up, your garage details will be reviewed for verification. Once approved, your listing will go live within 24 hours."
+  },
+  {
+    "id": 5,
+    "question": "How Do I Receive Bookings?",
+    "answer": "When a driver books an appointment with your garage, you will receive a booking confirmation by email with the driver’s details and appointment time. All bookings will also appear in your Garage Dashboard under the “Bookings” section, allowing you to keep track of your upcoming / previous appointments in one place."
+  },
+  {
+    "id": 6,
+    "question": "How Do I Receive Payment?",
+    "answer": "The driver attends the appointment and pays the garage directly on the day of the test."
+  },
+  {
+    "id": 7,
+    "question": "What Happens If A Driver Cancels?",
+    "answer": "Occasionally drivers may cancel a booking, which is normal within the trade. Simply MOT does not charge cancellation fees and aims to keep the system fair and straightforward for both garages and drivers."
+  },
+  {
+    "id": 8,
+    "question": "How Do I Cancel My Membership?",
+    "answer": "You can cancel your membership at any time directly from your dashboard. Simply go to Subscriptions, select your active subscription, and cancel it there. If you need any help, you can also contact us via the Contact Us section in your dashboard."
+  },
+  {
+    "id": 9,
+    "question": "Are There Any Cancellation Fees?",
+    "answer": "You’re free to cancel anytime with no cancellation fees. Just a heads-up though- we don’t offer refunds for any unused time in your current billing cycle."
+  },
+  {
+    "id": 10,
+    "question": "How Can I Contact Support?",
+    "answer": "Simply MOT is an online-based platform, so all communication and support is handled through our online contact forms. Our support hours are Monday to Friday, from 9:00am to 5:00pm. For assistance, please submit a request through the Contact Us section, and our team will respond as soon as possible."
+  }
+]

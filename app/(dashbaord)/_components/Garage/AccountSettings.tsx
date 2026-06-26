@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useProfile } from "@/hooks/useProfile";
+import { useGetMeQuery, useUpdateProfileMutation } from "@/rtk/api/auth/authApis";
 import ProfileImageUpload from "../Common/CommonImage";
-import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { useAuth } from "@/hooks/useAuth";
 // import { EmailChangeModal } from '@/components/reusable/EmailChangeModal';
 
@@ -105,13 +104,10 @@ const EditableInput = ({
 
 export default function AccountSettingsComponent() {
   // Profile hook
-  const { profile, isLoading, error, refetch } = useProfile();
-  const {
-    isLoading: isUpdating,
-    error: updateError,
-    success: updateSuccess,
-    mutate,
-  } = useUpdateProfile();
+  const { data: profileResponse, isLoading, refetch } = useGetMeQuery();
+  const profile = profileResponse?.data || null;
+
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
   const { checkAuth } = useAuth();
 
   // State
@@ -255,16 +251,16 @@ export default function AccountSettingsComponent() {
           payload.image = profileImage;
         }
       }
-      await mutate(payload, isFormData);
+      await updateProfile(payload).unwrap();
       await refetch();
       await checkAuth();
       setOriginalValues(data);
       setHasChanges(false);
       setSelectedFile(null);
       toast.success("Profile updated successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(updateError || "Failed to update profile. Please try again.");
+      toast.error(error.data?.message || error.message || "Failed to update profile. Please try again.");
     }
   };
 

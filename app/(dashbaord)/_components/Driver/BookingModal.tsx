@@ -11,7 +11,7 @@ import {
   useBookSlotMutation,
 } from "@/rtk/api/driver/bookMyMotApi";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { useGetMeQuery } from "@/rtk/api/auth/authApis";
 import PersonalInformationSection from "./BookingModal/PersonalInformationSection";
 import BookingDetailsSection from "./BookingModal/BookingDetailsSection";
 import AdditionalServicesSection from "./BookingModal/AdditionalServicesSection";
@@ -52,7 +52,8 @@ export default function BookingModal({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { data: profileResponse } = useGetMeQuery();
+  const profile = profileResponse?.data || null;
 
   // Use vehicle_id from prop if vehicle is not in Redux
   const vehicleId = propVehicleId || null;

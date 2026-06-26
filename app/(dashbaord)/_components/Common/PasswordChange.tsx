@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { usePasswordChange } from "@/hooks/usePasswordChange"
+import { useChangePasswordMutation } from "@/rtk/api/auth/authApis"
 
 // Types
 interface PasswordFormData {
@@ -68,7 +68,7 @@ const PasswordInput = ({
 
 export default function CommonPasswordChangeComponent() {
     // Password change hook
-    const { changePassword, isLoading, error, resetError } = usePasswordChange()
+    const [changePassword, { isLoading }] = useChangePasswordMutation()
 
     // State
     const [showOldPassword, setShowOldPassword] = useState(false)
@@ -106,20 +106,19 @@ export default function CommonPasswordChangeComponent() {
                 return
             }
 
-            const success = await changePassword({
+            const response = await changePassword({
                 old_password: data.oldPassword,
                 new_password: data.newPassword
-            })
+            }).unwrap()
 
-            if (success) {
+            if (response.success) {
                 toast.success('Password changed successfully!')
                 passwordForm.reset()
-                resetError()
             } else {
-                toast.error(error || 'Failed to change password')
+                toast.error(response.message || 'Failed to change password')
             }
-        } catch (error) {
-            toast.error('Failed to change password. Please try again.')
+        } catch (error: any) {
+            toast.error(error.data?.message || error.message || 'Failed to change password. Please try again.')
         }
     }
 

@@ -54,7 +54,12 @@ export interface RegisterRequest {
   email: string;
   phone_number: string;
   password: string;
-  type: string;
+  kind: string;
+}
+
+export interface PasswordChangeRequest {
+  old_password: string;
+  new_password: string;
 }
 
 export const authApi = createApi({
@@ -73,7 +78,7 @@ export const authApi = createApi({
       query: () => "/api/auth/me",
       providesTags: ["AuthUser"],
     }),
-    register: builder.mutation<any, RegisterRequest>({
+    register: builder.mutation<CommonResponse, RegisterRequest>({
       query: (body) => ({
         url: "/api/auth/register",
         method: "POST",
@@ -109,7 +114,7 @@ export const authApi = createApi({
     }),
     resetPassword: builder.mutation<
       CommonResponse,
-      { email: string; token: string; password: any }
+      { email: string; token: string; password: string }
     >({
       query: (body) => ({
         url: "/api/auth/reset-password",
@@ -117,33 +122,41 @@ export const authApi = createApi({
         body,
       }),
     }),
-    changePassword: builder.mutation<CommonResponse, any>({
+    changePassword: builder.mutation<CommonResponse, PasswordChangeRequest>({
       query: (body) => ({
         url: "/api/auth/change-password",
         method: "POST",
         body,
       }),
     }),
-    requestEmailChange: builder.mutation<CommonResponse, any>({
+    requestEmailChange: builder.mutation<CommonResponse, { email: string }>({
       query: (body) => ({
         url: "/api/auth/request-email-change",
         method: "POST",
         body,
       }),
     }),
-    changeEmail: builder.mutation<CommonResponse, any>({
+    changeEmail: builder.mutation<
+      CommonResponse,
+      { email: string; token: string }
+    >({
       query: (body) => ({
         url: "/api/auth/change-email",
         method: "POST",
         body,
       }),
     }),
-    updateProfile: builder.mutation<CommonResponse, { data: any }>({
-      query: ({ data }) => ({
-        url: "/api/auth/update",
-        method: "PATCH",
-        body: data,
-      }),
+    updateProfile: builder.mutation<CommonResponse, any>({
+      query: (body) => {
+        const isFormData = body instanceof FormData;
+        const requestBody =
+          !isFormData && body && "data" in body ? body.data : body;
+        return {
+          url: "/api/auth/update",
+          method: "PATCH",
+          body: requestBody,
+        };
+      },
       invalidatesTags: ["AuthUser"],
     }),
   }),

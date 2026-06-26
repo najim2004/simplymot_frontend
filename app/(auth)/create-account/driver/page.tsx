@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import DriverRegister from "../../_components/DriverRegister";
+import AuthRegisterForm from "../../_components/AuthRegisterForm";
 import { Loader2 } from "lucide-react";
 
 export default function DriverCreateAccount() {
@@ -11,7 +11,7 @@ export default function DriverCreateAccount() {
         </div>
       }
     >
-      <DriverRegister />
+      <AuthRegisterForm userKind="DRIVER" />
     </Suspense>
   );
 }

@@ -4,7 +4,6 @@ import Script from "next/script";
 import { AppConfig } from "@/config/app.config";
 import { Inter, Inder, Nunito_Sans } from "next/font/google";
 import { ToastContainer } from "react-toastify";
-import { AuthProvider } from "@/context/AuthContext";
 import { ReduxProvider } from "@/rtk/ReduxProvider";
 
 export const metadata: Metadata = {
@@ -71,10 +70,8 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReduxProvider>
-          <AuthProvider>
-            <ToastContainer position="top-center" />
-            {children}
-          </AuthProvider>
+          <ToastContainer position="top-center" />
+          {children}
         </ReduxProvider>
         {awinAdvertiserId ? (
           <Script

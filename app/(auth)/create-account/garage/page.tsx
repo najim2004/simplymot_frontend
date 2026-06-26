@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import GarageRegister from "../../_components/GarageRegister";
+import AuthRegisterForm from "../../_components/AuthRegisterForm";
 import { Loader2 } from "lucide-react";
 
 export default function GarageCreateAccount() {
@@ -11,7 +11,7 @@ export default function GarageCreateAccount() {
         </div>
       }
     >
-      <GarageRegister />
+      <AuthRegisterForm userKind="GARAGE" />
     </Suspense>
   );
 }

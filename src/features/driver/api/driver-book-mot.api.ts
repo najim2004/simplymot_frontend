@@ -1,0 +1,442 @@
+import { apiSlice } from "@/lib/api/api-slice";
+
+export interface VehicleData {
+  registration_number: string;
+  make: string;
+  model: string;
+  color: string;
+  fuel_type: string;
+  mot_expiry_date: string;
+  exists_in_account: boolean;
+  vehicle_id: string;
+}
+
+export interface GarageData {
+  id: string;
+  garage_name: string;
+  address: string;
+  postcode: string;
+  vts_number: string;
+  primary_contact: string;
+  phone_number: string;
+  avatar?: string;
+  email?: string;
+  distance_miles?: number;
+  mot_price?: number;
+  has_class7?: boolean;
+}
+
+export enum GarageSortBy {
+  DISTANCE = "DISTANCE",
+  PRICE_LOW_TO_HIGH = "PRICE_LOW_TO_HIGH",
+  PRICE_HIGH_TO_LOW = "PRICE_HIGH_TO_LOW",
+}
+
+export interface SearchRequest {
+  registration_number: string;
+  postcode: string;
+  page?: number;
+  limit?: number;
+  sort_by?: GarageSortBy;
+}
+
+export interface SearchResponse {
+  success: boolean;
+  data: {
+    vehicle: VehicleData;
+    garages: GarageData[];
+  };
+  meta_data: {
+    total_count: number;
+    search_postcode: string;
+  };
+}
+
+export interface GarageServiceGarage {
+  id: string;
+  garage_name: string;
+  address: string | null;
+  zip_code: string;
+  vts_number: string;
+  primary_contact: string;
+  phone_number: string;
+  email: string;
+  avatar?: string;
+}
+
+export interface ScheduleRestriction {
+  type: string;
+  end_time: string;
+  start_time: string;
+  day_of_week: number[];
+  description: string;
+}
+
+export interface DailyHoursInterval {
+  end_time: string;
+  start_time: string;
+}
+
+export interface DailyHours {
+  is_closed?: boolean;
+  intervals?: DailyHoursInterval[];
+  slot_duration?: number;
+}
+
+export interface Schedule {
+  id: string;
+  start_time: string;
+  end_time: string;
+  slot_duration: number;
+  restrictions: ScheduleRestriction[];
+  daily_hours: {
+    [key: string]: DailyHours;
+  };
+  is_active: boolean;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  class_number?: number | null;
+}
+
+export interface Additional {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export interface GarageServicesResponse {
+  garage: GarageServiceGarage;
+  services: Service[];
+  additionals: Additional[];
+  schedule: Schedule;
+}
+
+export interface GarageSlotsResponse {
+  slots: Slot[];
+}
+
+export interface Slot {
+  id: string;
+  start_time: string;
+  end_time: string;
+  date: string;
+  status?: string[];
+  has_id: boolean;
+}
+
+export const bookMyMotApi = apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    searchVehiclesAndGarages: builder.query<SearchResponse, SearchRequest>({
+      query: (params) => ({
+        url: `/api/garages/discover`,
+        method: "GET",
+        params: {
+          vehicle_registration_number: params.registration_number,
+          post_code: params.postcode,
+          page: params.page,
+          limit: params.limit,
+          sort: params.sort_by === "PRICE_LOW_TO_HIGH" ? "price" : params.sort_by === "PRICE_HIGH_TO_LOW" ? "price" : "distance",
+          sort_order: params.sort_by === "PRICE_HIGH_TO_LOW" ? "DESC" : "ASC",
+        },
+      }),
+      transformResponse: (response: any) => {
+        const data = response?.data || {};
+        const vehicle = data.vehicle || {};
+        const garages = data.garages || [];
+        const total = response?.meta_data?.total || 0;
+        const postcode = response?.meta_data?.post_code || "";
+
+        return {
+          success: true,
+          data: {
+            vehicle: {
+              registration_number: vehicle.registration_number || "",
+              make: vehicle.make || "",
+              model: vehicle.model || "",
+              color: vehicle.color || "",
+              fuel_type: vehicle.fuel_type || "",
+              mot_expiry_date: vehicle.mot_expiry_date || "",
+              exists_in_account: vehicle.exists_in_account ?? false,
+              vehicle_id: vehicle.id || "",
+            },
+            garages: garages.map((g: any) => ({
+              id: g.id,
+              garage_name: g.garage_name,
+              address: g.address,
+              postcode: g.post_code,
+              vts_number: g.vts_number,
+              primary_contact: g.primary_contact || "",
+              phone_number: g.phone_number,
+              avatar: g.garage_image || undefined,
+              distance_miles: g.distance_miles || 0,
+              mot_price: g.mot_price ? g.mot_price / 100 : 0,
+              has_class7: g.has_class7 ?? false,
+            })),
+          },
+          meta_data: {
+            total_count: total,
+            search_postcode: postcode,
+          },
+        };
+      },
+      providesTags: ["Booking"],
+    }),
+
+    getGarageServices: builder.query<GarageServicesResponse, string>({
+      query: (id) => ({
+        url: `/api/garages/discover/${id}`,
+        method: "GET",
+      }),
+      transformResponse: (response: any) => {
+        const garage = response?.data || {};
+        const servicesData = garage.services || {};
+        const scheduleData = garage.schedule || {};
+
+        const services: Service[] = [];
+        if (servicesData.mot) {
+          services.push({
+            id: servicesData.mot.id,
+            name: servicesData.mot.title || "MOT Test",
+            type: "MOT",
+            price: servicesData.mot.price ? servicesData.mot.price / 100 : 0,
+            class_number: 4,
+          });
+        }
+        if (servicesData.mot_retest) {
+          services.push({
+            id: servicesData.mot_retest.id,
+            name: servicesData.mot_retest.title || "MOT Retest",
+            type: "RETEST",
+            price: servicesData.mot_retest.price ? servicesData.mot_retest.price / 100 : 0,
+            class_number: 4,
+          });
+        }
+
+        const additionals: Additional[] = (servicesData.other_services || []).map((s: any) => ({
+          id: s.id,
+          name: s.title || s.name || "",
+          type: "ADDITIONAL",
+          price: s.price ? s.price / 100 : 0,
+        }));
+
+        const intervals = scheduleData.schedule_intervals || [];
+        const daily_hours: Record<string, DailyHours> = {};
+        intervals.forEach((item: any) => {
+          const dayKey = item.day_of_week.toLowerCase();
+          daily_hours[dayKey] = {
+            is_closed: item.is_closed,
+            slot_duration: item.slot_duration,
+            intervals: [
+              {
+                start_time: item.open_time,
+                end_time: item.close_time,
+              },
+            ],
+          };
+        });
+
+        return {
+          garage: {
+            id: garage.id,
+            garage_name: garage.garage_name,
+            address: garage.address,
+            zip_code: garage.post_code,
+            vts_number: garage.vts_number,
+            primary_contact: garage.primary_contact || "",
+            phone_number: garage.phone_number,
+            email: garage.contact_email,
+            avatar: garage.garage_image || undefined,
+          },
+          services,
+          additionals,
+          schedule: {
+            id: scheduleData.id || "",
+            start_time: "",
+            end_time: "",
+            slot_duration: intervals[0]?.slot_duration || 60,
+            restrictions: [],
+            daily_hours,
+            is_active: true,
+          },
+        };
+      },
+      providesTags: ["Booking"],
+      keepUnusedDataFor: 0,
+    }),
+
+    getGarageSlots: builder.query<
+      GarageSlotsResponse,
+      { id: string; date: string }
+    >({
+      query: ({ id, date }) => ({
+        url: `/api/garages/${id}/slots?date=${date}`,
+        method: "GET",
+      }),
+      transformResponse: (response: any, _meta, arg) => {
+        const toSlot = (slot: any, index: number): Slot => ({
+          id:
+            slot?.id ||
+            `${slot?.date || arg.date || "date"}-${
+              slot?.start_time || "start"
+            }-${slot?.end_time || "end"}-${index}`,
+          start_time: slot?.start_time || "",
+          end_time: slot?.end_time || "",
+          date: slot?.date || arg.date,
+          status: slot?.status,
+          has_id: !!slot?.id,
+        });
+
+        if (Array.isArray(response)) {
+          return { slots: response.map(toSlot) };
+        }
+
+        if (
+          response?.success &&
+          response?.data &&
+          Array.isArray(response.data)
+        ) {
+          return { slots: response.data.map(toSlot) };
+        }
+
+        if (response?.slots && Array.isArray(response.slots)) {
+          return { slots: response.slots.map(toSlot) };
+        }
+
+        if (response?.data && Array.isArray(response.data)) {
+          return { slots: response.data.map(toSlot) };
+        }
+
+        return { slots: [] };
+      },
+      providesTags: ["Booking"],
+      keepUnusedDataFor: 0,
+    }),
+
+    bookSlot: builder.mutation<
+      any,
+      {
+        garage_id: string;
+        vehicle_id: string;
+        service_type: string;
+        additional_services?: string;
+        slot_id?: string;
+        start_time?: string;
+        end_time?: string;
+        date?: string;
+      }
+    >({
+      query: (body) => ({
+        url: `/api/bookings`,
+        method: "POST",
+        body: body,
+      }),
+      invalidatesTags: ["Booking"],
+    }),
+
+    getMyBookings: builder.query<
+      any,
+      { search: string; status: string; page: number; limit: number }
+    >({
+      query: ({ search, status, page, limit }) => {
+        const params = new URLSearchParams();
+        if (search) params.append("search", search);
+        if (status && status !== "all") params.append("status", status.toUpperCase());
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        return {
+          url: `/api/bookings?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      transformResponse: (response: any) => {
+        const bookings = response?.data || [];
+        const total = response?.meta_data?.total || 0;
+        const page = response?.meta_data?.page || 1;
+        const limit = response?.meta_data?.limit || 10;
+        const pages = Math.ceil(total / limit) || 1;
+
+        return {
+          success: true,
+          message: response?.message || "Bookings fetched successfully",
+          bookings: bookings.map((b: any) => ({
+            id: b.id,
+            created_at: b.created_at,
+            order_date: b.order_date || b.created_at,
+            status: b.status,
+            total_amount: b.total_amount ? `£${(Number(b.total_amount) / 100).toFixed(2)}` : "£0.00",
+            garage_id: b.garage_id,
+            additional_services: b.additional_services,
+            vehicle: {
+              id: b.vehicle?.id || "",
+              registration_number: b.vehicle?.registration_number || "",
+              make: b.vehicle?.make || "",
+              model: b.vehicle?.model || "",
+            },
+            garage: {
+              id: b.garage?.id || "",
+              garage_name: b.garage?.garage_name || "Garage",
+              address: b.garage?.address || "",
+              phone_number: b.garage?.phone_number || "",
+              avatar: b.garage?.garage_image || "",
+            },
+            slot: b.slot,
+          })),
+          pagination: {
+            page,
+            limit,
+            total,
+            pages,
+          },
+        } as any;
+      },
+      providesTags: ["Booking"],
+    }),
+
+    cancelMyBooking: builder.mutation<
+      any,
+      { id: string; reason: string }
+    >({
+      query: ({ id, reason }) => ({
+        url: `/api/bookings/${id}/cancel`,
+        method: "PATCH",
+        body: { reason },
+      }),
+      invalidatesTags: ["Booking"],
+    }),
+
+    rescheduleMyBooking: builder.mutation<
+      any,
+      {
+        id: string;
+        slot_id?: string;
+        date?: string;
+        start_time?: string;
+        end_time?: string;
+        reason?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/api/bookings/${id}/reschedule`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Booking"],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const {
+  useSearchVehiclesAndGaragesQuery,
+  useGetGarageServicesQuery,
+  useGetGarageSlotsQuery,
+  useBookSlotMutation,
+  useGetMyBookingsQuery,
+  useCancelMyBookingMutation,
+  useRescheduleMyBookingMutation,
+} = bookMyMotApi;

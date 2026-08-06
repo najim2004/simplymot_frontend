@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { User, Lock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import AccountSettingsComponent from './AccountSettings'
-import CommonPasswordChangeComponent from '@/app/(dashbaord)/_components/Common/PasswordChange'
+import CommonPasswordChangeComponent from '@/components/reusable/Common/PasswordChange'
 
 // Tab Button Component
 const TabButton = ({

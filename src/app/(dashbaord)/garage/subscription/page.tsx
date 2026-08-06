@@ -19,8 +19,10 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCheckoutLoading, setSelectedPlan } from "@/features/subscriptions";
 import { PAGINATION_CONFIG } from "@/config/pagination.config";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
-import SubscriptionDetails from "../../_components/Garage/Subscription/SubscriptionDetails";
-import CancelSubscription from "../../_components/Garage/Subscription/CancelSubscription";
+import {
+  SubscriptionDetails,
+  CancelSubscription,
+} from "@/features/garage";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";

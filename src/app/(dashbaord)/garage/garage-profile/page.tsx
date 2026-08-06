@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
-import GarageProfileCard from "../../_components/Garage/GarageProfileCard";
-import GarageProfileAdd from "../../_components/Garage/GarageProfileAdd";
+import { GarageProfileCard, GarageProfileAdd } from "@/features/garage";
 import { useGetProfileQuery } from "@/features/garage";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,5 @@
-import DriverProfile from '../../_components/Driver/Profile'
+"use client";
+import { DriverProfile } from "@/features/driver";
 
 export default function DriverProfilePage() {
     return (

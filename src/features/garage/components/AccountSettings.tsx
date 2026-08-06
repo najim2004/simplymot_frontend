@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetMeQuery, useUpdateProfileMutation } from "@/features/auth";
-import ProfileImageUpload from "@/app/(dashbaord)/_components/Common/CommonImage";
+import ProfileImageUpload from "@/components/reusable/Common/CommonImage";
 import { useAuth } from "@/features/auth";
 // import { EmailChangeModal } from '@/components/reusable/EmailChangeModal';
 

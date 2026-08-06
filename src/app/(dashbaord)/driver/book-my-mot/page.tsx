@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "react-toastify";
 
 import imgMot from "@/public/Image/admin/cardMot.png";
-import GarageCard from "../../_components/Driver/GarageCard";
+import { GarageCard } from "@/features/driver";
 import {
   useBookSlotMutation,
   useSearchVehiclesAndGaragesQuery,
@@ -32,7 +32,7 @@ import {
   useAddVehicleMutation,
   useGetVehiclesQuery,
 } from "@/features/driver";
-import BookingSuccessModal from "../../_components/Driver/BookingModal/BookingSuccessModal";
+import { BookingSuccessModal } from "@/features/driver";
 import { useAuth } from "@/features/auth";
 import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 import { getBrandLogo, normalizeRegistration } from "@/lib/helper/vehicle.helper";

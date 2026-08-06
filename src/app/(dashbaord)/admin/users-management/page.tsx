@@ -12,10 +12,12 @@ import {
 import ReusableTable from "@/components/reusable/Dashboard/Table/ReuseableTable";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import { Plus } from "lucide-react";
-import StatsCards from "@/app/(dashbaord)/_components/Admin/UserManagement/StatsCards";
-import FilterSearch from "@/app/(dashbaord)/_components/Admin/UserManagement/FilterSearch";
-import CreateNewUser from "@/app/(dashbaord)/_components/Admin/UserManagement/CreateNewUser";
-import TableAction from "@/app/(dashbaord)/_components/Admin/UserManagement/TableAction";
+import {
+  UserStatsCards as StatsCards,
+  UserFilterSearch as FilterSearch,
+  CreateNewUser,
+  UserTableAction as TableAction,
+} from "@/features/admin";
 import Image from "next/image";
 
 export default function UserManagement() {

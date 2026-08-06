@@ -8,10 +8,12 @@ import {
   useGetASubscriptionQuery,
   JobType,
 } from "@/features/admin";
-import SubscriptionDetailsTab from "../../../_components/Admin/SubscriptionsManagement/components/SubscriptionDetailsTab";
-import MigrationTab from "../../../_components/Admin/SubscriptionsManagement/components/MigrationTab";
-import JobsTab from "../../../_components/Admin/SubscriptionsManagement/components/JobsTab";
-import GarageSubscriptionsTab from "../../../_components/Admin/SubscriptionsManagement/components/GarageSubscriptionsTab";
+import {
+  SubscriptionDetailsTab,
+  MigrationTab,
+  JobsTab,
+  GarageSubscriptionsTab,
+} from "@/features/admin";
 
 export default function SubscriptionDetailsPage() {
   const params = useParams();

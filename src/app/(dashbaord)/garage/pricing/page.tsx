@@ -1,15 +1,18 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import MotFeeAdd from '../../_components/Garage/MotFeeAdd'
-import AdditionalServicesAdd from '../../_components/Garage/AdditionalServicesAdd'
+import {
+    MotFeeAdd,
+    AdditionalServicesAdd,
+    getPricingLoadingState,
+    useGetPricingQuery,
+    setPricingFromResponse,
+} from "@/features/garage"
 import { Button } from '@/components/ui/button'
 import { useAppDispatch } from "@/store/hooks"
-import { useGetPricingQuery, setPricingFromResponse } from "@/features/garage"
 import { Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'react-toastify'
-import { getPricingLoadingState } from '../../_components/Garage/MotFeeAdd'
 
 export default function Pricing() {
     const dispatch = useAppDispatch()

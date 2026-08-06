@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
-import BookingModal from "../../../_components/Driver/BookingModal";
+import { BookingModal } from "@/features/driver";
 import {
   useBookSlotMutation,
   useGetGarageServicesQuery,
@@ -22,7 +22,7 @@ import {
   useGetVehiclesQuery,
 } from "@/features/driver";
 import LoadingSpinner from "@/components/reusable/LoadingSpinner";
-import BookingSuccessModal from "@/app/(dashbaord)/_components/Driver/BookingModal/BookingSuccessModal";
+import { BookingSuccessModal } from "@/features/driver";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
 import { getBookMyMotReturnUrl } from "@/lib/book-my-mot-navigation";
 import { trackBookingConversionFromApiData } from "@/lib/tracking";

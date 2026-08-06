@@ -5,14 +5,16 @@ import { useRouter, useParams } from "next/navigation";
 import VehiclesCardReusble from "@/components/reusable/Dashboard/Driver/VehiclesCardReusble";
 import { useVehicleData } from "../../../../../hooks/useVehicleData";
 import { MOTReport, Vehicle, MotReportWithVehicle } from "../_types";
-import ErrorDisplay from "@/app/(dashbaord)/_components/Driver/motReport/ErrorDisplay";
-import ReportCard from "@/app/(dashbaord)/_components/Driver/motReport/ReportCard";
-import ReportCardShimmer from "@/app/(dashbaord)/_components/Driver/motReport/ReportCardShimmer";
-import VehicleHeaderShimmer from "@/app/(dashbaord)/_components/Driver/motReport/VehicleHeaderShimmer";
-import NoReportsMessage from "@/app/(dashbaord)/_components/Driver/motReport/NoReportsMessage";
-import NoVehicleSelected from "@/app/(dashbaord)/_components/Driver/motReport/NoVehicleSelected";
-import VehicleDetailsModal from "@/app/(dashbaord)/_components/Driver/motReport/VehicleDetailsModal";
-import DownloadModal from "@/app/(dashbaord)/_components/Driver/motReport/DownloadModal";
+import {
+  ErrorDisplay,
+  ReportCard,
+  ReportCardShimmer,
+  VehicleHeaderShimmer,
+  NoReportsMessage,
+  NoVehicleSelected,
+  VehicleDetailsModal,
+  DownloadModal,
+} from "@/features/driver";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

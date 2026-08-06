@@ -8,7 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import RoleList from './RoleList'
 import { Eye, EyeOff, Pencil } from 'lucide-react'
 import { toast } from 'react-toastify'
-import ProfileImageUpload from '@/app/(dashbaord)/_components/Common/CommonImage'
+import ProfileImageUpload from '@/components/reusable/Common/CommonImage'
 
 interface CreateNewUserProps {
     open: boolean

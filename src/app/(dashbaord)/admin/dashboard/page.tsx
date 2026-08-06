@@ -1,8 +1,10 @@
 import React from 'react'
-import OverviewCard from '../../_components/Admin/OverviewCard'
-import NewGarages from '../../_components/Admin/NewGarages'
-import NewDrivers from '../../_components/Admin/NewDrivers'
-import NewBookings from '../../_components/Admin/NewBookings'
+import {
+  OverviewCard,
+  NewGarages,
+  NewDrivers,
+  NewBookings,
+} from "@/features/admin";
 
 export default function AdminDashboard() {
     return (

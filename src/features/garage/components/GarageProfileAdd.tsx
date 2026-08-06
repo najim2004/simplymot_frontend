@@ -166,7 +166,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 };
 
 interface GarageProfileAddProps {
-  profile: GarageProfile;
+  profile: any;
 }
 
 export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {

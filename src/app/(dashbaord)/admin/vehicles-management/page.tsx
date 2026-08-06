@@ -37,10 +37,12 @@ import {
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";
 import { toast } from "react-toastify";
-import { useAutoReminderSettings } from "@/app/(dashbaord)/_components/Admin/VehiclesManagement/useAutoReminder";
-import { useVehicleReminders } from "@/app/(dashbaord)/_components/Admin/VehiclesManagement/useVehicleReminders";
-import MotReminderSection from "@/app/(dashbaord)/_components/Admin/VehiclesManagement/MotReminderSection";
-import SendReminderModal from "@/app/(dashbaord)/_components/Admin/VehiclesManagement/SendReminderModal";
+import {
+  useAutoReminderSettings,
+  useVehicleReminders,
+  MotReminderSection,
+  SendReminderModal,
+} from "@/features/admin";
 
 const DriverDetailsDropdown = React.memo(({ vehicleId }: { vehicleId: string }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);

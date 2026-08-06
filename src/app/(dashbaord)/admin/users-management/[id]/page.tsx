@@ -20,7 +20,7 @@ import {
   Clock,
 } from "lucide-react";
 import Image from "next/image";
-import UserPlatformActivity from "@/app/(dashbaord)/_components/Admin/UserManagement/UserPlatformActivity";
+import { UserPlatformActivity } from "@/features/admin";
 
 export default function UserDetails() {
   const params = useParams();

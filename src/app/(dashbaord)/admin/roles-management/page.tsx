@@ -7,12 +7,14 @@ import ReusableTable from '@/components/reusable/Dashboard/Table/ReuseableTable'
 import ReusablePagination from '@/components/reusable/Dashboard/Table/ReusablePagination';
 import { Plus, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import CreateRoleModal from '../../_components/Admin/RoleManagement/CreateRoleModal';
-import ViewRoleDetailsModal from '../../_components/Admin/RoleManagement/ViewRoleDetailsModal';
-import RoleTableActions from '../../_components/Admin/RoleManagement/RoleTableActions';
-import StatsCards from '../../_components/Admin/RoleManagement/StatsCards';
-import RolesBreakdown from '../../_components/Admin/RoleManagement/RolesBreakdown';
-import AssignPermissionsModal from '../../_components/Admin/RoleManagement/AssignPermissionsModal';
+import {
+  CreateRoleModal,
+  ViewRoleDetailsModal,
+  RoleTableActions,
+  RoleStatsCards as StatsCards,
+  RolesBreakdown,
+  AssignPermissionsModal,
+} from "@/features/admin";
 import CustomReusableModal from '@/components/reusable/Dashboard/Modal/CustomReusableModal';
 import { Button } from '@/components/ui/button';
 

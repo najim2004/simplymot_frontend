@@ -1,4 +1,5 @@
-import ProfileComponent from '../../_components/Garage/Profile'
+"use client";
+import { GarageProfile as ProfileComponent } from "@/features/garage";
 
 export default function ProfilePage() {
     return (

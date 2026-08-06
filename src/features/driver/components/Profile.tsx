@@ -4,8 +4,8 @@ import { User, Lock } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 
-import MyProfile from '@/app/(dashbaord)/_components/Common/MyProfile'
-import CommonPasswordChangeComponent from '@/app/(dashbaord)/_components/Common/PasswordChange'
+import MyProfile from '@/components/reusable/Common/MyProfile'
+import CommonPasswordChangeComponent from '@/components/reusable/Common/PasswordChange'
 
 // Tab Button Component
 const TabButton = ({

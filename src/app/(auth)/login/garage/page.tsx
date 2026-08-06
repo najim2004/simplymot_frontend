@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import AuthLoginForm from "../../_components/AuthLoginForm";
+import { AuthLoginForm } from "@/features/auth";
 
 function GarageLoginContent() {
   return <AuthLoginForm userKind="GARAGE" />;

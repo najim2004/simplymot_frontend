@@ -2,8 +2,8 @@
 import React, { useState } from 'react'
 import { User, Lock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import CommonPasswordChangeComponent from '@/app/(dashbaord)/_components/Common/PasswordChange'
-import MyProfile from '@/app/(dashbaord)/_components/Common/MyProfile'
+import CommonPasswordChangeComponent from '@/components/reusable/Common/PasswordChange'
+import MyProfile from '@/components/reusable/Common/MyProfile'
 
 const TabButton = ({
     isActive,

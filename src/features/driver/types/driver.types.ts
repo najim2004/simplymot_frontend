@@ -129,21 +129,25 @@ export interface GarageSlotsResponse {
 
 export interface ApiVehicle {
   id: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
   registration_number: string;
   make: string;
   model: string;
-  color: string;
-  fuel_type: string;
-  year_of_manufacture: number;
-  engine_capacity: number;
-  co2_emissions: number;
-  mot_expiry_date: string;
-  dvla_data: string;
-  mot_data: string;
-  mot_reports: MotTest[];
+  color?: string;
+  fuel_type?: string;
+  year_of_manufacture?: number | null;
+  engine_capacity?: number | null;
+  co2_emissions?: number | null;
+  mot_status?: string | null;
+  is_expired?: boolean | null;
+  mot_expiry_date?: string | null;
+  mot_last_checked_at?: string | null;
+  reminder_last_sent_at?: string | null;
+  dvla_data?: string | null;
+  mot_data?: string | null;
+  mot_reports?: MotTest[];
 }
 
 export interface VehiclesResponse {
@@ -155,13 +159,13 @@ export interface VehiclesResponse {
 export interface AddVehicleResponse {
   success: boolean;
   message: string;
-  data: null;
+  data?: ApiVehicle | null;
 }
 
 export interface DeleteVehicleResponse {
   success: boolean;
   message: string;
-  data: null;
+  data?: ApiVehicle | null;
 }
 
 export interface RefreshMotReportsResponse {

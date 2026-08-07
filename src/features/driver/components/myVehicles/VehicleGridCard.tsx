@@ -25,7 +25,10 @@ export default function VehicleGridCard({
     >
       {/* Delete Button */}
       <button
-        onClick={() => onDeleteClick()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDeleteClick();
+        }}
         disabled={isDeleting}
         className="absolute cursor-pointer top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-200 z-10 disabled:opacity-50 disabled:cursor-not-allowed"
         title="Remove Vehicle"

@@ -5,11 +5,10 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 
 interface ConfirmationModalProps {
   open: boolean;
@@ -31,41 +30,41 @@ export default function ConfirmationModal({
   description,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  variant = "info",
+  variant = "danger",
   isLoading = false,
 }: ConfirmationModalProps) {
   const variantConfig = {
     danger: {
-      icon: AlertCircle,
-      iconColor: "text-rose-600",
-      bgColor: "bg-rose-50",
-      borderColor: "border-rose-100",
-      buttonClass: "bg-rose-600 hover:bg-rose-700 shadow-rose-200",
+      icon: Trash2,
+      iconColor: "text-red-600",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-100",
+      confirmBtnClass: "bg-red-600 hover:bg-red-700 text-white",
     },
     warning: {
       icon: AlertTriangle,
       iconColor: "text-amber-600",
       bgColor: "bg-amber-50",
       borderColor: "border-amber-100",
-      buttonClass: "bg-amber-600 hover:bg-amber-700 shadow-amber-200",
+      confirmBtnClass: "bg-amber-600 hover:bg-amber-700 text-white",
     },
     info: {
       icon: Info,
-      iconColor: "text-[#19CA32]",
-      bgColor: "bg-[#19CA32]/10",
-      borderColor: "border-[#19CA32]/20",
-      buttonClass: "bg-[#19CA32] hover:bg-[#16b82e] shadow-[#19CA32]/20",
+      iconColor: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-100",
+      confirmBtnClass: "bg-blue-600 hover:bg-blue-700 text-white",
     },
     success: {
-      icon: CheckCircle,
+      icon: CheckCircle2,
       iconColor: "text-emerald-600",
       bgColor: "bg-emerald-50",
       borderColor: "border-emerald-100",
-      buttonClass: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200",
+      confirmBtnClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
     },
   };
 
-  const config = variantConfig[variant];
+  const config = variantConfig[variant] || variantConfig.danger;
   const Icon = config.icon;
 
   return (
@@ -73,51 +72,52 @@ export default function ConfirmationModal({
       open={open}
       onOpenChange={(isOpen) => !isOpen && !isLoading && onClose()}
     >
-      <AlertDialogContent className="max-w-[400px] p-0 overflow-hidden border-none rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
-        <div className="p-8">
-          <AlertDialogHeader className="space-y-4">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div
-                className={`p-4 rounded-2xl ${config.bgColor} ${config.borderColor} border-2 animate-bounce-subtle`}
-              >
-                <Icon className={`w-10 h-10 ${config.iconColor}`} />
-              </div>
-              <div className="space-y-2">
-                <AlertDialogTitle className="text-2xl font-bold text-gray-900 tracking-tight">
-                  {title}
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-500 text-base leading-relaxed">
-                  {description}
-                </AlertDialogDescription>
-              </div>
+      <AlertDialogContent className="max-w-md p-6 bg-white rounded-2xl border border-gray-100 shadow-xl">
+        <AlertDialogHeader className="space-y-0">
+          <div className="flex items-start gap-4 text-left">
+            <div
+              className={`p-3 rounded-xl ${config.bgColor} ${config.borderColor} border shrink-0`}
+            >
+              <Icon className={`w-6 h-6 ${config.iconColor}`} />
             </div>
-          </AlertDialogHeader>
-          <div className="mt-8 flex flex-col gap-3">
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                onConfirm();
-              }}
-              disabled={isLoading}
-              className={`${config.buttonClass} w-full py-6 text-white font-bold rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg cursor-pointer`}
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              ) : (
-                confirmText
-              )}
-            </AlertDialogAction>
-            <AlertDialogCancel
-              onClick={onClose}
-              disabled={isLoading}
-              className="w-full py-6 text-gray-500 font-semibold bg-gray-50 hover:bg-gray-100 border-none rounded-xl transition-all duration-200 cursor-pointer"
-            >
-              {cancelText}
-            </AlertDialogCancel>
+
+            <div className="space-y-1">
+              <AlertDialogTitle className="text-lg font-bold text-gray-900 tracking-tight">
+                {title}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-500 text-sm leading-relaxed">
+                {description}
+              </AlertDialogDescription>
+            </div>
           </div>
+        </AlertDialogHeader>
+
+        {/* Action Buttons */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={isLoading}
+            className={`${config.confirmBtnClass} w-full py-2.5 font-medium rounded-lg text-sm transition-colors cursor-pointer m-0 shadow-xs flex items-center justify-center gap-2`}
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Deleting...</span>
+              </div>
+            ) : (
+              confirmText
+            )}
+          </AlertDialogAction>
+          <AlertDialogCancel
+            onClick={onClose}
+            disabled={isLoading}
+            className="w-full py-2.5 text-gray-700 font-medium bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm transition-colors cursor-pointer m-0"
+          >
+            {cancelText}
+          </AlertDialogCancel>
         </div>
       </AlertDialogContent>
     </AlertDialog>

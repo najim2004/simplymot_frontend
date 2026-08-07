@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";
 import {
@@ -12,22 +13,23 @@ import {
   AddVehicleCardButton,
   AddVehicleModal,
   MyVehiclesDetailsModal,
+  ApiVehicle,
 } from "@/features/driver";
 
 export default function MyVehicles() {
+  const router = useRouter();
+
   const [isOpenAddVehicleModal, setIsOpenAddVehicleModal] =
     React.useState(false);
   const [isOpenDeleteVehicleModal, setIsOpenDeleteVehicleModal] =
     React.useState(false);
-  const [vehicleIdForDelete, setVehicleIdForDelete] = React.useState(null);
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  const [isOpenVehicleDetailsModal, setIsOpenVehicleDetailsModal] =
+    React.useState(false);
+  const [vehicleForDetailsModal, setVehicleForDetailsModal] =
+    React.useState<ApiVehicle | null>(null);
+  const [vehicleIdForDelete, setVehicleIdForDelete] = React.useState<
+    string | null
+  >(null);
 
   const { data, isLoading: isLoadingVehicles } = useGetVehiclesQuery();
   const vehicles = data?.data;
@@ -35,14 +37,22 @@ export default function MyVehicles() {
   const [addVehicle, { isLoading: isAdding }] = useAddVehicleMutation();
   const [deleteVehicle, { isLoading: isDeleting }] = useDeleteVehicleMutation();
 
-  const addVehicleHandler = async ({ registration_number }) => {
+  const addVehicleHandler = async ({
+    registration_number,
+  }: {
+    registration_number: string;
+  }) => {
     try {
       const response = await addVehicle({ registration_number }).unwrap();
       if (response.success) {
         toast.success(response.message);
+        setIsOpenAddVehicleModal(false);
       }
-    } catch (error) {
-      toast.error(error.message);
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
+      const msg =
+        error.data?.message || error.message || "Failed to add vehicle";
+      toast.error(msg);
     }
   };
 
@@ -55,8 +65,29 @@ export default function MyVehicles() {
         setIsOpenDeleteVehicleModal(false);
         setVehicleIdForDelete(null);
       }
-    } catch (error) {
-      toast.error(error.message);
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
+      const msg =
+        error.data?.message || error.message || "Failed to delete vehicle";
+      toast.error(msg);
+    }
+  };
+
+  const handleBookMyMOT = () => {
+    if (vehicleForDetailsModal) {
+      setIsOpenVehicleDetailsModal(false);
+      router.push(
+        `/driver/book-my-mot?registration=${encodeURIComponent(
+          vehicleForDetailsModal.registration_number,
+        )}`,
+      );
+    }
+  };
+
+  const handleMotReports = () => {
+    if (vehicleForDetailsModal?.id) {
+      setIsOpenVehicleDetailsModal(false);
+      router.push(`/driver/mot-reports/${vehicleForDetailsModal.id}`);
     }
   };
 
@@ -82,7 +113,10 @@ export default function MyVehicles() {
                 key={vehicle.id}
                 vehicle={vehicle}
                 isDeleting={isDeleting}
-                onVehicleClick={() => {}}
+                onVehicleClick={(v) => {
+                  setVehicleForDetailsModal(v);
+                  setIsOpenVehicleDetailsModal(true);
+                }}
                 onDeleteClick={() => {
                   setVehicleIdForDelete(vehicle.id);
                   setIsOpenDeleteVehicleModal(true);
@@ -106,14 +140,13 @@ export default function MyVehicles() {
       />
 
       {/* Vehicle Details Modal */}
-      {/* <MyVehiclesDetailsModal
-        isOpen={isOpenDeleteVehicleModal}
-        selectedVehicle={selectedVehicle}
-        onClose={() => setIsOpenDeleteVehicleModal(false)}
+      <MyVehiclesDetailsModal
+        isOpen={isOpenVehicleDetailsModal}
+        selectedVehicle={vehicleForDetailsModal}
+        onClose={() => setIsOpenVehicleDetailsModal(false)}
         onBookMyMOT={handleBookMyMOT}
         onMotReports={handleMotReports}
-        formatDate={formatDate}
-      /> */}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal

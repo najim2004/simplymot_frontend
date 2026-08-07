@@ -52,9 +52,11 @@ export default function AddVehicleModal({
       onClose={handleClose}
       title="Add Another Vehicle"
       showHeader={false}
-      className="max-w-sm"
+      hideClose={true}
+      contentClassName="p-0"
+      className="max-w-md"
     >
-      <div className="bg-white rounded-lg overflow-hidden">
+      <div className="bg-white rounded-lg overflow-hidden h-[250px] flex flex-col">
         {/* Header */}
         <div
           className={`bg-[${brandColor}] text-white p-4 flex items-center justify-between`}
@@ -63,10 +65,10 @@ export default function AddVehicleModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-5 flex-1">
+          <div className="space-y-4 flex flex-col h-full">
             {/* Registration Number Input */}
-            <div className="space-y-2">
+            <div className="space-y-2 flex-grow flex flex-col justify-center">
               <Label
                 htmlFor="registration_number"
                 className="text-sm font-medium text-gray-700"
@@ -93,14 +95,25 @@ export default function AddVehicleModal({
               )}
             </div>
 
-            {/* Add Vehicle Button */}
-            <Button
-              type="submit"
-              disabled={isAdding}
-              className={`w-full bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-3 text-base rounded-md transition-all duration-200 cursor-pointer disabled:bg-[${brandColor}]/70 disabled:cursor-not-allowed`}
-            >
-              {isAdding ? "Adding Vehicle..." : "Add Vehicle"}
-            </Button>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Button
+                type="button"
+                onClick={handleClose}
+                variant="outline"
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 text-sm rounded-md transition-all duration-200 cursor-pointer"
+              >
+                Close
+              </Button>
+
+              <Button
+                type="submit"
+                disabled={isAdding}
+                className={`w-full bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-3 text-sm rounded-md transition-all duration-200 cursor-pointer disabled:bg-[${brandColor}]/70 disabled:cursor-not-allowed`}
+              >
+                {isAdding ? "Adding..." : "Add Vehicle"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

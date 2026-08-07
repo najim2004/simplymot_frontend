@@ -1,5 +1,5 @@
 import React from "react";
-import HeroSectionReused from "../_components/Shared/HeroSectionReused";
+import HeroSectionReused from "@/features/client/components/Shared/HeroSectionReused";
 
 const driverTermsData = {
   lastUpdated: "December 2025 ",

@@ -6,7 +6,6 @@ import usersManagementReducer from "@/features/admin/store/users-management.slic
 import roleManagementReducer from "@/features/admin/store/role-management.slice";
 import bookingManagementReducer from "@/features/admin/store/booking-management.slice";
 import pricingReducer from "@/features/garage/store/garage-pricing.slice";
-import vehiclesReducer from "@/features/driver/store/driver-vehicles.slice";
 import bookMyMotReducer from "@/features/driver/store/driver-book-mot.slice";
 
 const appReducer = combineReducers({
@@ -17,13 +16,12 @@ const appReducer = combineReducers({
   roleManagement: roleManagementReducer,
   bookingManagement: bookingManagementReducer,
   pricing: pricingReducer,
-  vehicles: vehiclesReducer,
   bookMyMot: bookMyMotReducer,
 });
 
 export const rootReducer = (
   state: ReturnType<typeof appReducer> | undefined,
-  action: any
+  action: any,
 ) => {
   if (action.type === "auth/logout") {
     state = undefined;

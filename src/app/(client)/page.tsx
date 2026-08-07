@@ -1,9 +1,9 @@
-import HomeBanner from "@/app/(client)/_components/Home/Banner";
-import CustomersSay from "@/app/(client)/_components/Home/CustomersSay";
-import Frequently from "@/app/(client)/_components/Home/Frequently";
-import HowToBook from "@/app/(client)/_components/Home/HowToBook";
-import LineStyle from "@/app/(client)/_components/Home/LineStyle";
-import ReadytoBook from "@/app/(client)/_components/Home/ReadytoBook ";
+import HomeBanner from "@/features/client/components/Home/Banner";
+import CustomersSay from "@/features/client/components/Home/CustomersSay";
+import Frequently from "@/features/client/components/Home/Frequently";
+import HowToBook from "@/features/client/components/Home/HowToBook";
+import LineStyle from "@/features/client/components/Home/LineStyle";
+import ReadytoBook from "@/features/client/components/Home/ReadytoBook ";
 
 export default function Home() {
   return (

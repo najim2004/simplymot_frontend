@@ -1,5 +1,5 @@
-import Footer from "@/app/(client)/_components/Shared/Footer";
-import Navbar from "@/app/(client)/_components/Shared/Navbar";
+import Footer from "@/features/client/components/Shared/Footer";
+import Navbar from "@/features/client/components/Shared/Navbar";
 import DriverIcon from "@/components/Icons/Login/Driver";
 import GarageIcon from "@/components/Icons/Login/Grage";
 import bgImg from "@/public/Image/home/bannerImage.png";

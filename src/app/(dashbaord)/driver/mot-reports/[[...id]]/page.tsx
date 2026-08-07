@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import VehiclesCardReusble from "@/components/reusable/Dashboard/Driver/VehiclesCardReusble";
-import { MOTReport, Vehicle, MotReportWithVehicle } from "../_types";
+import { MOTReport, MOTReportVehicle, MotReportWithVehicle } from "@/features/driver";
 import {
   useGetVehiclesQuery,
   useGetVehicleMotReportsQuery,
@@ -24,7 +24,7 @@ import { RotateCw, Download } from "lucide-react";
 import { IoNotifications } from "react-icons/io5";
 import { useRefreshMotReportsMutation } from "@/features/driver";
 import { toast } from "react-toastify";
-import { formatDate } from "../_utils";
+import { formatDate } from "@/features/driver/utils/mot-report.utils";
 import { getBrandLogo } from "@/lib/helper/vehicle.helper";
 
 export default function MotReports() {
@@ -103,7 +103,7 @@ export default function MotReports() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [selectedReportForDownload, setSelectedReportForDownload] = useState<{
     report: MOTReport;
-    vehicle: Vehicle;
+    vehicle: MOTReportVehicle;
   } | null>(null);
 
   // Handle URL navigation from other pages - Reset and set selected vehicle when URL changes
@@ -204,7 +204,7 @@ export default function MotReports() {
     setSelectedVehicleForModal(null);
   };
 
-  const handleDownloadClick = (report: MOTReport, vehicle: Vehicle) => {
+  const handleDownloadClick = (report: MOTReport, vehicle: MOTReportVehicle) => {
     setSelectedReportForDownload({ report, vehicle });
     setIsDownloadModalOpen(true);
   };

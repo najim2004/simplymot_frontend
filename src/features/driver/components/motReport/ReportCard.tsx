@@ -1,10 +1,10 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MOTReport } from "@/app/(dashbaord)/driver/mot-reports/_types";
+import { MOTReport } from "../../types/mot-report.types";
 import {
   formatDate,
   getStatusStyles,
-} from "@/app/(dashbaord)/driver/mot-reports/_utils";
+} from "../../utils/mot-report.utils";
 
 interface ReportCardProps {
   report: MOTReport;

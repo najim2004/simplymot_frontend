@@ -1,13 +1,18 @@
 import { apiSlice } from "@/lib/api/api-slice";
 import {
-  ApiVehicle,
   VehiclesResponse,
   MotReportsResponse,
+  AddVehicleResponse,
+  DeleteVehicleResponse,
+  RefreshMotReportsResponse,
 } from "../types";
 
 export const vehiclesApis = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    addVehicle: builder.mutation<any, { registration_number: string }>({
+    addVehicle: builder.mutation<
+      AddVehicleResponse,
+      { registration_number: string }
+    >({
       query: (body) => ({
         url: `/api/vehicle`,
         method: "POST",
@@ -22,7 +27,7 @@ export const vehiclesApis = apiSlice.injectEndpoints({
       }),
       providesTags: ["Vehicle"],
     }),
-    deleteVehicle: builder.mutation<any, string>({
+    deleteVehicle: builder.mutation<DeleteVehicleResponse, string>({
       query: (id) => ({
         url: `/api/vehicle/${id}`,
         method: "DELETE",
@@ -40,9 +45,14 @@ export const vehiclesApis = apiSlice.injectEndpoints({
       }),
       providesTags: (result, error, { id }) => [{ type: "Vehicle", id }],
     }),
-    refreshMotReports: builder.mutation<any, string>({
+    refreshMotReports: builder.mutation<RefreshMotReportsResponse, string>({
       queryFn: async () => {
-        return { data: { success: true, message: "MOT history refreshed successfully (simulation)" } };
+        return {
+          data: {
+            success: true,
+            message: "MOT history refreshed successfully (simulation)",
+          },
+        };
       },
       invalidatesTags: ["Vehicle"],
     }),

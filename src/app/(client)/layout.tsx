@@ -1,6 +1,6 @@
 import React from 'react';
-import Navbar from './_components/Shared/Navbar';
-import Footer from './_components/Shared/Footer';
+import Navbar from '@/features/client/components/Shared/Navbar';
+import Footer from '@/features/client/components/Shared/Footer';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     return (

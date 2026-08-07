@@ -6,13 +6,13 @@ import { Label } from '@/components/ui/label'
 import Image from 'next/image'
 import { TiArrowSortedDown } from "react-icons/ti"
 import CustomReusableModal from '@/components/reusable/Dashboard/Modal/CustomReusableModal'
-import { MOTReport, Vehicle } from '@/app/(dashbaord)/driver/mot-reports/_types'
+import { MOTReport, MOTReportVehicle } from '../../types/mot-report.types'
 
 interface DownloadModalProps {
     isOpen: boolean
     onClose: () => void
     report: MOTReport | null
-    vehicle: Vehicle | null
+    vehicle: MOTReportVehicle | null
 }
 
 export default function DownloadModal({ isOpen, onClose, report, vehicle }: DownloadModalProps) {

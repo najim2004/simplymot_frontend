@@ -9,7 +9,7 @@ export interface MOTReport {
     motStatus: 'Pass' | 'Fail'
 }
 
-export interface Vehicle {
+export interface MOTReportVehicle {
     id: number
     apiVehicleId?: string // API vehicle ID (string format)
     registrationNumber: string

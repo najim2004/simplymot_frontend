@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import ManageSlotsModal from "./_components/modals/manage-slots-modal";
-import CalendarView from "./_components/calendar-view";
+import ManageSlotsModal from "@/features/garage/components/availability/modals/manage-slots-modal";
+import CalendarView from "@/features/garage/components/availability/calendar-view";
 import {
   useGetCalendarViewQuery,
   useGetScheduleQuery,
   scheduleApi,
 } from "@/features/garage";
 import { useAppDispatch } from "@/store/hooks";
-import DefultCalanderView from "./_components/DefultCalanderView";
-import ManageHolidaysModal from "./_components/ManageHolidaysModal";
+import DefultCalanderView from "@/features/garage/components/availability/DefultCalanderView";
+import ManageHolidaysModal from "@/features/garage/components/availability/ManageHolidaysModal";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 

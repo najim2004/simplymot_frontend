@@ -143,13 +143,30 @@ export interface ApiVehicle {
   mot_expiry_date: string;
   dvla_data: string;
   mot_data: string;
-  mot_reports: any[];
+  mot_reports: MotTest[];
 }
 
 export interface VehiclesResponse {
   success: boolean;
   message: string;
   data: ApiVehicle[];
+}
+
+export interface AddVehicleResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface DeleteVehicleResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface RefreshMotReportsResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface MotTestDefect {

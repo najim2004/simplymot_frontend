@@ -4,7 +4,6 @@ import ReusableTable from '@/components/reusable/Dashboard/Table/ReuseableTable'
 import ReusablePagination from '@/components/reusable/Dashboard/Table/ReusablePagination'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-// import InvoicePageDesign from '../../_components/Garage/InvoicePageDesign' // Modal not needed
 // import CustomReusableModal from '@/components/reusable/Dashboard/Modal/CustomReusableModal' // Modal not needed
 import { useGetInvoicesQuery, useDownloadInvoiceMutation } from "@/features/garage"
 import { toast } from 'react-toastify'

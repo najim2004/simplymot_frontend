@@ -144,6 +144,14 @@ export interface ApiVehicle {
   is_expired?: boolean | null;
   mot_expiry_date?: string | null;
   mot_last_checked_at?: string | null;
+  tax_status?: string | null;
+  tax_due_date?: string | null;
+  revenue_weight?: number | null;
+  wheelplan?: string | null;
+  type_approval?: string | null;
+  month_of_first_reg?: string | null;
+  date_of_last_v5c_issued?: string | null;
+  marked_for_export?: boolean | null;
   reminder_last_sent_at?: string | null;
   dvla_data?: string | null;
   mot_data?: string | null;
@@ -193,12 +201,25 @@ export interface MotTest {
   defects: MotTestDefect[];
 }
 
+export interface MotHistoryItem {
+  id: string;
+  test_date: string;
+  status?: string | null;
+  odometer_value?: number | null;
+  odometer_unit?: string | null;
+  odometer_result_type?: string | null;
+  data_source?: string | null;
+  registration_at_test?: string | null;
+}
+
 export interface MotReportsResponse {
-  registration: string;
-  make: string;
-  model: string;
-  firstUsedDate: string;
-  fuelType: string;
-  primaryColour: string;
-  mot_tests: MotTest[];
+  success: boolean;
+  message: string;
+  data: MotHistoryItem[];
+  meta_data?: {
+    total: number;
+    page: number;
+    limit: number;
+    filters?: Record<string, any>;
+  };
 }

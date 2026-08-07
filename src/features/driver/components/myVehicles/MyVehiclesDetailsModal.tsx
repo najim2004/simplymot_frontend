@@ -62,13 +62,13 @@ export default function MyVehiclesDetailsModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 space-y-3">
+        <div className="p-5 space-y-3 max-h-[75vh] overflow-y-auto">
           {/* Registration Number */}
           <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
             <span className="text-gray-500 font-medium">
               Registration Number
             </span>
-            <div className="font-bold">
+            <div className="font-bold font-mono">
               {selectedVehicle.registration_number}
             </div>
           </div>
@@ -100,6 +100,23 @@ export default function MyVehiclesDetailsModal({
               </span>
             </div>
           </div>
+
+          {/* Tax Status & Tax Due Date */}
+          {selectedVehicle.tax_status && (
+            <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
+              <span className="text-gray-500 font-medium">Tax Status</span>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-semibold text-xs uppercase">
+                  {selectedVehicle.tax_status}
+                </span>
+                {selectedVehicle.tax_due_date && (
+                  <span className="font-medium text-gray-800">
+                    {formatDate(selectedVehicle.tax_due_date)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Fuel Type */}
           <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
@@ -149,7 +166,37 @@ export default function MyVehiclesDetailsModal({
             </div>
           )}
 
-          {/* Last Checked */}
+          {/* Month of First Registration */}
+          {selectedVehicle.month_of_first_reg && (
+            <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
+              <span className="text-gray-500 font-medium">First Registered</span>
+              <span className="font-medium text-gray-800">
+                {selectedVehicle.month_of_first_reg}
+              </span>
+            </div>
+          )}
+
+          {/* Wheelplan & Type Approval */}
+          {selectedVehicle.wheelplan && (
+            <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
+              <span className="text-gray-500 font-medium">Wheelplan</span>
+              <span className="font-medium text-gray-800 uppercase">
+                {selectedVehicle.wheelplan}
+              </span>
+            </div>
+          )}
+
+          {/* Last V5C Issued */}
+          {selectedVehicle.date_of_last_v5c_issued && (
+            <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
+              <span className="text-gray-500 font-medium">Last V5C Issued</span>
+              <span className="font-medium text-gray-800">
+                {formatDate(selectedVehicle.date_of_last_v5c_issued)}
+              </span>
+            </div>
+          )}
+
+          {/* Last Synced */}
           {selectedVehicle.mot_last_checked_at && (
             <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
               <span className="text-gray-500 font-medium">Last Synced At</span>

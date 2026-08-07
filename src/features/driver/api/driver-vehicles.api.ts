@@ -43,18 +43,19 @@ export const vehiclesApis = apiSlice.injectEndpoints({
         method: "GET",
         params: { limit, page, status },
       }),
-      providesTags: (result, error, { id }) => [{ type: "Vehicle", id }],
+      providesTags: (result, error, { id }) => [
+        { type: "Vehicle", id },
+        { type: "Vehicle", id: `MOT_${id}` },
+      ],
     }),
     refreshMotReports: builder.mutation<RefreshMotReportsResponse, string>({
-      queryFn: async () => {
-        return {
-          data: {
-            success: true,
-            message: "MOT history refreshed successfully (simulation)",
-          },
-        };
-      },
-      invalidatesTags: ["Vehicle"],
+      query: (id) => ({
+        url: `/api/vehicle/${id}/mot_history`,
+        method: "GET",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Vehicle", id: `MOT_${id}` },
+      ],
     }),
   }),
   overrideExisting: false,
@@ -65,5 +66,6 @@ export const {
   useGetVehiclesQuery,
   useDeleteVehicleMutation,
   useGetVehicleMotReportsQuery,
+  useLazyGetVehicleMotReportsQuery,
   useRefreshMotReportsMutation,
 } = vehiclesApis;

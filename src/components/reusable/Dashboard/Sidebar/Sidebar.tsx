@@ -272,9 +272,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
               })
               .map((item) => {
                 const isActive =
-                  item.href === "/driver/book-my-mot"
-                    ? pathname.startsWith("/driver/book-my-mot")
-                    : pathname === item.href;
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
 
                 // Check if route is protected and subscription is not active
                 const isGarageLocked =

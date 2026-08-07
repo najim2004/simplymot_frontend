@@ -3,8 +3,8 @@ import "./globals.css";
 import Script from "next/script";
 import { AppConfig } from "@/config/app.config";
 import { Inter, Inder, Nunito_Sans } from "next/font/google";
-import { ToastContainer } from "react-toastify";
 import { ReduxProvider } from "@/components/providers";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: AppConfig().app.meta.title,
@@ -70,7 +70,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReduxProvider>
-          <ToastContainer position="top-center" />
+          <Toaster richColors position="top-right" />
           {children}
         </ReduxProvider>
         {awinAdvertiserId ? (

@@ -12,7 +12,9 @@ interface RouteProtectionProps {
 export const RouteProtection: React.FC<RouteProtectionProps> = ({
   children,
 }) => {
-  const { isAuthenticated, isLoading, user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isLoading, user } = useAppSelector(
+    (state) => state.auth,
+  );
   const router = useRouter();
   const pathname = usePathname();
 
@@ -36,21 +38,26 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
       }
 
       if (user) {
+        const userKind = (user.kind || user.type || "").toUpperCase();
         const isDriverRoute = pathname.startsWith("/driver");
         const isGarageRoute = pathname.startsWith("/garage");
         const isAdminRoute = pathname.startsWith("/admin");
 
-        if (isDriverRoute && user.type !== "DRIVER") {
+        if (isDriverRoute && userKind !== "DRIVER" && userKind !== "USER") {
           router.push("/unauthorized");
           return;
         }
 
-        if (isGarageRoute && user.type !== "GARAGE") {
+        if (isGarageRoute && userKind !== "GARAGE") {
           router.push("/unauthorized");
           return;
         }
 
-        if (isAdminRoute && user.type !== "ADMIN") {
+        if (
+          isAdminRoute &&
+          userKind !== "ADMIN" &&
+          !user.roles?.some((r) => r.name?.toLowerCase().includes("admin"))
+        ) {
           router.push("/unauthorized");
           return;
         }
@@ -67,17 +74,22 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
   }
 
   if (user) {
+    const userKind = (user.kind || user.type || "").toUpperCase();
     const isDriverRoute = pathname.startsWith("/driver");
     const isGarageRoute = pathname.startsWith("/garage");
     const isAdminRoute = pathname.startsWith("/admin");
 
-    if (isDriverRoute && user.type !== "DRIVER") {
+    if (isDriverRoute && userKind !== "DRIVER" && userKind !== "USER") {
       return <LoadingSpinner />;
     }
-    if (isGarageRoute && user.type !== "GARAGE") {
+    if (isGarageRoute && userKind !== "GARAGE") {
       return <LoadingSpinner />;
     }
-    if (isAdminRoute && user.type !== "ADMIN") {
+    if (
+      isAdminRoute &&
+      userKind !== "ADMIN" &&
+      !user.roles?.some((r) => r.name?.toLowerCase().includes("admin"))
+    ) {
       return <LoadingSpinner />;
     }
   }

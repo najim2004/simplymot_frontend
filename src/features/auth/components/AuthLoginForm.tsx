@@ -14,20 +14,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  useLoginMutation,
-  useLazyGetMeQuery,
-  useResendVerificationEmailMutation,
-} from "@/features/auth/api/auth.api";
-import {
-  setUser,
-  setLoading as setAuthLoading,
-  User,
-} from "@/features/auth/store/auth.slice";
+import { useLoginMutation } from "@/features/auth/api/auth.api";
+import { setLoading as setAuthLoading } from "@/features/auth/store/auth.slice";
 import { useAppDispatch } from "@/store/hooks";
-import { EmailVerificationModal } from "@/components/reusable/EmailVerificationModal";
 import DriverAuthBanner from "./DriverAuthBanner";
 import GarageAuthBanner from "./GarageAuthBanner";
 
@@ -42,10 +33,12 @@ interface AuthLoginFormProps {
 
 export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [login] = useLoginMutation();
-  const [triggerAuthMe] = useLazyGetMeQuery();
-  const [resendVerificationEmail] = useResendVerificationEmailMutation();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const router = useRouter();
   const dispatch = useAppDispatch();
+
+  const [login] = useLoginMutation();
 
   const form = useForm<LoginFormData>({
     defaultValues: {
@@ -54,125 +47,27 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
     },
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verifyEmail, setVerifyEmail] = useState("");
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-
-  const handleVerificationSuccess = () => {
-    setShowVerifyModal(false);
-    setVerifyEmail("");
-  };
-
-  const openVerificationModal = (email: string) => {
-    setVerifyEmail(email);
-    setShowVerifyModal(true);
-  };
-
-  const handleVerifyLinkClick = async () => {
-    const email =
-      form.getValues("email") ||
-      (document.getElementById("email") as HTMLInputElement)?.value;
-    if (!email) {
-      toast.error("Please enter your email first to verify");
-      return;
-    }
-    setIsSendingOtp(true);
-    try {
-      const response = await resendVerificationEmail({ email }).unwrap();
-      if (response.success || (response as any).status === "success") {
-        toast.success(
-          response?.message || "Verification code sent to your email",
-        );
-        openVerificationModal(email);
-      } else {
-        toast.error(response?.message || "Failed to send verification code");
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send verification code");
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
       dispatch(setAuthLoading(true));
-      const loginResponse = await login({
+      const response = await login({
         email: data.email,
         password: data.password,
         type: userKind,
-      } as any).unwrap();
-
-      if (loginResponse.authorization?.token) {
-        localStorage.setItem("token", loginResponse.authorization.token);
-      }
-
-      let userDetails = null;
-      try {
-        userDetails = await triggerAuthMe().unwrap();
-      } catch (e) {
-        console.warn("AuthMe failed, fallback");
-      }
-
-      const userObj: User = userDetails?.data
-        ? {
-            id: userDetails.data.id,
-            email: userDetails.data.email,
-            name: userDetails.data.name,
-            type: userDetails.data.type,
-            avatar_url: userDetails.data.avatar_url || undefined,
-            garage_name: userDetails.data.garage_name || undefined,
-          }
-        : {
-            id: "temp-id",
-            email: data.email,
-            name: "User",
-            type: userKind,
-          };
-
-      dispatch(setUser(userObj));
+      }).unwrap();
       toast.success("Login successful");
-
-      if (userKind === "DRIVER") {
-        const redirectParam = searchParams?.get("redirect");
-        const registration = searchParams?.get("registration");
-        const postcode = searchParams?.get("postcode");
-
-        if (redirectParam) {
-          const decodedRedirect = decodeURIComponent(redirectParam);
-          const separator = decodedRedirect.includes("?") ? "&" : "?";
-          const finalRedirect = `${decodedRedirect}${separator}is_logged_in=true`;
-          router.replace(finalRedirect);
-        } else if (registration && postcode) {
-          router.replace(
-            `/driver/book-my-mot?registration=${encodeURIComponent(
-              registration,
-            )}&postcode=${encodeURIComponent(postcode)}`,
-          );
-        } else {
-          router.replace("/driver/book-my-mot");
-        }
-      } else {
+      const kind = response.user?.kind || userKind;
+      if (kind === "DRIVER") {
+        router.push("/driver/book-my-mot");
+      } else if (kind === "GARAGE") {
         router.push("/garage/garage-profile");
+      } else {
+        router.push("/admin/dashboard");
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
       const msg = error.data?.message || error.message || "Login failed";
-      if (
-        msg.toLowerCase().includes("verify") ||
-        msg.toLowerCase().includes("verification")
-      ) {
-        try {
-          await resendVerificationEmail({ email: data.email }).unwrap();
-        } catch (resendError) {
-          console.error("Failed to auto-send OTP:", resendError);
-        }
-        openVerificationModal(data.email);
-      }
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -217,7 +112,7 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                   }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                      <FormLabel className="text-sm font-medium text-gray-700 block">
                         Email <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
@@ -229,7 +124,7 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-sm mt-2" />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -242,7 +137,7 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                   }}
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between">
                         <FormLabel className="text-sm font-medium text-gray-700 block">
                           Password <span className="text-red-500">*</span>
                         </FormLabel>
@@ -254,7 +149,7 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                         </Link>
                       </div>
                       <FormControl>
-                        <div className="relative mt-2">
+                        <div className="relative">
                           <Input
                             id="password"
                             type={showPassword ? "text" : "password"}
@@ -284,11 +179,9 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                   Need to verify your email?{" "}
                   <button
                     type="button"
-                    onClick={handleVerifyLinkClick}
-                    disabled={isSendingOtp}
                     className="font-semibold text-[#19CA32] hover:underline bg-transparent border-0 p-0 cursor-pointer"
                   >
-                    {isSendingOtp ? "Sending code..." : "Enter verification code"}
+                    Enter verification code
                   </button>
                 </div>
 
@@ -327,13 +220,6 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
           </div>
         </div>
       </div>
-
-      <EmailVerificationModal
-        isOpen={showVerifyModal}
-        onClose={() => setShowVerifyModal(false)}
-        email={verifyEmail}
-        onVerificationSuccess={handleVerificationSuccess}
-      />
     </div>
   );
 }

@@ -5,11 +5,28 @@ import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReu
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 
+interface RoleChangeItem {
+  id: string;
+  name: string;
+  title?: string;
+}
+
+export interface AssignResultData {
+  data?: {
+    roles_added?: number;
+    roles_removed?: number;
+    role_changes?: {
+      added?: RoleChangeItem[];
+      removed?: RoleChangeItem[];
+    };
+  };
+}
+
 interface AssignRolesResultModalProps {
   isOpen: boolean;
   onClose: () => void;
   assignMessage: string;
-  assignResult: any;
+  assignResult: AssignResultData | null;
 }
 
 export const AssignRolesResultModal: React.FC<AssignRolesResultModalProps> = ({
@@ -56,11 +73,11 @@ export const AssignRolesResultModal: React.FC<AssignRolesResultModalProps> = ({
         )}
 
         <div className="space-y-4">
-          {resultData?.role_changes?.added?.length > 0 && (
+          {resultData?.role_changes?.added && resultData.role_changes.added.length > 0 && (
             <div className="transition-all duration-300 ease-out animate-in fade-in-50 slide-in-from-left-2">
               <p className="text-sm font-medium text-emerald-700">Added Roles</p>
               <ul className="mt-2 flex flex-wrap gap-2">
-                {resultData.role_changes.added.map((r: any) => (
+                {resultData.role_changes.added.map((r) => (
                   <li
                     key={r.id}
                     className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200"
@@ -71,11 +88,11 @@ export const AssignRolesResultModal: React.FC<AssignRolesResultModalProps> = ({
               </ul>
             </div>
           )}
-          {resultData?.role_changes?.removed?.length > 0 && (
+          {resultData?.role_changes?.removed && resultData.role_changes.removed.length > 0 && (
             <div className="transition-all duration-300 ease-out animate-in fade-in-50 slide-in-from-right-2">
               <p className="text-sm font-medium text-rose-700">Removed Roles</p>
               <ul className="mt-2 flex flex-wrap gap-2">
-                {resultData.role_changes.removed.map((r: any) => (
+                {resultData.role_changes.removed.map((r) => (
                   <li
                     key={r.id}
                     className="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-200"
@@ -88,28 +105,12 @@ export const AssignRolesResultModal: React.FC<AssignRolesResultModalProps> = ({
           )}
         </div>
 
-        {(resultData?.assignment_strategy || resultData?.intelligent_reasoning) && (
-          <div className="rounded-lg border border-gray-200 bg-white p-4 animate-in fade-in-50 slide-in-from-bottom-2">
-            {resultData?.assignment_strategy && (
-              <p className="text-sm">
-                <span className="font-semibold">Strategy:</span>{" "}
-                {resultData.assignment_strategy.replace(/_/g, " ")}
-              </p>
-            )}
-            {resultData?.intelligent_reasoning && (
-              <p className="text-sm mt-1 italic text-gray-600">
-                {resultData.intelligent_reasoning}
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-end pt-2">
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+            className="bg-[#19CA32] hover:bg-[#19CA32]/90 text-white cursor-pointer px-6"
             onClick={onClose}
           >
-            OK
+            Done
           </Button>
         </div>
       </div>

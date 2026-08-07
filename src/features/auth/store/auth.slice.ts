@@ -1,12 +1,26 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { GarageItem, RoleItem, SubscriptionItem } from "../types/auth.types";
 
 export interface User {
   id: string;
-  email: string;
   name: string;
-  type: "DRIVER" | "GARAGE" | "ADMIN";
-  avatar_url?: string;
-  garage_name?: string;
+  email: string;
+  avatar?: string | null;
+  avatar_url?: string | null;
+  address?: string | null;
+  phone_number?: string | null;
+  kind?: string;
+  type?: string;
+  garages?: GarageItem[];
+  created_at?: string;
+  email_verified_at?: string | null;
+  status?: string;
+  roles?: RoleItem[];
+  subscription?: SubscriptionItem | null;
+  primary_contact?: string | null;
+  garage_name?: string | null;
+  vts_number?: string | null;
+  [key: string]: unknown;
 }
 
 interface AuthState {

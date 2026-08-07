@@ -1,3 +1,4 @@
+export * from "./types";
 export * from "./api/garage-bookings.api";
 export * from "./api/garage-contact.api";
 export * from "./api/garage-invoice.api";

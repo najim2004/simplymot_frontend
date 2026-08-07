@@ -1,61 +1,15 @@
 import { apiSlice } from "@/lib/api/api-slice";
+import { setUser, User } from "../store/auth.slice";
+import {
+  LoginRequest,
+  LoginResponse,
+  AuthMeResponse,
+  CommonResponse,
+  RegisterRequest,
+  PasswordChangeRequest,
+} from "../types";
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-  type?: "DRIVER" | "GARAGE" | "ADMIN";
-  kind?: "DRIVER" | "GARAGE" | "ADMIN";
-}
-
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  authorization: {
-    token: string;
-    type: string;
-  };
-  type: string;
-}
-
-export interface AuthMeResponse {
-  success: boolean;
-  data: {
-    id: string;
-    name: string;
-    email: string;
-    avatar: string | null;
-    address: string | null;
-    phone_number: string | null;
-    type: string;
-    gender: string | null;
-    date_of_birth: string | null;
-    created_at: string;
-    vts_number: string | null;
-    primary_contact: string | null;
-    garage_name: string | null;
-  };
-}
-
-export interface CommonResponse {
-  success: boolean;
-  message: string;
-}
-
-export interface RegisterRequest {
-  name: string;
-  garage_name?: string;
-  vts_number?: string;
-  primary_contact?: string;
-  email: string;
-  phone_number: string;
-  password: string;
-  kind: string;
-}
-
-export interface PasswordChangeRequest {
-  old_password: string;
-  new_password: string;
-}
+export * from "../types";
 
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -65,10 +19,53 @@ export const authApi = apiSlice.injectEndpoints({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["Auth"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const token = data.authorization?.access_token || data.authorization?.token;
+          if (token && typeof window !== "undefined") {
+            localStorage.setItem("token", token);
+            localStorage.setItem("access_token", token);
+          }
+          if (data.user) {
+            const userObj: User = {
+              ...(data.user as unknown as User),
+              type: data.user.kind || data.type || "DRIVER",
+              kind: data.user.kind || data.type || "DRIVER",
+            };
+            dispatch(setUser(userObj));
+          }
+        } catch (error) {
+          console.error("Login query failed:", error);
+        }
+      },
     }),
     getMe: builder.query<AuthMeResponse, void>({
       query: () => "/api/auth/me",
       providesTags: ["Auth"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.data) {
+            const userData = data.data;
+            const userObj: User = {
+              ...(userData as unknown as User),
+              type: userData.kind || userData.type || "DRIVER",
+              kind: userData.kind || userData.type || "DRIVER",
+            };
+            dispatch(setUser(userObj));
+          } else {
+            dispatch(setUser(null));
+          }
+        } catch {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("access_token");
+          }
+          dispatch(setUser(null));
+        }
+      },
     }),
     register: builder.mutation<CommonResponse, RegisterRequest>({
       query: (body) => ({
@@ -82,7 +79,7 @@ export const authApi = apiSlice.injectEndpoints({
       { email: string; token: string }
     >({
       query: (body) => ({
-        url: "/api/auth/verify-email",
+        url: "/api/auth/verify_email",
         method: "POST",
         body,
       }),
@@ -92,14 +89,14 @@ export const authApi = apiSlice.injectEndpoints({
       { email: string }
     >({
       query: (body) => ({
-        url: "/api/auth/resend-verification-email",
+        url: "/api/auth/resend_verification_email",
         method: "POST",
         body,
       }),
     }),
     forgotPassword: builder.mutation<CommonResponse, { email: string }>({
       query: (body) => ({
-        url: "/api/auth/forgot-password",
+        url: "/api/auth/forgot_password",
         method: "POST",
         body,
       }),
@@ -109,21 +106,21 @@ export const authApi = apiSlice.injectEndpoints({
       { email: string; token: string; password: string }
     >({
       query: (body) => ({
-        url: "/api/auth/reset-password",
+        url: "/api/auth/reset_password",
         method: "POST",
         body,
       }),
     }),
     changePassword: builder.mutation<CommonResponse, PasswordChangeRequest>({
       query: (body) => ({
-        url: "/api/auth/change-password",
+        url: "/api/auth/change_password",
         method: "POST",
         body,
       }),
     }),
     requestEmailChange: builder.mutation<CommonResponse, { email: string }>({
       query: (body) => ({
-        url: "/api/auth/request-email-change",
+        url: "/api/auth/request_email_change",
         method: "POST",
         body,
       }),
@@ -133,16 +130,21 @@ export const authApi = apiSlice.injectEndpoints({
       { email: string; token: string }
     >({
       query: (body) => ({
-        url: "/api/auth/change-email",
+        url: "/api/auth/change_email",
         method: "POST",
         body,
       }),
     }),
-    updateProfile: builder.mutation<CommonResponse, any>({
+    updateProfile: builder.mutation<
+      CommonResponse,
+      FormData | Record<string, unknown>
+    >({
       query: (body) => {
         const isFormData = body instanceof FormData;
         const requestBody =
-          !isFormData && body && "data" in body ? body.data : body;
+          !isFormData && body && typeof body === "object" && "data" in body
+            ? (body as { data: unknown }).data
+            : body;
         return {
           url: "/api/auth/update",
           method: "PATCH",

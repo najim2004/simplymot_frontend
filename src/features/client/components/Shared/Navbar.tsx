@@ -26,8 +26,10 @@ export default function Navbar() {
   const getDashboardRoute = () => {
     if (!user) return "/login";
 
-    switch (user.type) {
+    const userKind = (user.kind || user.type || "").toUpperCase();
+    switch (userKind) {
       case "DRIVER":
+      case "USER":
         return "/driver/book-my-mot";
       case "GARAGE":
         return "/garage/garage-profile";
@@ -128,7 +130,6 @@ export default function Navbar() {
                 className="text-white hover:bg-white/20 p-2 cursor-pointer"
               >
                 <Menu className="size-6 md:size-7" />
-                {/* <span className="sr-only">Open menu</span> */}
               </Button>
             </SheetTrigger>
             <SheetContent
@@ -154,7 +155,7 @@ export default function Navbar() {
                       Account
                     </h3>
 
-                    {!isAuthenticated ? (
+                    {isLoading ? null : !isAuthenticated ? (
                       <>
                         <Button
                           variant="outline"

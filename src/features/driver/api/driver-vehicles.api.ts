@@ -1,64 +1,9 @@
 import { apiSlice } from "@/lib/api/api-slice";
-
-export interface ApiVehicle {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  registration_number: string;
-  make: string;
-  model: string;
-  color: string;
-  fuel_type: string;
-  year_of_manufacture: number;
-  engine_capacity: number;
-  co2_emissions: number;
-  mot_expiry_date: string;
-  dvla_data: string;
-  mot_data: string;
-  mot_reports: any[];
-}
-
-export interface VehiclesResponse {
-  success: boolean;
-  message: string;
-  data: ApiVehicle[];
-}
-
-export interface MotTestDefect {
-  dangerous: boolean;
-  text: string;
-  type: string;
-}
-
-export interface MotTest {
-  reportId?: string;
-  registrationAtTimeOfTest: string | null;
-  motTestNumber: string;
-  completedDate: string;
-  expiryDate: string | null;
-  odometerValue: string;
-  odometerUnit: string;
-  odometerResultType: string;
-  testResult: string;
-  dataSource: string;
-  defects: MotTestDefect[];
-}
-
-export interface MotReportsResponse {
-  registration: string;
-  make: string;
-  model: string;
-  primaryColour: string;
-  fuelType: string;
-  engineSize: string;
-  firstUsedDate: string;
-  registrationDate: string;
-  manufactureDate: string;
-  motExpiryDate: string;
-  hasOutstandingRecall: string;
-  motTests: MotTest[];
-}
+import {
+  ApiVehicle,
+  VehiclesResponse,
+  MotReportsResponse,
+} from "../types";
 
 export const vehiclesApis = apiSlice.injectEndpoints({
   endpoints: (builder) => ({

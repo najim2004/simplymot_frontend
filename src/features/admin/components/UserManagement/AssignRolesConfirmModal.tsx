@@ -5,10 +5,16 @@ import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReu
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 
+interface RoleItem {
+  id: string;
+  name: string;
+  title?: string;
+}
+
 interface AssignRolesConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedRoles: any[];
+  selectedRoles: RoleItem[];
   onConfirm: () => void;
   isLoading: boolean;
 }
@@ -33,7 +39,7 @@ export const AssignRolesConfirmModal: React.FC<AssignRolesConfirmModalProps> = (
     >
       <div className="space-y-3 text-sm text-gray-700">
         <ul className="list-disc pl-5 max-h-40 overflow-auto">
-          {selectedRoles.map((r: any) => (
+          {selectedRoles.map((r) => (
             <li key={r.id}>{r.title || r.name}</li>
           ))}
         </ul>
@@ -47,11 +53,11 @@ export const AssignRolesConfirmModal: React.FC<AssignRolesConfirmModalProps> = (
             Cancel
           </Button>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
-            disabled={isLoading}
+            className="bg-[#19CA32] hover:bg-[#19CA32]/90 text-white cursor-pointer"
             onClick={onConfirm}
+            disabled={isLoading}
           >
-            {isLoading ? "Processing..." : "Confirm"}
+            {isLoading ? "Saving..." : "Confirm Assign"}
           </Button>
         </div>
       </div>

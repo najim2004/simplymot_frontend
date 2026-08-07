@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import bgImage from "@/public/Image/register/bgImage.png";
 import carImage from "@/public/Image/register/registerLargeImg.png";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   useForgotPasswordMutation,
   useResetPasswordMutation,
@@ -91,7 +91,8 @@ export default function ForgotPassword() {
       setCurrentStep("tokenPassword");
       startTimer();
       toast.success(response.message || "Reset link sent to your email");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
       toast.error(error?.data?.message || error?.message || "Failed to send reset email");
     } finally {
       setIsLoading(false);
@@ -122,7 +123,8 @@ export default function ForgotPassword() {
       toast.success(response.message || "Password reset successfully");
       resetTimer();
       router.push("/login");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
       toast.error(error?.data?.message || error?.message || "Failed to reset password");
     } finally {
       setIsLoading(false);
@@ -136,7 +138,8 @@ export default function ForgotPassword() {
       const response = await resendVerificationEmail({ email: userEmail }).unwrap();
       startTimer();
       toast.success(response.message || "Reset code resent to your email");
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
       toast.error(error?.data?.message || error?.message || "Failed to resend code");
     } finally {
       setIsLoading(false);

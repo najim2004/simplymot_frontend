@@ -1,3 +1,4 @@
+export * from "./types";
 export * from "./api/driver-vehicles.api";
 export * from "./api/driver-book-mot.api";
 export * from "./api/driver-contact.api";

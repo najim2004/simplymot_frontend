@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Edit2, Loader2 } from "lucide-react";
@@ -8,9 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetMeQuery, useUpdateProfileMutation } from "@/features/auth";
-import { useAppSelector } from "@/store/hooks";
 import ProfileImageUpload from "./CommonImage";
-// import { EmailChangeModal } from '@/components/reusable/EmailChangeModal';
 
 interface ProfileFormData {
   name: string;
@@ -38,84 +37,20 @@ const profileValidation = {
   },
 };
 
-const EditableInput = ({
-  id,
-  label,
-  type = "text",
-  placeholder,
-  editingField,
-  onEditClick,
-  onBlur,
-  register,
-  errors,
-  validation,
-  showEditIcon,
-}: {
-  id: string;
-  label: string;
-  type?: string;
-  placeholder: string;
-  editingField: string | null;
-  onEditClick: (fieldName: string) => void;
-  onBlur: () => void;
-  register: any;
-  errors: any;
-  validation: any;
-  showEditIcon?: boolean;
-}) => {
-  const isEditing = editingField === id;
-  const isEmailField = id === "email";
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <div className="relative">
-        <Input
-          id={id}
-          type={type}
-          placeholder={placeholder}
-          disabled={!isEditing || isEmailField}
-          className={`pr-10 ${isEditing && !isEmailField ? "border-blue-500" : "border-gray-300 bg-gray-50"}`}
-          {...register(id, validation)}
-          onBlur={onBlur}
-        />
-        {showEditIcon !== false && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`absolute cursor-pointer right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 ${isEditing && !isEmailField ? "text-blue-600" : "text-gray-500"}`}
-            onClick={() => onEditClick(id)}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-      {errors[id] && (
-        <p className="text-sm text-red-500">{errors[id].message}</p>
-      )}
-    </div>
-  );
-};
-
 export default function MyProfile() {
   const { data: profileResponse, isLoading, isError, refetch } = useGetMeQuery();
   const profile = profileResponse?.data || null;
 
-  const [updateProfile, { isLoading: isUpdating, error: updateError }] = useUpdateProfileMutation();
+  const [updateProfile, { isLoading: isUpdating, error: updateError }] =
+    useUpdateProfileMutation();
 
   // State
   const [profileImage, setProfileImage] = useState<string>(
     "/api/placeholder/96/96",
   );
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [originalValues, setOriginalValues] = useState<ProfileFormData | null>(
-    null,
-  );
-  const [hasChanges, setHasChanges] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Form
   const profileForm = useForm<ProfileFormData>({
@@ -134,28 +69,11 @@ export default function MyProfile() {
         phone: profile.phone_number || "",
       };
       profileForm.reset(formValues);
-      setOriginalValues(formValues);
-      setProfileImage((profile as any).avatar_url || profile.avatar || "/api/placeholder/96/96");
+      setProfileImage(
+        (profile as any).avatar_url || profile.avatar || "/api/placeholder/96/96",
+      );
     }
   }, [profile, profileForm]);
-
-  const checkForChanges = () => {
-    if (!originalValues) return false;
-    const currentValues = profileForm.getValues();
-    // Exclude email from form changes since it's handled separately via modal
-    const formChanged = Object.keys(currentValues).some((key) => {
-      if (key === "email") return false; // Email changes are handled via modal
-      return (
-        currentValues[key as keyof ProfileFormData] !==
-        originalValues[key as keyof ProfileFormData]
-      );
-    });
-    const imageChanged =
-      profileImage !== ((profile as any)?.avatar_url || profile?.avatar || "/api/placeholder/96/96");
-    const hasAnyChanges = formChanged || imageChanged || !!selectedFile;
-    setHasChanges(hasAnyChanges);
-    return hasAnyChanges;
-  };
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -174,91 +92,42 @@ export default function MyProfile() {
     }
   };
 
-  const handleEditClick = (fieldName: string) => {
-    if (fieldName === "email") {
-      // setIsEmailModalOpen(true);
-      return;
-    }
-
-    setEditingField(editingField === fieldName ? null : fieldName);
-    if (editingField !== fieldName) {
-      setTimeout(() => {
-        const element = document.getElementById(fieldName);
-        if (element) element.focus();
-      }, 100);
-    }
-  };
-
-  const handleFieldBlur = () => {
-    setTimeout(() => {
-      checkForChanges();
-      setEditingField(null);
-    }, 100);
-  };
-
-  const watchedValues = profileForm.watch();
-  useEffect(() => {
-    if (originalValues) {
-      const currentValues = profileForm.getValues();
-      const formChanged = Object.keys(currentValues).some((key) => {
-        if (key === "email") return false;
-        return (
-          currentValues[key as keyof ProfileFormData] !==
-          originalValues[key as keyof ProfileFormData]
-        );
-      });
-      const imageChanged =
-        profileImage !== ((profile as any)?.avatar_url || profile?.avatar || "/api/placeholder/96/96");
-      setHasChanges(formChanged || imageChanged || !!selectedFile);
-    }
-  }, [watchedValues, profileImage, selectedFile, originalValues, profile, profileForm]);
-
   const onProfileSubmit = async (data: ProfileFormData) => {
     try {
       let payload: any;
-      let isFormData = false;
       if (selectedFile) {
         payload = new FormData();
         payload.append("name", data.name);
         payload.append("email", data.email);
         payload.append("phone", data.phone);
         payload.append("image", selectedFile);
-        isFormData = true;
       } else {
         payload = {
           name: data.name,
           email: data.email,
           phone: data.phone,
         };
-        if (profileImage && profileImage !== ((profile as any)?.avatar_url || profile?.avatar)) {
+        if (
+          profileImage &&
+          profileImage !== ((profile as any)?.avatar_url || profile?.avatar)
+        ) {
           payload.image = profileImage;
         }
       }
       await updateProfile(payload).unwrap();
       await refetch();
-      await refetch();
-      setOriginalValues(data);
-      setHasChanges(false);
+      setIsEditing(false);
       setSelectedFile(null);
       toast.success("Profile updated successfully!");
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(error.data?.message || error.message || "Failed to update profile. Please try again.");
+      toast.error(
+        error.data?.message ||
+          error.message ||
+          "Failed to update profile. Please try again.",
+      );
     }
   };
-
-  // const handleEmailChangeSuccess = async (newEmail: string) => {
-  //     try {
-  //         await refetch();
-  //         await checkAuth();
-  //         // Update the form with new email
-  //         profileForm.setValue('email', newEmail);
-  //         setOriginalValues(prev => prev ? { ...prev, email: newEmail } : null);
-  //         setHasChanges(false);
-  //     } catch (error) {
-  //         console.error('Error updating email:', error);
-  //     }
-  // };
 
   if (isLoading) {
     return (
@@ -285,10 +154,7 @@ export default function MyProfile() {
         <CardContent className="p-6">
           <div className="text-center py-8">
             <p className="text-red-500 mb-4">Failed to load profile data.</p>
-            <Button
-              onClick={refetch}
-              className="bg-[#14A228] hover:bg-green-600"
-            >
+            <Button onClick={refetch} className="bg-[#14A228] hover:bg-green-600">
               Retry
             </Button>
           </div>
@@ -298,99 +164,129 @@ export default function MyProfile() {
   }
 
   return (
-    <>
-      <Card className="shadow-sm">
-        <CardHeader className="bg-[#14A228] text-white rounded-t-lg p-5">
-          <CardTitle className="text-xl sm:text-2xl">My Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <ProfileImageUpload
-            profileImage={profileImage}
-            onImageClick={handleImageClick}
-            onImageChange={handleImageChange}
-            fileInputRef={fileInputRef}
-            onImageError={() => setProfileImage("")}
-          />
+    <Card className="shadow-sm">
+      {/* Header with single Edit Profile Toggle Button */}
+      <CardHeader className="bg-[#14A228] text-white rounded-t-lg p-5 flex flex-row items-center justify-between">
+        <CardTitle className="text-xl sm:text-2xl">My Profile</CardTitle>
+        <Button
+          type="button"
+          onClick={() => setIsEditing((prev) => !prev)}
+          className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold py-1.5 px-3.5 rounded-lg flex items-center gap-1.5 cursor-pointer border border-white/30 transition-all"
+        >
+          <Edit2 className="h-3.5 w-3.5" />
+          {isEditing ? "Cancel Edit" : "Edit Profile"}
+        </Button>
+      </CardHeader>
 
-          {updateError && (
-            <p className="text-sm text-red-500 mb-2">
-              {(updateError as any)?.data?.message || "Failed to update profile"}
-            </p>
-          )}
-          <form
-            onSubmit={profileForm.handleSubmit(onProfileSubmit)}
-            className="space-y-6"
-          >
-            <EditableInput
+      <CardContent className="p-6">
+        {/* Profile Image Component (Unchanged) */}
+        <ProfileImageUpload
+          profileImage={profileImage}
+          onImageClick={handleImageClick}
+          onImageChange={handleImageChange}
+          fileInputRef={fileInputRef}
+          onImageError={() => setProfileImage("")}
+        />
+
+        {updateError && (
+          <p className="text-sm text-red-500 mb-2">
+            {(updateError as any)?.data?.message || "Failed to update profile"}
+          </p>
+        )}
+
+        <form
+          onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+          className="space-y-5"
+        >
+          {/* Name Field */}
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-gray-700 font-medium">
+              Name
+            </Label>
+            <Input
               id="name"
-              label="Name"
+              type="text"
               placeholder="Enter your name"
-              editingField={editingField}
-              onEditClick={handleEditClick}
-              onBlur={handleFieldBlur}
-              register={profileForm.register}
-              errors={profileForm.formState.errors}
-              validation={profileValidation.name}
+              disabled={!isEditing}
+              className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
+                isEditing
+                  ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
+                  : "border-gray-300 bg-gray-50/80"
+              }`}
+              {...profileForm.register("name", profileValidation.name)}
             />
+            {profileForm.formState.errors.name && (
+              <p className="text-sm text-red-500">
+                {profileForm.formState.errors.name.message}
+              </p>
+            )}
+          </div>
 
-            <EditableInput
+          {/* Email Field */}
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-gray-700 font-medium">
+              Email
+            </Label>
+            <Input
               id="email"
-              label="Email"
               type="email"
               placeholder="Enter your email"
-              editingField={null} // Force disabled
-              onEditClick={() => {}} // No-op
-              onBlur={handleFieldBlur}
-              register={profileForm.register}
-              errors={profileForm.formState.errors}
-              validation={profileValidation.email}
-              showEditIcon={false}
+              disabled={true}
+              className="py-6 border border-gray-300 text-base px-4 rounded-lg bg-gray-50/80 cursor-not-allowed opacity-80"
+              {...profileForm.register("email", profileValidation.email)}
             />
+            {profileForm.formState.errors.email && (
+              <p className="text-sm text-red-500">
+                {profileForm.formState.errors.email.message}
+              </p>
+            )}
+          </div>
 
-            <EditableInput
+          {/* Phone Field */}
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-gray-700 font-medium">
+              Phone Number
+            </Label>
+            <Input
               id="phone"
-              label="Phone Number"
               type="tel"
               placeholder="Enter your phone number"
-              editingField={editingField}
-              onEditClick={handleEditClick}
-              onBlur={handleFieldBlur}
-              register={profileForm.register}
-              errors={profileForm.formState.errors}
-              validation={profileValidation.phone}
-            />
-
-            <Button
-              type="submit"
-              disabled={!hasChanges || isUpdating}
-              className={`w-full cursor-pointer transition-all ${
-                hasChanges && !isUpdating
-                  ? "bg-[#14A228] hover:bg-green-600"
-                  : "bg-gray-300 cursor-not-allowed"
+              disabled={!isEditing}
+              className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
+                isEditing
+                  ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
+                  : "border-gray-300 bg-gray-50/80"
               }`}
-            >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
-                  Updating...
-                </>
-              ) : hasChanges ? (
-                "Save Changes"
-              ) : (
-                "No Changes to Save"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              {...profileForm.register("phone", profileValidation.phone)}
+            />
+            {profileForm.formState.errors.phone && (
+              <p className="text-sm text-red-500">
+                {profileForm.formState.errors.phone.message}
+              </p>
+            )}
+          </div>
 
-      {/* Email Change Modal */}
-      {/* <EmailChangeModal
-                isOpen={isEmailModalOpen}
-                onClose={() => setIsEmailModalOpen(false)}
-                currentEmail={profile?.email || ""}
-                onEmailChangeSuccess={handleEmailChangeSuccess}
-            /> */}
-    </>
+          {/* Single Save Button */}
+          <Button
+            type="submit"
+            disabled={!isEditing && !selectedFile}
+            className={`w-full cursor-pointer py-6 font-semibold text-base transition-all rounded-lg ${
+              isEditing || selectedFile
+                ? "bg-[#14A228] hover:bg-green-600 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {isUpdating ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving Changes...
+              </div>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

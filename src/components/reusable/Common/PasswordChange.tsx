@@ -44,6 +44,7 @@ const PasswordInput = ({
                 id={id}
                 type={showPassword ? "text" : "password"}
                 placeholder={placeholder}
+                className="py-6 pr-12 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
                 {...register(id, validation)}
             />
             <Button

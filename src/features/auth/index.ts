@@ -1,8 +1,6 @@
 export * from "./api/auth.api";
 export { default as authReducer, setUser, setLoading, logout } from "./store/auth.slice";
 export type { User } from "./store/auth.slice";
-export { useAuth } from "./hooks/useAuth";
-export { useForgotPassword } from "./hooks/useForgotPassword";
 export { default as AuthLoginForm } from "./components/AuthLoginForm";
 export { default as AuthRegisterForm } from "./components/AuthRegisterForm";
 export { default as ForgotPassword } from "./components/ForgotPassword";

@@ -16,7 +16,7 @@ import {
 } from "@/features/driver";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import {
   useAddVehicleMutation,
   useGetVehiclesQuery,
@@ -166,7 +166,7 @@ function DetailsContent() {
   const pathname = "/driver/book-my-mot/details"; // Fixed pathname for this page
 
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const pendingBooking = useSelector(
     (rootState: RootState) => rootState.bookMyMot.pendingBooking,
   );

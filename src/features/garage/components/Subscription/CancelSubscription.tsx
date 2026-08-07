@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCancelSubscriptionMutation, subscriptionApi } from "@/features/garage";
-import { useAppDispatch } from "@/store/hooks";;
-import { useSubscriptionUpdate } from "@/features/subscriptions";
+import { useAppDispatch } from "@/store/hooks";
+import { updateSubscriptionStatus } from "@/features/subscriptions/store/subscription.slice";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import {
   Select,
@@ -30,7 +30,6 @@ export default function CancelSubscription({
   );
   const [reason, setReason] = useState("");
   const [cancelSubscription] = useCancelSubscriptionMutation();
-  const { triggerUpdate } = useSubscriptionUpdate();
 
   const handleCancelSubscription = async () => {
     setIsCancelLoading(true);
@@ -63,8 +62,7 @@ export default function CancelSubscription({
             ])
           );
 
-          // Trigger update hook
-          triggerUpdate();
+          dispatch(updateSubscriptionStatus());
         }, 500);
       }
     } catch (error) {

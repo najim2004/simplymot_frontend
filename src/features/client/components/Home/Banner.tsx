@@ -12,7 +12,7 @@ import GroupStart from "../Icon/GroupStart";
 import { useCountUp } from "react-countup";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import Link from "next/link";
 import { normalizeRegistration } from "@/lib/helper/vehicle.helper";
 
@@ -23,7 +23,8 @@ interface FormData {
 
 export default function HomeBanner() {
   const router = useRouter();
-  const { isAuthenticated, isDriver } = useAuth();
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const isDriver = user?.type === "DRIVER";
   const {
     register,
     handleSubmit,
@@ -61,7 +62,7 @@ export default function HomeBanner() {
   ];
 
   const handleFreeMOTReminder = () => {
-    if (isAuthenticated && isDriver()) {
+    if (isAuthenticated && isDriver) {
       router.push("/driver/my-vehicles");
     } else {
       router.push("/create-account/driver?redirect=/driver/my-vehicles");
@@ -73,7 +74,7 @@ export default function HomeBanner() {
     const registration = normalizeRegistration(data.registration);
 
     // Check if driver is logged in
-    if ((isAuthenticated && isDriver()) || !isAuthenticated) {
+    if ((isAuthenticated && isDriver) || !isAuthenticated) {
       // Driver is logged in - redirect to book-my-mot page with form data
       router.push(
         `/driver/book-my-mot?registration=${encodeURIComponent(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import LoadingSpinner from "@/components/reusable/LoadingSpinner";
@@ -12,19 +12,17 @@ interface RouteProtectionProps {
 export const RouteProtection: React.FC<RouteProtectionProps> = ({
   children,
 }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAppSelector((state) => state.auth);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        // Skip redirection for public driver routes
         if (pathname.startsWith("/driver/book-my-mot")) {
           return;
         }
 
-        // Redirect to appropriate login page based on the route
         if (pathname.startsWith("/driver")) {
           router.push("/login/driver");
         } else if (pathname.startsWith("/garage")) {
@@ -42,7 +40,6 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
         const isGarageRoute = pathname.startsWith("/garage");
         const isAdminRoute = pathname.startsWith("/admin");
 
-        // If user tries to access a route they don't have permission for, redirect immediately
         if (isDriverRoute && user.type !== "DRIVER") {
           router.push("/unauthorized");
           return;
@@ -61,23 +58,28 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
     }
   }, [isAuthenticated, isLoading, user, pathname, router]);
 
-  // Show loading while checking authentication
   if (isLoading) {
-    return <LoadingSpinner fullScreen text="Loading..." />;
+    return <LoadingSpinner />;
   }
 
-  // Show loading while redirecting (for both login and unauthorized)
-  // Don't show loading for public driver routes when unauthenticated
-  const isPublicDriverRoute = pathname.startsWith("/driver/book-my-mot");
+  if (!isAuthenticated && !pathname.startsWith("/driver/book-my-mot")) {
+    return <LoadingSpinner />;
+  }
 
-  if (
-    (!isAuthenticated && !isPublicDriverRoute) ||
-    (user &&
-      ((pathname.startsWith("/driver") && user.type !== "DRIVER") ||
-        (pathname.startsWith("/garage") && user.type !== "GARAGE") ||
-        (pathname.startsWith("/admin") && user.type !== "ADMIN")))
-  ) {
-    return <LoadingSpinner fullScreen text="Loading..." />;
+  if (user) {
+    const isDriverRoute = pathname.startsWith("/driver");
+    const isGarageRoute = pathname.startsWith("/garage");
+    const isAdminRoute = pathname.startsWith("/admin");
+
+    if (isDriverRoute && user.type !== "DRIVER") {
+      return <LoadingSpinner />;
+    }
+    if (isGarageRoute && user.type !== "GARAGE") {
+      return <LoadingSpinner />;
+    }
+    if (isAdminRoute && user.type !== "ADMIN") {
+      return <LoadingSpinner />;
+    }
   }
 
   return <>{children}</>;

@@ -33,7 +33,7 @@ import {
   useGetVehiclesQuery,
 } from "@/features/driver";
 import { BookingSuccessModal } from "@/features/driver";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 import { getBrandLogo, normalizeRegistration } from "@/lib/helper/vehicle.helper";
 import { cx } from "class-variance-authority";
@@ -108,7 +108,7 @@ function BookMyMOTContent() {
     // reset,
   } = useForm<FormData>();
 
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const shouldShowMotExpiry = Boolean(user?.id);
 
   // Get registration number and postcode from URL query parameters

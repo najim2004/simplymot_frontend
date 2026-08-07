@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import VehiclesCardReusble from "@/components/reusable/Dashboard/Driver/VehiclesCardReusble";
-import { useVehicleData } from "../../../../../hooks/useVehicleData";
 import { MOTReport, Vehicle, MotReportWithVehicle } from "../_types";
 import {
+  useGetVehiclesQuery,
+  useGetVehicleMotReportsQuery,
   ErrorDisplay,
   ReportCard,
   ReportCardShimmer,
@@ -24,8 +25,8 @@ import { IoNotifications } from "react-icons/io5";
 import { useRefreshMotReportsMutation } from "@/features/driver";
 import { toast } from "react-toastify";
 import { formatDate } from "../_utils";
+import { getBrandLogo } from "@/lib/helper/vehicle.helper";
 
-// Main Component
 export default function MotReports() {
   const router = useRouter();
   const params = useParams();
@@ -38,30 +39,60 @@ export default function MotReports() {
 
   const vehicleIdFromURL = getVehicleIdFromURL();
 
-  // UI State
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null,
-  );
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
-  // No status filtering - always show all reports
   const statusFilter = "";
 
-  const {
-    vehicles,
-    motReports,
-    foundVehicle,
-    isLoadingVehicles,
-    isLoadingMotReports,
-    vehiclesError,
-    motReportsError,
-    hasMore,
-  } = useVehicleData(vehicleIdFromURL, currentPage, limit, statusFilter);
+  const { data: vehiclesResponse, isLoading: isLoadingVehicles, error: vehiclesError } = useGetVehiclesQuery();
+  const apiVehicles = vehiclesResponse?.data || [];
+
+  const foundVehicle = React.useMemo(() => {
+    if (!apiVehicles.length || !vehicleIdFromURL) return null;
+    return apiVehicles.find((v: any) => v.id === vehicleIdFromURL);
+  }, [apiVehicles, vehicleIdFromURL]);
+
+  const vehicleIdForQuery = foundVehicle?.id || vehicleIdFromURL || "";
+
+  const { data: motReportsData, isLoading: isLoadingMotReports, error: motReportsError } = useGetVehicleMotReportsQuery(
+    { id: vehicleIdForQuery, page: currentPage, limit, status: statusFilter },
+    { skip: !vehicleIdForQuery }
+  );
+
+  const vehicles = React.useMemo(() => {
+    return apiVehicles.map((v: any) => ({
+      id: v.id,
+      apiVehicleId: v.id,
+      registrationNumber: v.registration_number,
+      expiryDate: v.mot_expiry_date || "N/A",
+      roadTax: v.tax_status || "N/A",
+      make: v.make,
+      model: v.model,
+      year: v.year_of_manufacture || 0,
+      image: getBrandLogo(v.make),
+      motReport: [],
+    }));
+  }, [apiVehicles]);
+
+  const motReports = React.useMemo(() => {
+    const rawTests = (motReportsData as any)?.data?.mot_tests || [];
+    return rawTests.map((test: any, index: number) => ({
+      id: index + 1,
+      color: (foundVehicle as any)?.color || "N/A",
+      fuelType: (foundVehicle as any)?.fuel_type || "N/A",
+      registrationDate: (foundVehicle as any)?.date_registered || "N/A",
+      motTestNumber: test.mot_test_number || "N/A",
+      motPassDate: test.completed_date || "N/A",
+      motExpiryDate: test.expiry_date || "N/A",
+      motStatus: test.test_result === "PASSED" ? ("Pass" as const) : ("Fail" as const),
+    }));
+  }, [motReportsData, foundVehicle]);
+
+  const hasMore = Boolean((motReportsData as any)?.data?.pagination?.has_more);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);

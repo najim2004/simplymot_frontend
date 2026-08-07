@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetMeQuery, useUpdateProfileMutation } from "@/features/auth";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import ProfileImageUpload from "./CommonImage";
 // import { EmailChangeModal } from '@/components/reusable/EmailChangeModal';
 
@@ -103,7 +103,6 @@ export default function MyProfile() {
   const profile = profileResponse?.data || null;
 
   const [updateProfile, { isLoading: isUpdating, error: updateError }] = useUpdateProfileMutation();
-  const { checkAuth } = useAuth();
 
   // State
   const [profileImage, setProfileImage] = useState<string>(
@@ -237,7 +236,7 @@ export default function MyProfile() {
       }
       await updateProfile(payload).unwrap();
       await refetch();
-      await checkAuth();
+      await refetch();
       setOriginalValues(data);
       setHasChanges(false);
       setSelectedFile(null);

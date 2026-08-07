@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/features/contact";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import { useGetMeQuery } from "@/features/auth";
 
 type ContactFormValues = {
@@ -23,7 +23,7 @@ type ContactFormValues = {
 export default function ContactUs() {
   const [createContactMessage, { isLoading }] =
     useCreateContactMessageMutation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { data: authMeData } = useGetMeQuery(undefined, { skip: !isAuthenticated });
   const [userData, setUserData] = useState<any>(null);
 

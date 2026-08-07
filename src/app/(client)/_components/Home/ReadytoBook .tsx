@@ -7,22 +7,17 @@ import bgImage from "@/public/Image/book/Bgbook.png";
 import leftImage from "@/public/Image/book/leftImg.png";
 import rightImage from "@/public/Image/book/rightImg.png";
 import SmalButtonReuseable from "@/components/reusable/SmalButtonReuseable";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 
 export default function ReadytoBook() {
   const router = useRouter();
-  const { isDriver, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const isDriver = user?.type === "DRIVER";
 
   const handleBookMOTClick = () => {
-    // Check if user is logged in as driver
-    if ((isAuthenticated && isDriver()) || !isAuthenticated) {
-      // If logged in as driver, redirect to book-my-mot
+    if ((isAuthenticated && isDriver) || !isAuthenticated) {
       router.push("/driver/book-my-mot");
     }
-    //  else {
-    //   // If not logged in, redirect to login page with redirect parameter
-    //   router.push("/login/driver?redirect=/driver/book-my-mot");
-    // }
   };
   return (
     <div

@@ -12,12 +12,12 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
 
   // dynamic years
   const currentYear = new Date().getFullYear();

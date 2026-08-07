@@ -8,7 +8,6 @@ export {
   default as bookMyMotReducer,
 } from "./store/driver-book-mot.slice";
 export { default as vehiclesReducer } from "./store/driver-vehicles.slice";
-export { useVehicleData } from "./hooks/useVehicleData";
 
 export { default as DriverProfile } from "./components/Profile";
 export { default as GarageCard } from "./components/GarageCard";

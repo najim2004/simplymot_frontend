@@ -10,7 +10,7 @@ import {
   useGetGarageSlotsQuery,
   useBookSlotMutation,
 } from "@/features/driver";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 import { useGetMeQuery } from "@/features/auth";
 import PersonalInformationSection from "./BookingModal/PersonalInformationSection";
 import BookingDetailsSection from "./BookingModal/BookingDetailsSection";
@@ -51,7 +51,7 @@ export default function BookingModal({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const { data: profileResponse } = useGetMeQuery();
   const profile = profileResponse?.data || null;
 

@@ -2,18 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { disconnectSocket, initSocket } from "@/lib/socket";
-import { useAuth } from "@/features/auth";
+import { useAppSelector } from "@/store/hooks";
 
 /** Match backend default PRESENCE_HEARTBEAT_MS (60s) — fewer requests, same accuracy */
 const HEARTBEAT_INTERVAL_MS = 60000;
 
-/**
- * Tracks dashboard presence only. When the dashboard layout unmounts
- * (user navigates to public/auth pages), the socket disconnects so the
- * session is not left in a stale half-active state.
- */
 export const usePresenceTracking = () => {
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {

@@ -1,19 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Activity,
-  BarChart3,
-  Clock,
-  Loader2,
-  TrendingUp,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
-import { useGetUserActivityQuery } from "@/features/admin";;
+import { Activity, Loader2 } from "lucide-react";
+import { useGetUserActivityQuery } from "@/features/admin";
 import { LineChart } from "@/components/Chart/LineChart";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import { PAGINATION_CONFIG } from "@/config/pagination.config";
+import ActivitySummaryCards from "./ActivitySummaryCards";
 
 type ActivityPeriod = "day" | "week" | "month" | "year";
 
@@ -47,16 +40,10 @@ const formatDuration = (seconds: number) => {
   return `${minutes}m`;
 };
 
-export default function UserPlatformActivity({
-  userId,
-}: UserPlatformActivityProps) {
+export default function UserPlatformActivity({ userId }: UserPlatformActivityProps) {
   const [period, setPeriod] = useState<ActivityPeriod>("week");
-  const [currentPage, setCurrentPage] = useState<number>(
-    PAGINATION_CONFIG.DEFAULT_PAGE,
-  );
-  const [itemsPerPage, setItemsPerPage] = useState<number>(
-    PAGINATION_CONFIG.DEFAULT_LIMIT,
-  );
+  const [currentPage, setCurrentPage] = useState<number>(PAGINATION_CONFIG.DEFAULT_PAGE);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION_CONFIG.DEFAULT_LIMIT);
 
   useEffect(() => {
     setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
@@ -77,17 +64,14 @@ export default function UserPlatformActivity({
         new Date(`${item.date}T12:00:00.000Z`).toLocaleDateString("en-GB", {
           day: "numeric",
           month: "short",
-        }),
+        })
       ),
-    [activity?.daily_breakdown],
+    [activity?.daily_breakdown]
   );
 
   const chartData = useMemo(
-    () =>
-      (activity?.daily_breakdown ?? []).map((item) =>
-        Math.round(item.total_seconds / 60),
-      ),
-    [activity?.daily_breakdown],
+    () => (activity?.daily_breakdown ?? []).map((item) => Math.round(item.total_seconds / 60)),
+    [activity?.daily_breakdown]
   );
 
   const maxHourlySeconds = useMemo(() => {
@@ -104,9 +88,7 @@ export default function UserPlatformActivity({
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">
-              Platform Activity
-            </h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900">Platform Activity</h3>
             <p className="text-xs sm:text-sm text-gray-500">
               Dashboard online time, sessions, and usage patterns
             </p>
@@ -142,100 +124,7 @@ export default function UserPlatformActivity({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="rounded-xl border border-gray-100 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm">Total Time</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {activity.summary.total_time_formatted}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <Clock className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-100 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm">Sessions</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {activity.summary.total_sessions}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-100 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm">Avg Session</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {activity.summary.avg_session_formatted}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-100 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm">Status</p>
-                  <p
-                    className={`text-lg font-bold mt-1 ${
-                      activity.summary.currently_online
-                        ? "text-green-600"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {activity.summary.currently_online ? "Online" : "Offline"}
-                  </p>
-                </div>
-                <div
-                  className={`p-3 rounded-lg ${
-                    activity.summary.currently_online
-                      ? "bg-green-100"
-                      : "bg-gray-100"
-                  }`}
-                >
-                  {activity.summary.currently_online ? (
-                    <Wifi className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <WifiOff className="w-5 h-5 text-gray-500" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
-              <p className="text-xs text-gray-500">Most Active Hour</p>
-              <p className="text-sm sm:text-base font-semibold text-gray-900 mt-1">
-                {activity.summary.most_active_hour_label ?? "N/A"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
-              <p className="text-xs text-gray-500">Most Active Day</p>
-              <p className="text-sm sm:text-base font-semibold text-gray-900 mt-1">
-                {activity.summary.most_active_day ?? "N/A"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
-              <p className="text-xs text-gray-500">Longest Session</p>
-              <p className="text-sm sm:text-base font-semibold text-gray-900 mt-1">
-                {activity.summary.longest_session_formatted}
-              </p>
-            </div>
-          </div>
+          <ActivitySummaryCards summary={activity.summary} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div className="border border-gray-200 rounded-lg p-4 sm:p-5">
@@ -243,11 +132,7 @@ export default function UserPlatformActivity({
                 Daily Active Time
               </h4>
               {chartLabels.length > 0 ? (
-                <LineChart
-                  label="Minutes"
-                  labels={chartLabels}
-                  data={chartData}
-                />
+                <LineChart label="Minutes" labels={chartLabels} data={chartData} />
               ) : (
                 <p className="text-sm text-gray-500 py-8 text-center">
                   No daily activity in this period.
@@ -260,10 +145,10 @@ export default function UserPlatformActivity({
                 Hourly Activity
               </h4>
               <div className="grid grid-cols-12 gap-1 items-end h-40">
-                {activity.hourly_distribution.map((item) => {
+                {(activity.hourly_distribution || []).map((item) => {
                   const height = `${Math.max(
                     (item.seconds / maxHourlySeconds) * 100,
-                    item.seconds > 0 ? 8 : 2,
+                    item.seconds > 0 ? 8 : 2
                   )}%`;
 
                   return (
@@ -272,10 +157,7 @@ export default function UserPlatformActivity({
                       className="flex flex-col items-center justify-end h-full"
                       title={`${item.label}: ${formatDuration(item.seconds)}`}
                     >
-                      <div
-                        className="w-full rounded-t bg-green-500/80 min-h-[2px]"
-                        style={{ height }}
-                      />
+                      <div className="w-full rounded-t bg-green-500/80 min-h-[2px]" style={{ height }} />
                     </div>
                   );
                 })}
@@ -316,17 +198,12 @@ export default function UserPlatformActivity({
                   </thead>
                   <tbody>
                     {sessions.map((session) => (
-                      <tr
-                        key={session.id}
-                        className="border-b border-gray-100 last:border-0"
-                      >
+                      <tr key={session.id} className="border-b border-gray-100 last:border-0">
                         <td className="px-4 py-3 text-gray-900">
                           {formatDateTime(session.joined_at)}
                         </td>
                         <td className="px-4 py-3 text-gray-700">
-                          {session.is_active
-                            ? "Still active"
-                            : formatDateTime(session.left_at)}
+                          {session.is_active ? "Still active" : formatDateTime(session.left_at)}
                         </td>
                         <td className="px-4 py-3 text-gray-900 font-medium">
                           {formatDuration(session.duration_seconds)}

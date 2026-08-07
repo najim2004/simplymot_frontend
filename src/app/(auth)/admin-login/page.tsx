@@ -13,7 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/features/auth";
+import { useLoginMutation, useLazyGetMeQuery } from "@/features/auth/api/auth.api";
+import { setUser, setLoading as setAuthLoading, User } from "@/features/auth/store/auth.slice";
+import { useAppDispatch } from "@/store/hooks";
 
 interface FormData {
   email: string;
@@ -23,6 +25,9 @@ interface FormData {
 
 export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
+  const [login] = useLoginMutation();
+  const [triggerGetMe] = useLazyGetMeQuery();
+  const dispatch = useAppDispatch();
   const {
     register,
     handleSubmit,
@@ -30,22 +35,52 @@ export default function AdminLogin() {
   } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { loginWithType } = useAuth();
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      const result = await loginWithType(data.email, data.password, "ADMIN");
-      if (result.success) {
-        toast.success(result.message);
-        router.push("/admin/dashboard");
-      } else {
-        toast.error(result.message);
+      dispatch(setAuthLoading(true));
+      const res = await login({
+        email: data.email,
+        password: data.password,
+        type: "ADMIN",
+      } as any).unwrap();
+
+      if (res.authorization?.token) {
+        localStorage.setItem("token", res.authorization.token);
       }
+
+      let userDetails = null;
+      try {
+        userDetails = await triggerGetMe().unwrap();
+      } catch (e) {
+        console.warn("AuthMe fallback");
+      }
+
+      const userObj: User = userDetails?.data
+        ? {
+            id: userDetails.data.id,
+            email: userDetails.data.email,
+            name: userDetails.data.name,
+            type: userDetails.data.type,
+            avatar_url: userDetails.data.avatar_url || undefined,
+            garage_name: userDetails.data.garage_name || undefined,
+          }
+        : {
+            id: "temp-id",
+            email: data.email,
+            name: "Admin User",
+            type: "ADMIN",
+          };
+
+      dispatch(setUser(userObj));
+      toast.success("Login successful");
+      router.push("/admin/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
+      toast.error(error.data?.message || error.message || "Login failed");
     } finally {
       setIsLoading(false);
+      dispatch(setAuthLoading(false));
     }
   };
 

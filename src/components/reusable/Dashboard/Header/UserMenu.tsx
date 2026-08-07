@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, LogOut, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/features/auth";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout } from "@/features/auth/store/auth.slice";
+import { resetReduxStore } from "@/lib/resetReduxStore";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,16 +20,20 @@ import Image from "next/image";
 
 export const UserMenu: React.FC = () => {
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuth();
-  const [imageError, setImageError] = React.useState(false);
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const [imageError, setImageError] = useState(false);
 
-  // Reset image error when avatar_url changes
-  React.useEffect(() => {
+  useEffect(() => {
     setImageError(false);
   }, [user?.avatar_url]);
 
   const handleLogout = () => {
-    logout();
+    resetReduxStore();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
+    dispatch(logout());
     router.push("/login/driver");
   };
 
@@ -45,8 +51,8 @@ export const UserMenu: React.FC = () => {
       role === "admin"
         ? "/admin/profile"
         : role === "garage"
-          ? "/garage/profile"
-          : "/driver/profile";
+        ? "/garage/profile"
+        : "/driver/profile";
     router.push(profileRoute);
   };
 
@@ -58,79 +64,80 @@ export const UserMenu: React.FC = () => {
           className="flex items-center gap-2 px-2 cursor-pointer select-none"
         >
           <Avatar className="h-10 w-10 border">
-            {isAuthenticated && user?.avatar_url && !imageError ? (
+            {user?.avatar_url && !imageError ? (
               <Image
                 src={user.avatar_url}
-                alt={user?.name || "User Avatar"}
+                alt={user.name || "User Avatar"}
                 width={40}
                 height={40}
-                className="rounded-full object-cover w-full h-full"
+                className="h-full w-full object-cover rounded-full"
                 onError={() => setImageError(true)}
               />
-            ) : null}
-            <AvatarFallback className="select-none">
-              {isAuthenticated
-                ? user?.type?.toLowerCase() === "garage" && user?.garage_name
-                  ? (user?.garage_name?.charAt(0) ?? "G")
-                  : (user?.name?.charAt(0) ?? "U")
-                : "G"}
-            </AvatarFallback>
+            ) : (
+              <AvatarFallback className="bg-[#006644] text-white">
+                <UserIcon className="h-5 w-5" />
+              </AvatarFallback>
+            )}
           </Avatar>
-          <div className="hidden md:flex flex-col items-start select-none">
-            <span className="text-sm font-medium text-gray-900">
-              <span className="text-sm font-medium text-gray-900">
-                {isAuthenticated
-                  ? user?.type?.toLowerCase() === "garage" && user?.garage_name
-                    ? user.garage_name
-                    : user?.name || "User"
-                  : "Guest"}
-              </span>
+
+          <div className="hidden md:flex flex-col text-left">
+            <span className="text-sm font-semibold text-gray-900 leading-tight">
+              {user?.name || (isAuthenticated ? "Account" : "Guest")}
             </span>
             <span className="text-xs text-gray-500 capitalize">
-              {isAuthenticated && user?.type
-                ? user.type.toLowerCase()
-                : "Visitor"}
+              {user?.type?.toLowerCase() || (isAuthenticated ? "User" : "Log in")}
             </span>
           </div>
+
           <ChevronDown className="h-4 w-4 text-gray-500" />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
         {isAuthenticated ? (
           <>
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
             <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer"
               onClick={handleProfileClick}
+              className="cursor-pointer"
             >
-              <User className="h-4 w-4" />
+              <UserIcon className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
-              className="flex items-center gap-2 text-red-600 cursor-pointer"
               onClick={handleLogout}
+              className="cursor-pointer text-red-600 focus:text-red-600"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
           </>
         ) : (
           <>
             <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer text-[#19CA32]"
               onClick={handleLogin}
+              className="cursor-pointer"
             >
-              <User className="h-4 w-4" />
-              <span>Login</span>
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Log in</span>
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer text-[#19CA32]"
               onClick={handleRegister}
+              className="cursor-pointer font-semibold text-[#006644]"
             >
-              <User className="h-4 w-4" />
-              <span>Register</span>
+              <span>Create account</span>
             </DropdownMenuItem>
           </>
         )}
@@ -138,3 +145,5 @@ export const UserMenu: React.FC = () => {
     </DropdownMenu>
   );
 };
+
+export default UserMenu;

@@ -1,87 +1,65 @@
-"use client"
+"use client";
 
-import { useAuth } from '@/features/auth'
-import { useRouter, usePathname } from 'next/navigation'
-import { useEffect } from 'react'
-import { useGetCurrentSubscriptionQuery } from '@/features/garage'
-import LoadingSpinner from '@/components/reusable/LoadingSpinner'
+import { useAppSelector } from "@/store/hooks";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useGetCurrentSubscriptionQuery } from "@/features/garage";
+import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 
 interface SubscriptionProtectionProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export const SubscriptionProtection: React.FC<SubscriptionProtectionProps> = ({ children }) => {
-  const { user, isLoading: isAuthLoading } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
+  const { user, isLoading: isAuthLoading } = useAppSelector((state) => state.auth);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Protected routes that require active subscription
   const protectedRoutes = [
-    '/garage/pricing',
-    '/garage/availability',
-    '/garage/bookings',
-  ]
+    "/garage/pricing",
+    "/garage/availability",
+    "/garage/bookings",
+  ];
 
-  // Check if current route is protected
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-  const isGarageUser = user?.type?.toLowerCase() === 'garage'
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isGarageUser = user?.type?.toLowerCase() === "garage";
 
-  // Fetch subscription data for garage users only on protected routes
   const {
     data: subscriptionData,
     isLoading: isLoadingSubscription,
   } = useGetCurrentSubscriptionQuery(undefined, {
     skip: !isGarageUser || !isProtectedRoute || isAuthLoading,
-  })
+  });
 
   useEffect(() => {
-    // Wait for auth to complete first
-    if (isAuthLoading) {
-      return
+    if (isAuthLoading || !isGarageUser || !isProtectedRoute || isLoadingSubscription) {
+      return;
     }
 
-    // Only check for garage users on protected routes
-    if (!isGarageUser || !isProtectedRoute) {
-      return
-    }
+    const subscriptionStatus = subscriptionData?.data?.status;
+    const hasActiveSubscription = subscriptionStatus === "ACTIVE";
 
-    // Wait for subscription data to load
-    if (isLoadingSubscription) {
-      return
-    }
-
-    // Check subscription status
-    const subscriptionStatus = subscriptionData?.data?.status
-    const hasActiveSubscription = subscriptionStatus === 'ACTIVE'
-
-    // Redirect to subscription page if no active subscription
     if (!hasActiveSubscription) {
-      router.push('/garage/subscription')
+      router.push("/garage/subscription");
     }
-  }, [user, pathname, subscriptionData, isLoadingSubscription, router, isAuthLoading, isGarageUser, isProtectedRoute])
+  }, [isAuthLoading, isGarageUser, isProtectedRoute, isLoadingSubscription, subscriptionData, router]);
 
-  // Show loading only if auth is done and we're checking subscription
-  // Don't show if auth is still loading (let RouteProtection handle that)
-  if (
-    !isAuthLoading &&
-    isGarageUser &&
-    isProtectedRoute &&
-    isLoadingSubscription
-  ) {
-    return <LoadingSpinner fullScreen text="Loading..." />
+  if (isAuthLoading) {
+    return <LoadingSpinner />;
   }
 
-  // Show loading while redirecting (only for garage users on protected routes without active subscription)
-  if (
-    !isAuthLoading &&
-    isGarageUser &&
-    isProtectedRoute &&
-    !isLoadingSubscription &&
-    subscriptionData?.data?.status !== 'ACTIVE'
-  ) {
-    return <LoadingSpinner fullScreen text="Loading..." />
+  if (isGarageUser && isProtectedRoute) {
+    if (isLoadingSubscription) {
+      return <LoadingSpinner />;
+    }
+
+    const subscriptionStatus = subscriptionData?.data?.status;
+    const hasActiveSubscription = subscriptionStatus === "ACTIVE";
+
+    if (!hasActiveSubscription) {
+      return <LoadingSpinner />;
+    }
   }
 
-  return <>{children}</>
-}
-
+  return <>{children}</>;
+};

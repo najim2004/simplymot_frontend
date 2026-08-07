@@ -34,7 +34,9 @@ import {
   Tags,
   Star,
 } from "lucide-react";
-import { useAuth } from "@/features/auth";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logout as logoutAction } from "@/features/auth/store/auth.slice";
+import { resetReduxStore } from "@/lib/resetReduxStore";
 import { useGetCurrentSubscriptionQuery } from "@/features/garage";
 
 interface SidebarProps {
@@ -43,9 +45,19 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onClose }: SidebarProps) {
-  const { user, logout, isAuthenticated } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const pathname = usePathname();
   const router = useRouter();
+
+  const handleLogout = () => {
+    resetReduxStore();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
+    dispatch(logoutAction());
+    router.push("/login/driver");
+  };
 
   // Fetch current subscription for garage users
   const { data: subscriptionData, isLoading: isLoadingSubscription } =
@@ -205,11 +217,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     },
   ];
 
-  const handleLogout = () => {
-    logout(); // Clear auth state
-    router.push("/");
-    toast.success("Logout successful");
-  };
+
 
   const handleLogin = () => {
     router.push("/login/driver");

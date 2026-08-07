@@ -2,20 +2,34 @@
 
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import Image from "next/image";
 import Link from "next/link";
-import { Eye, EyeOff, Check, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import bgImage from "@/public/Image/register/bgImage.png";
-import carImage from "@/public/Image/register/registerLargeImg.png";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { toast } from "react-toastify";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useLoginMutation, useLazyGetMeQuery, useResendVerificationEmailMutation } from "@/features/auth/api/auth.api";
-import { setUser, setLoading as setAuthLoading, User } from "@/features/auth/store/auth.slice";
+import {
+  useLoginMutation,
+  useLazyGetMeQuery,
+  useResendVerificationEmailMutation,
+} from "@/features/auth/api/auth.api";
+import {
+  setUser,
+  setLoading as setAuthLoading,
+  User,
+} from "@/features/auth/store/auth.slice";
 import { useAppDispatch } from "@/store/hooks";
 import { EmailVerificationModal } from "@/components/reusable/EmailVerificationModal";
+import DriverAuthBanner from "./DriverAuthBanner";
+import GarageAuthBanner from "./GarageAuthBanner";
 
 interface LoginFormData {
   email: string;
@@ -26,21 +40,6 @@ interface AuthLoginFormProps {
   userKind: "DRIVER" | "GARAGE";
 }
 
-const driverHighlights = [
-  { id: 1, title: "Book your MOT in just a few taps" },
-  { id: 2, title: "Reschedule or cancel your bookings" },
-  { id: 3, title: "Get automatic MOT reminders" },
-  { id: 4, title: "Keep track of past MOTs" },
-  { id: 5, title: "Stay road-legal with zero stress" },
-];
-
-const garageHighlights = [
-  { id: 1, title: "Get more bookings from drivers in your area" },
-  { id: 2, title: "No commission - you keep 100%" },
-  { id: 3, title: "Manage your bookings in one place" },
-  { id: 4, title: "Never miss a booking" },
-];
-
 export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
@@ -48,11 +47,13 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
   const [resendVerificationEmail] = useResendVerificationEmailMutation();
   const dispatch = useAppDispatch();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>();
+  const form = useForm<LoginFormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,7 +73,9 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
   };
 
   const handleVerifyLinkClick = async () => {
-    const email = (document.getElementById("email") as HTMLInputElement)?.value;
+    const email =
+      form.getValues("email") ||
+      (document.getElementById("email") as HTMLInputElement)?.value;
     if (!email) {
       toast.error("Please enter your email first to verify");
       return;
@@ -81,7 +84,9 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
     try {
       const response = await resendVerificationEmail({ email }).unwrap();
       if (response.success || (response as any).status === "success") {
-        toast.success(response?.message || "Verification code sent to your email");
+        toast.success(
+          response?.message || "Verification code sent to your email",
+        );
         openVerificationModal(email);
       } else {
         toast.error(response?.message || "Failed to send verification code");
@@ -146,8 +151,8 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
         } else if (registration && postcode) {
           router.replace(
             `/driver/book-my-mot?registration=${encodeURIComponent(
-              registration
-            )}&postcode=${encodeURIComponent(postcode)}`
+              registration,
+            )}&postcode=${encodeURIComponent(postcode)}`,
           );
         } else {
           router.replace("/driver/book-my-mot");
@@ -157,7 +162,10 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
       }
     } catch (error: any) {
       const msg = error.data?.message || error.message || "Login failed";
-      if (msg.toLowerCase().includes("verify") || msg.toLowerCase().includes("verification")) {
+      if (
+        msg.toLowerCase().includes("verify") ||
+        msg.toLowerCase().includes("verification")
+      ) {
         try {
           await resendVerificationEmail({ email: data.email }).unwrap();
         } catch (resendError) {
@@ -172,175 +180,151 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
     }
   };
 
-  const highlights = userKind === "DRIVER" ? driverHighlights : garageHighlights;
-  const leftSideTitle =
-    userKind === "DRIVER"
-      ? "All Your MOT Needs In One Place."
-      : "More MOT Bookings. One Simple System.";
-  const formHeading = userKind === "DRIVER" ? "Let's get you signed in" : "Member Login";
+  const formHeading =
+    userKind === "DRIVER" ? "Let's get you signed in" : "Member Login";
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row p-4 gap-4">
-      {/* Left Side */}
-      <div
-        className="flex-1 lg:flex-1 text-white relative overflow-hidden rounded-2xl h-auto min-h-[50vh] lg:h-[calc(100vh-32px)]"
-        style={{
-          backgroundImage: `url(${bgImage.src})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="relative z-10 p-6 lg:p-12 flex flex-col justify-between h-full">
-          <div>
-            <button
-              onClick={() => router.back()}
-              className="flex justify-start cursor-pointer border border-white rounded-full p-2 w-fit group mb-4"
-            >
-              <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white shrink-0" />
-              </div>
-            </button>
+      {/* Left Side Component */}
+      {userKind === "DRIVER" ? (
+        <DriverAuthBanner onBack={() => router.back()} />
+      ) : (
+        <GarageAuthBanner onBack={() => router.back()} />
+      )}
 
-            <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center">
-              <Link href="/">simplymot.co.uk</Link>
-            </div>
-
-            <div className="mt-8 space-y-4">
-              <h1 className="text-2xl sm:text-3xl font-bold font-arial-rounded leading-tight text-[#DEF3E7]">
-                {leftSideTitle}
-              </h1>
-
-              <div className="space-y-3">
-                {highlights.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 rounded-full bg-emerald-[#092C23] flex items-center justify-center shrink-0">
-                      <Check className="w-3.5 h-3.5 text-[#22C55E]" />
-                    </div>
-                    <span className="text-sm font-medium text-white/90">{item.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-center items-center">
-            <Image
-              src={carImage}
-              alt="Car Illustration"
-              className="w-full max-w-[500px] h-auto object-contain"
-              priority
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side */}
-      <div className="flex-1 lg:flex-1 bg-white rounded-2xl p-6 lg:p-12 flex flex-col justify-center min-h-[50vh] lg:h-[calc(100vh-32px)]">
-        <div className="max-w-md w-full mx-auto space-y-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 font-arial-rounded">
+      {/* Right Side - Form */}
+      <div className="flex-1 lg:flex-1 flex items-center justify-center rounded-2xl">
+        <div className="w-full max-w-full lg:max-w-lg xl:max-w-xl">
+          <div className="bg-white rounded-xl border border-[#19CA32] p-8 sm:p-10 lg:p-12">
+            <h2 className="text-xl text-center sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10">
               {formHeading}
             </h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Enter your details to sign in to your account.
-            </p>
-          </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700 block mb-1">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address",
-                  },
-                })}
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
-                </Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-semibold text-[#006644] hover:underline"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  {...register("password", {
-                    required: "Password is required",
-                  })}
-                  className={errors.password ? "border-red-500 pr-10" : "pr-10"}
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4 sm:space-y-5"
+              >
+                <FormField
+                  control={form.control}
+                  name="email"
+                  rules={{
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address",
+                    },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 mb-2 block">
+                        Email <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="email@example.com"
+                          className="mt-2 py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm mt-2" />
+                    </FormItem>
+                  )}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-              )}
-            </div>
 
-            <div className="text-xs text-right">
-              Need to verify your email?{" "}
-              <button
-                type="button"
-                onClick={handleVerifyLinkClick}
-                disabled={isSendingOtp}
-                className="font-semibold text-[#006644] hover:underline bg-transparent border-0 p-0 cursor-pointer"
-              >
-                {isSendingOtp ? "Sending code..." : "Enter verification code"}
-              </button>
-            </div>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  rules={{
+                    required: "Password is required",
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between mb-2">
+                        <FormLabel className="text-sm font-medium text-gray-700 block">
+                          Password <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Link
+                          href="/forgot-password"
+                          className="text-xs font-semibold text-[#19CA32] hover:underline"
+                        >
+                          Forgot Password?
+                        </Link>
+                      </div>
+                      <FormControl>
+                        <div className="relative mt-2">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            className="py-6 pr-12 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5 text-[#19CA32] cursor-pointer" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-[#19CA32] cursor-pointer" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm mt-2" />
+                    </FormItem>
+                  )}
+                />
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#006644] hover:bg-[#005236] text-white py-2.5 rounded-lg font-semibold transition-colors cursor-pointer"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in...</span>
+                <div className="text-xs text-right pt-1">
+                  Need to verify your email?{" "}
+                  <button
+                    type="button"
+                    onClick={handleVerifyLinkClick}
+                    disabled={isSendingOtp}
+                    className="font-semibold text-[#19CA32] hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                  >
+                    {isSendingOtp ? "Sending code..." : "Enter verification code"}
+                  </button>
                 </div>
-              ) : (
-                "Sign in"
-              )}
-            </Button>
 
-            <div className="text-center text-sm text-gray-600 pt-2">
-              Don&apos;t have an account?{" "}
-              <Link
-                href={userKind === "DRIVER" ? "/create-account/driver" : "/create-account/garage"}
-                className="font-semibold text-[#006644] hover:underline"
-              >
-                Create an account
-              </Link>
-            </div>
-          </form>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full cursor-pointer bg-[#19CA32] hover:bg-[#19CA32]/90 disabled:bg-[#19CA32]/70 disabled:cursor-not-allowed text-white py-6 rounded-lg font-medium text-base transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20 disabled:hover:shadow-none"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    "Sign in"
+                  )}
+                </Button>
+
+                <div className="text-center pt-2">
+                  <span className="text-sm text-gray-600">
+                    Don&apos;t have an account?{" "}
+                    <Link
+                      href={
+                        userKind === "DRIVER"
+                          ? "/create-account/driver"
+                          : "/create-account/garage"
+                      }
+                      className="text-[#19CA32] hover:underline font-medium"
+                    >
+                      Create an account
+                    </Link>
+                  </span>
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
 

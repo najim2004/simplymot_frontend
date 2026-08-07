@@ -15,6 +15,8 @@ import { toast } from "react-toastify";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRegisterMutation } from "@/features/auth/api/auth.api";
 import { EmailVerificationModal } from "@/components/reusable/EmailVerificationModal";
+import DriverAuthBanner from "./DriverAuthBanner";
+import GarageAuthBanner from "./GarageAuthBanner";
 
 interface RegisterFormData {
   name?: string;
@@ -227,57 +229,13 @@ export default function AuthRegisterForm({ userKind }: AuthRegisterFormProps) {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row p-4 gap-4">
-      {/* Left Side */}
-      <div
-        className="flex-1 lg:flex-1 text-white relative overflow-hidden rounded-2xl h-auto min-h-[50vh] lg:h-[calc(100vh-32px)]"
-        style={{
-          backgroundImage: `url(${bgImage.src})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="relative z-10 p-6 lg:p-12 flex flex-col justify-between h-full">
-          <div>
-            {/* back button */}
-            <button
-              onClick={handleBack}
-              className="flex justify-start cursor-pointer border border-white rounded-full p-2 w-fit group mb-4"
-            >
-              <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white shrink-0" />
-              </div>
-            </button>
-
-            <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center">
-              <Link href="/">simplymot.co.uk</Link>
-            </div>
-
-            {/* Feature List */}
-            <div className="space-y-3 lg:space-y-4 mt-20">
-              <h2 className="text-lg md:text-xl lg:text-[28px] font-semibold font-inder">
-                {leftSideTitle}
-              </h2>
-              {highlights.map((item) => (
-                <div key={item.id} className="flex items-center gap-3">
-                  <Check className="w-4 h-4 lg:w-5 lg:h-5 text-white shrink-0" />
-                  <span className="text-sm md:text-base lg:text-lg font-normal">
-                    {item.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Car Image */}
-          <div className="flex justify-end mt-4 lg:mt-0">
-            <Image
-              src={carImage}
-              alt="Car with people illustration"
-              className="max-w-xs sm:max-w-sm md:max-w-md w-full h-auto"
-              priority
-            />
-          </div>
-        </div>
+      {/* Left Side - Hero Banner */}
+      <div className="flex-1 lg:flex-1">
+        {userKind === "DRIVER" ? (
+          <DriverAuthBanner onBack={() => router.back()} />
+        ) : (
+          <GarageAuthBanner onBack={() => router.back()} />
+        )}
       </div>
 
       {/* Right Side - Form */}

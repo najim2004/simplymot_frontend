@@ -4,3 +4,5 @@ export type { User } from "./store/auth.slice";
 export { default as AuthLoginForm } from "./components/AuthLoginForm";
 export { default as AuthRegisterForm } from "./components/AuthRegisterForm";
 export { default as ForgotPassword } from "./components/ForgotPassword";
+export { default as DriverAuthBanner } from "./components/DriverAuthBanner";
+export { default as GarageAuthBanner } from "./components/GarageAuthBanner";

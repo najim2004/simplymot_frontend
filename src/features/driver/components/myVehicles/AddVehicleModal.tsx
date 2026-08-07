@@ -1,8 +1,15 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 
 export interface AddVehicleForm {
@@ -30,16 +37,15 @@ export default function AddVehicleModal({
   brandColorHover = "#16b82e",
   registrationPattern = DEFAULT_REGISTRATION_PATTERN,
 }: AddVehicleModalProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<AddVehicleForm>();
+  const form = useForm<AddVehicleForm>({
+    defaultValues: {
+      registration_number: "",
+    },
+  });
 
   const handleClose = () => {
     onClose();
-    reset();
+    form.reset();
   };
 
   const handleFormSubmit = async (data: AddVehicleForm) => {
@@ -56,7 +62,7 @@ export default function AddVehicleModal({
       contentClassName="p-0"
       className="max-w-md"
     >
-      <div className="bg-white rounded-lg overflow-hidden h-[250px] flex flex-col">
+      <div className="bg-white rounded-lg overflow-hidden flex flex-col">
         {/* Header */}
         <div
           className={`bg-[${brandColor}] text-white p-4 flex items-center justify-between`}
@@ -65,57 +71,61 @@ export default function AddVehicleModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-5 flex-1">
-          <div className="space-y-4 flex flex-col h-full">
-            {/* Registration Number Input */}
-            <div className="space-y-2 flex-grow flex flex-col justify-center">
-              <Label
-                htmlFor="registration_number"
-                className="text-sm font-medium text-gray-700"
-              >
-                Registration Number
-              </Label>
-              <Input
-                id="registration_number"
-                type="text"
-                placeholder=""
-                className={`w-full py-3 text-base border-gray-300 focus:border-[${brandColor}] focus:ring-[${brandColor}] rounded-md`}
-                {...register("registration_number", {
+        <div className="p-5 flex-1">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleFormSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="registration_number"
+                rules={{
                   required: "Registration number is required",
                   pattern: {
                     value: registrationPattern,
                     message: "Invalid registration number format",
                   },
-                })}
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Registration Number <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="e.g. LV62RVL"
+                        className="py-6 px-4 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base rounded-lg font-mono uppercase"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.registration_number && (
-                <p className="text-red-500 text-sm">
-                  {errors.registration_number.message}
-                </p>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Button
-                type="button"
-                onClick={handleClose}
-                variant="outline"
-                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 text-sm rounded-md transition-all duration-200 cursor-pointer"
-              >
-                Close
-              </Button>
-
-              <Button
-                type="submit"
-                disabled={isAdding}
-                className={`w-full bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-3 text-sm rounded-md transition-all duration-200 cursor-pointer disabled:bg-[${brandColor}]/70 disabled:cursor-not-allowed`}
-              >
-                {isAdding ? "Adding..." : "Add Vehicle"}
-              </Button>
-            </div>
-          </div>
-        </form>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 text-sm rounded-lg cursor-pointer"
+                >
+                  Close
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isAdding}
+                  className={`w-full cursor-pointer bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-2.5 text-sm rounded-lg transition-all duration-200`}
+                >
+                  {isAdding ? "Adding..." : "Add Vehicle"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </CustomReusableModal>
   );

@@ -25,6 +25,9 @@ type ContactFormValues = {
   message: string;
 };
 
+const inputStyle =
+  "py-6 px-4 border border-gray-300 text-base rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32]";
+
 export default function ContactUs() {
   const { user } = useAppSelector((state) => state.auth);
 
@@ -82,16 +85,16 @@ export default function ContactUs() {
 
   return (
     <div className="flex justify-center items-center min-h-[80vh] py-8">
-      <div className="w-full max-w-lg rounded-lg border border-[#14A228] shadow-lg overflow-hidden">
+      <div className="w-full max-w-lg rounded-xl border border-[#19CA32] shadow-lg overflow-hidden">
         {/* Form Header */}
-        <div className="bg-[#14A228] text-white p-4">
+        <div className="bg-[#19CA32] text-white p-4">
           <h1 className="text-xl font-semibold">Contact Us</h1>
         </div>
 
         {/* Form Body using Shadcn UI Form */}
         <div className="p-6 bg-white">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               {/* Name Field */}
               <FormField
                 control={form.control}
@@ -105,17 +108,17 @@ export default function ContactUs() {
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Name
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Name <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter your name"
+                        className={inputStyle}
                         {...field}
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -133,18 +136,18 @@ export default function ContactUs() {
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Email
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Email <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="email"
                         placeholder="Enter your email"
+                        className={inputStyle}
                         {...field}
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -162,18 +165,18 @@ export default function ContactUs() {
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Phone Number
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Phone Number <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="tel"
                         placeholder="Enter your phone number"
+                        className={inputStyle}
                         {...field}
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -191,17 +194,17 @@ export default function ContactUs() {
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">
-                      Message
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Message <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Type your message here..."
+                        className="p-4 border border-gray-300 text-base rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] min-h-[120px] resize-none"
                         {...field}
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500 min-h-[120px] resize-none"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-red-500 text-sm" />
                   </FormItem>
                 )}
               />
@@ -209,12 +212,12 @@ export default function ContactUs() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full cursor-pointer bg-[#14A228] hover:bg-[#118821] text-white font-medium py-3 rounded-md mt-6"
+                className="w-full cursor-pointer bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold py-6 rounded-lg text-base mt-6 transition-all"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Sending...
                   </>
                 ) : (

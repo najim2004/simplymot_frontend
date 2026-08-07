@@ -6,8 +6,15 @@ import { Edit2, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useGetMeQuery, useUpdateProfileMutation } from "@/features/auth";
 import ProfileImageUpload from "./CommonImage";
 
@@ -38,7 +45,12 @@ const profileValidation = {
 };
 
 export default function MyProfile() {
-  const { data: profileResponse, isLoading, isError, refetch } = useGetMeQuery();
+  const {
+    data: profileResponse,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetMeQuery();
   const profile = profileResponse?.data || null;
 
   const [updateProfile, { isLoading: isUpdating, error: updateError }] =
@@ -70,7 +82,9 @@ export default function MyProfile() {
       };
       profileForm.reset(formValues);
       setProfileImage(
-        (profile as any).avatar_url || profile.avatar || "/api/placeholder/96/96",
+        (profile as any).avatar_url ||
+          profile.avatar ||
+          "/api/placeholder/96/96",
       );
     }
   }, [profile, profileForm]);
@@ -154,7 +168,10 @@ export default function MyProfile() {
         <CardContent className="p-6">
           <div className="text-center py-8">
             <p className="text-red-500 mb-4">Failed to load profile data.</p>
-            <Button onClick={refetch} className="bg-[#14A228] hover:bg-green-600">
+            <Button
+              onClick={refetch}
+              className="bg-[#14A228] hover:bg-green-600"
+            >
               Retry
             </Button>
           </div>
@@ -179,7 +196,7 @@ export default function MyProfile() {
       </CardHeader>
 
       <CardContent className="p-6">
-        {/* Profile Image Component (Unchanged) */}
+        {/* Profile Image Component */}
         <ProfileImageUpload
           profileImage={profileImage}
           onImageClick={handleImageClick}
@@ -194,98 +211,111 @@ export default function MyProfile() {
           </p>
         )}
 
-        <form
-          onSubmit={profileForm.handleSubmit(onProfileSubmit)}
-          className="space-y-5"
-        >
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-gray-700 font-medium">
-              Name
-            </Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Enter your name"
-              disabled={!isEditing}
-              className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
-                isEditing
-                  ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
-                  : "border-gray-300 bg-gray-50/80"
-              }`}
-              {...profileForm.register("name", profileValidation.name)}
-            />
-            {profileForm.formState.errors.name && (
-              <p className="text-sm text-red-500">
-                {profileForm.formState.errors.name.message}
-              </p>
-            )}
-          </div>
-
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-gray-700 font-medium">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              disabled={true}
-              className="py-6 border border-gray-300 text-base px-4 rounded-lg bg-gray-50/80 cursor-not-allowed opacity-80"
-              {...profileForm.register("email", profileValidation.email)}
-            />
-            {profileForm.formState.errors.email && (
-              <p className="text-sm text-red-500">
-                {profileForm.formState.errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Phone Field */}
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-gray-700 font-medium">
-              Phone Number
-            </Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="Enter your phone number"
-              disabled={!isEditing}
-              className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
-                isEditing
-                  ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
-                  : "border-gray-300 bg-gray-50/80"
-              }`}
-              {...profileForm.register("phone", profileValidation.phone)}
-            />
-            {profileForm.formState.errors.phone && (
-              <p className="text-sm text-red-500">
-                {profileForm.formState.errors.phone.message}
-              </p>
-            )}
-          </div>
-
-          {/* Single Save Button */}
-          <Button
-            type="submit"
-            disabled={!isEditing && !selectedFile}
-            className={`w-full cursor-pointer py-6 font-semibold text-base transition-all rounded-lg ${
-              isEditing || selectedFile
-                ? "bg-[#14A228] hover:bg-green-600 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+        <Form {...profileForm}>
+          <form
+            onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+            className="space-y-5"
           >
-            {isUpdating ? (
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Saving Changes...
-              </div>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </form>
+            {/* Name Field */}
+            <FormField
+              control={profileForm.control}
+              name="name"
+              rules={profileValidation.name}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700 font-medium">
+                    Name
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter your name"
+                      disabled={!isEditing}
+                      className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
+                        isEditing
+                          ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
+                          : "border-gray-300 bg-gray-50/80"
+                      }`}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Email Field */}
+            <FormField
+              control={profileForm.control}
+              name="email"
+              rules={profileValidation.email}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700 font-medium">
+                    Email
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email"
+                      disabled={true}
+                      className="py-6 border border-gray-300 text-base px-4 rounded-lg bg-gray-50/80 cursor-not-allowed opacity-80"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Phone Field */}
+            <FormField
+              control={profileForm.control}
+              name="phone"
+              rules={profileValidation.phone}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700 font-medium">
+                    Phone Number
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      disabled={!isEditing}
+                      className={`py-6 border border-gray-300 text-base px-4 rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] transition-colors ${
+                        isEditing
+                          ? "border-[#19CA32] bg-white ring-1 ring-[#19CA32]"
+                          : "border-gray-300 bg-gray-50/80"
+                      }`}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Single Save Button */}
+            <Button
+              type="submit"
+              disabled={!isEditing && !selectedFile}
+              className={`w-full cursor-pointer py-6 font-semibold text-base transition-all rounded-lg ${
+                isEditing || selectedFile
+                  ? "bg-[#14A228] hover:bg-green-600 text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              {isUpdating ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving Changes...
+                </div>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

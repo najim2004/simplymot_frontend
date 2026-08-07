@@ -23,50 +23,15 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
           post_code: params.postcode,
           page: params.page,
           limit: params.limit,
-          sort: params.sort_by === "PRICE_LOW_TO_HIGH" ? "price" : params.sort_by === "PRICE_HIGH_TO_LOW" ? "price" : "distance",
-          sort_order: params.sort_by === "PRICE_HIGH_TO_LOW" ? "DESC" : "ASC",
+          sort:
+            params.sort_by === "PRICE_LOW_TO_HIGH"
+              ? "price"
+              : params.sort_by === "PRICE_HIGH_TO_LOW"
+                ? "price"
+                : "distance",
+          sort_order: params.sort_by === "PRICE_HIGH_TO_LOW" ? "desc" : "asc",
         },
       }),
-      transformResponse: (response: any) => {
-        const data = response?.data || {};
-        const vehicle = data.vehicle || {};
-        const garages = data.garages || [];
-        const total = response?.meta_data?.total || 0;
-        const postcode = response?.meta_data?.post_code || "";
-
-        return {
-          success: true,
-          data: {
-            vehicle: {
-              registration_number: vehicle.registration_number || "",
-              make: vehicle.make || "",
-              model: vehicle.model || "",
-              color: vehicle.color || "",
-              fuel_type: vehicle.fuel_type || "",
-              mot_expiry_date: vehicle.mot_expiry_date || "",
-              exists_in_account: vehicle.exists_in_account ?? false,
-              vehicle_id: vehicle.id || "",
-            },
-            garages: garages.map((g: any) => ({
-              id: g.id,
-              garage_name: g.garage_name,
-              address: g.address,
-              postcode: g.post_code,
-              vts_number: g.vts_number,
-              primary_contact: g.primary_contact || "",
-              phone_number: g.phone_number,
-              avatar: g.garage_image || undefined,
-              distance_miles: g.distance_miles || 0,
-              mot_price: g.mot_price ? g.mot_price / 100 : 0,
-              has_class7: g.has_class7 ?? false,
-            })),
-          },
-          meta_data: {
-            total_count: total,
-            search_postcode: postcode,
-          },
-        };
-      },
       providesTags: ["Booking"],
     }),
 
@@ -95,12 +60,16 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
             id: servicesData.mot_retest.id,
             name: servicesData.mot_retest.title || "MOT Retest",
             type: "RETEST",
-            price: servicesData.mot_retest.price ? servicesData.mot_retest.price / 100 : 0,
+            price: servicesData.mot_retest.price
+              ? servicesData.mot_retest.price / 100
+              : 0,
             class_number: 4,
           });
         }
 
-        const additionals: Additional[] = (servicesData.other_services || []).map((s: any) => ({
+        const additionals: Additional[] = (
+          servicesData.other_services || []
+        ).map((s: any) => ({
           id: s.id,
           name: s.title || s.name || "",
           type: "ADDITIONAL",
@@ -228,7 +197,8 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
       query: ({ search, status, page, limit }) => {
         const params = new URLSearchParams();
         if (search) params.append("search", search);
-        if (status && status !== "all") params.append("status", status.toUpperCase());
+        if (status && status !== "all")
+          params.append("status", status.toUpperCase());
         params.append("page", page.toString());
         params.append("limit", limit.toString());
         return {
@@ -251,7 +221,9 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
             created_at: b.created_at,
             order_date: b.order_date || b.created_at,
             status: b.status,
-            total_amount: b.total_amount ? `£${(Number(b.total_amount) / 100).toFixed(2)}` : "£0.00",
+            total_amount: b.total_amount
+              ? `£${(Number(b.total_amount) / 100).toFixed(2)}`
+              : "£0.00",
             garage_id: b.garage_id,
             additional_services: b.additional_services,
             vehicle: {
@@ -280,10 +252,7 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
       providesTags: ["Booking"],
     }),
 
-    cancelMyBooking: builder.mutation<
-      any,
-      { id: string; reason: string }
-    >({
+    cancelMyBooking: builder.mutation<any, { id: string; reason: string }>({
       query: ({ id, reason }) => ({
         url: `/api/bookings/${id}/cancel`,
         method: "PATCH",

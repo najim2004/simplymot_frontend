@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/features/contact";
@@ -20,19 +27,18 @@ type ContactFormValues = {
   message: string;
 };
 
+const inputStyle =
+  "py-6 px-4 border border-gray-300 text-base rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32]";
+
 export default function ContactUs() {
   const [createContactMessage, { isLoading }] =
     useCreateContactMessageMutation();
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
-  const { data: authMeData } = useGetMeQuery(undefined, { skip: !isAuthenticated });
-  const [userData, setUserData] = useState<any>(null);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { data: authMeData } = useGetMeQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ContactFormValues>({
+  const form = useForm<ContactFormValues>({
     defaultValues: {
       garage_name: "",
       primary_contact_person_name: "",
@@ -45,9 +51,7 @@ export default function ContactUs() {
   useEffect(() => {
     if (isAuthenticated && authMeData?.success && authMeData?.data) {
       const responseData = authMeData.data;
-      setUserData(responseData);
-      // Pre-fill form with user data
-      reset({
+      form.reset({
         garage_name: responseData.garage_name || "",
         primary_contact_person_name: responseData.primary_contact || "",
         email: responseData.email || "",
@@ -55,23 +59,30 @@ export default function ContactUs() {
         message: "",
       });
     }
-  }, [isAuthenticated, authMeData, reset]);
+  }, [isAuthenticated, authMeData, form]);
 
   const onSubmit = async (data: ContactFormValues) => {
     try {
       const apiData = {
-        name: data.garage_name, // Map garage_name to name for DTO
+        name: data.garage_name,
         email: data.email,
         phone_number: data.phone_number,
         message: data.message,
-        primary_contact: data.primary_contact_person_name, // Optional field
+        primary_contact: data.primary_contact_person_name,
         source: "Garage",
       };
 
       const response = await createContactMessage(apiData).unwrap();
       toast.success(response.message || "Form submitted successfully");
-      reset();
-    } catch (error: any) {
+      form.reset({
+        garage_name: form.getValues("garage_name"),
+        primary_contact_person_name: form.getValues("primary_contact_person_name"),
+        email: form.getValues("email"),
+        phone_number: form.getValues("phone_number"),
+        message: "",
+      });
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string | string[] } };
       console.error("Error submitting form:", error);
       const errorMessage = Array.isArray(error?.data?.message)
         ? error.data.message.join(", ")
@@ -82,153 +93,177 @@ export default function ContactUs() {
 
   return (
     <div className="flex justify-center items-center min-h-[80vh] py-8">
-      <div className="w-full max-w-lg rounded-lg border border-[#14A228] shadow-lg">
-        <div className="bg-[#14A228] text-white p-4 rounded-t-lg">
-          <h1 className="text-xl font-inder font-semibold ">Contact Us</h1>
+      <div className="w-full max-w-lg rounded-xl border border-[#19CA32] shadow-lg overflow-hidden">
+        <div className="bg-[#19CA32] text-white p-4">
+          <h1 className="text-xl font-semibold">Contact Us</h1>
         </div>
-        <div className="p-6 bg-white rounded-b-lg">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="garage_name"
-                className="text-gray-700 font-medium"
-              >
-                Garage Name
-              </Label>
-              <Input
-                id="garage_name"
-                placeholder=""
-                {...register("garage_name", {
+
+        <div className="p-6 bg-white">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {/* Garage Name */}
+              <FormField
+                control={form.control}
+                name="garage_name"
+                rules={{
                   required: "Garage name is required",
                   minLength: {
                     value: 2,
                     message: "Garage name must be at least 2 characters",
                   },
-                })}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Garage Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter garage name"
+                        className={inputStyle}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.garage_name && (
-                <p className="text-red-500 text-sm">
-                  {errors.garage_name.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="primary_contact_person_name"
-                className="text-gray-700 font-medium"
-              >
-                Primary Contact Person Name
-              </Label>
-              <Input
-                id="primary_contact_person_name"
-                placeholder=""
-                {...register("primary_contact_person_name", {
+              {/* Primary Contact Person */}
+              <FormField
+                control={form.control}
+                name="primary_contact_person_name"
+                rules={{
                   required: "Primary contact person name is required",
                   minLength: {
                     value: 2,
-                    message:
-                      "Primary contact person name must be at least 2 characters",
+                    message: "Name must be at least 2 characters",
                   },
-                })}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Primary Contact Person Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter contact person name"
+                        className={inputStyle}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.primary_contact_person_name && (
-                <p className="text-red-500 text-sm">
-                  {errors.primary_contact_person_name.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-medium">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder=""
-                {...register("email", {
+              {/* Email */}
+              <FormField
+                control={form.control}
+                name="email"
+                rules={{
                   required: "Email is required",
                   pattern: {
                     value: /^\S+@\S+$/i,
                     message: "Please enter a valid email address",
                   },
-                })}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Email <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter email address"
+                        className={inputStyle}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email.message}</p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="phone_number"
-                className="text-gray-700 font-medium"
-              >
-                Phone Number
-              </Label>
-              <Input
-                id="phone_number"
-                type="tel"
-                placeholder=""
-                {...register("phone_number", {
+              {/* Phone Number */}
+              <FormField
+                control={form.control}
+                name="phone_number"
+                rules={{
                   required: "Phone number is required",
                   minLength: {
                     value: 10,
                     message: "Phone number must be at least 10 digits",
                   },
-                })}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Phone Number <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Enter phone number"
+                        className={inputStyle}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.phone_number && (
-                <p className="text-red-500 text-sm">
-                  {errors.phone_number.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="message" className="text-gray-700 font-medium">
-                Message
-              </Label>
-              <Textarea
-                id="message"
-                placeholder=""
-                {...register("message", {
+              {/* Message */}
+              <FormField
+                control={form.control}
+                name="message"
+                rules={{
                   required: "Message is required",
                   minLength: {
                     value: 10,
                     message: "Message must be at least 10 characters",
                   },
-                })}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500 min-h-[120px] resize-none"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700 block">
+                      Message <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Type your message here..."
+                        className="p-4 border border-gray-300 text-base rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] min-h-[120px] resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm" />
+                  </FormItem>
+                )}
               />
-              {errors.message && (
-                <p className="text-red-500 text-sm">{errors.message.message}</p>
-              )}
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full cursor-pointer bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-md mt-6"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send Message"
-              )}
-            </Button>
-            <p className="text-sm text-gray-500 text-center mt-4">
-              Our support hours are Monday to Friday, from 9:00am to 5:00pm.
-            </p>
-          </form>
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full cursor-pointer bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold py-6 rounded-lg text-base mt-6 transition-all"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Message"
+                )}
+              </Button>
+
+              <p className="text-sm text-gray-500 text-center mt-4">
+                Our support hours are Monday to Friday, from 9:00am to 5:00pm.
+              </p>
+            </form>
+          </Form>
         </div>
       </div>
     </div>

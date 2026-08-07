@@ -1,26 +1,38 @@
 export interface VehicleData {
+  id: string;
   registration_number: string;
   make: string;
   model: string;
-  color: string;
-  fuel_type: string;
-  mot_expiry_date: string;
-  exists_in_account: boolean;
-  vehicle_id: string;
+  color?: string | null;
+  fuel_type?: string | null;
+  engine_capacity?: number | null;
+  co2_emissions?: number | null;
+  mot_status?: string | null;
+  is_expired?: boolean;
+  mot_expiry_date?: string | null;
+  mot_last_checked_at?: string | null;
+  reminder_last_sent_at?: string | null;
+  year_of_manufacture?: number | null;
+  exists_in_account?: boolean;
+  vehicle_id?: string;
 }
 
 export interface GarageData {
   id: string;
   garage_name: string;
-  address: string;
-  postcode: string;
-  vts_number: string;
-  primary_contact: string;
-  phone_number: string;
-  avatar?: string;
-  email?: string;
-  distance_miles?: number;
-  mot_price?: number;
+  address?: string | null;
+  post_code?: string | null;
+  postcode?: string | null;
+  vts_number?: string | null;
+  primary_contact?: string | null;
+  phone_number?: string | null;
+  email?: string | null;
+  garage_image?: string | null;
+  avatar?: string | null;
+  mot_price?: number | null;
+  total_bookings?: number;
+  exact_post_code_match?: boolean;
+  distance_miles?: number | null;
   has_class7?: boolean;
 }
 
@@ -40,13 +52,23 @@ export interface SearchRequest {
 
 export interface SearchResponse {
   success: boolean;
+  message?: string;
   data: {
     vehicle: VehicleData;
     garages: GarageData[];
   };
   meta_data: {
-    total_count: number;
-    search_postcode: string;
+    page?: number;
+    limit?: number;
+    total?: number;
+    total_count?: number;
+    vehicle_registration_number?: string;
+    post_code?: string;
+    search_postcode?: string;
+    filters?: {
+      sort?: string;
+      sort_order?: string;
+    };
   };
 }
 

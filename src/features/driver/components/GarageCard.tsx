@@ -82,8 +82,8 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
               <div className="relative h-20 w-24 shrink-0 rounded-md overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
                 <Image
                   src={
-                    garage.avatar?.trim()
-                      ? garage.avatar
+                    (garage.garage_image || garage.avatar)?.trim()
+                      ? (garage.garage_image || garage.avatar)!
                       : DEFAULT_GARAGE_AVATAR_SRC
                   }
                   alt={garage.garage_name}
@@ -103,8 +103,8 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
                 <p className="flex items-center gap-1 text-[12px] text-gray-400 mt-0.5">
                   <Navigation className="w-3 h-3 shrink-0" />
                   {formatDistance(garage.distance_miles)
-                    ? `${formatDistance(garage.distance_miles)} · ${garage.postcode}`
-                    : garage.postcode}
+                    ? `${formatDistance(garage.distance_miles)} · ${garage.post_code || garage.postcode}`
+                    : (garage.post_code || garage.postcode)}
                 </p>
               </div>
               <div className="shrink-0 flex flex-col items-end gap-0.5">

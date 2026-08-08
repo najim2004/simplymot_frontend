@@ -19,14 +19,13 @@ import { cn } from "@/lib/utils";
 import {
   useGetGarageSlotsQuery,
   useBookSlotMutation,
-  type GarageData,
   type SlotItem,
 } from "@/features/driver";
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  garage: GarageData | null;
+  garage: { id: string } | null;
   vehicleId?: string;
   vehicleRegistrationNumber?: string;
 }
@@ -76,13 +75,9 @@ export default function BookingModal({
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!garage?.id || !vehicleId || !selectedSlot) {
+    if (!garage?.id || !selectedSlot) {
       toast.error(
-        !garage?.id
-          ? "Garage details missing."
-          : !vehicleId
-            ? "Vehicle missing."
-            : "Select a slot.",
+        !garage?.id ? "Garage details missing." : "Please select a slot.",
       );
       return;
     }
@@ -90,12 +85,13 @@ export default function BookingModal({
     try {
       const res = await bookSlot({
         garage_id: garage.id,
-        vehicle_id: vehicleId,
-        service_type: "MOT",
         additional_services: additionalServices || undefined,
-        start_time: selectedSlot.starts_at,
-        end_time: selectedSlot.ends_at,
-        date: formattedDateString,
+        ...(selectedSlot.id
+          ? { slot_id: selectedSlot.id }
+          : {
+              starts_at: selectedSlot.starts_at,
+              ends_at: selectedSlot.ends_at,
+            }),
       }).unwrap();
 
       if (res?.success !== false) {

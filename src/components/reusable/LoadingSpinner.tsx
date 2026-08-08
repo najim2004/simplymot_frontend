@@ -1,55 +1,89 @@
-"use client"
+"use client";
 
-import React from 'react'
+import React from "react";
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg'
-  text?: string
-  fullScreen?: boolean
+  size?: "sm" | "md" | "lg" | "xl";
+  text?: string;
+  fullScreen?: boolean;
 }
 
-export default function LoadingSpinner({ 
-  size = 'md', 
-  text = 'Loading...',
-  fullScreen = false 
+export default function LoadingSpinner({
+  size = "md",
+  text = "Loading...",
+  fullScreen = false,
 }: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-12 w-12',
-    lg: 'h-16 w-16'
-  }
+  const sizeMap = {
+    sm: { container: "w-8 h-8", text: "text-xs font-medium" },
+    md: { container: "w-14 h-14", text: "text-sm font-semibold" },
+    lg: { container: "w-20 h-20", text: "text-base font-bold" },
+    xl: { container: "w-28 h-28", text: "text-lg font-bold" },
+  };
 
-  const containerClass = fullScreen 
-    ? 'flex justify-center items-center min-h-screen bg-gray-50'
-    : 'flex justify-center items-center py-10'
+  const currentSize = sizeMap[size] || sizeMap.md;
+
+  const wrapperClasses = fullScreen
+    ? "fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/90 backdrop-blur-md"
+    : "w-full min-h-[calc(100vh-140px)] flex flex-col items-center justify-center p-6 my-auto flex-1";
 
   return (
-    <div className={containerClass}>
-      <div className="flex flex-col items-center space-y-4">
-        {/* Custom Spinner */}
-        <div className="relative">
-          {/* Outer ring */}
-          <div 
-            className={`${sizeClasses[size]} border-4 border-gray-200 rounded-full`}
+    <div className={wrapperClasses}>
+      <div className="flex flex-col items-center justify-center space-y-4 text-center my-auto">
+        {/* Perfectly Centered SVG Spinner */}
+        <div className="relative flex items-center justify-center">
+          {/* Subtle Ambient Glow */}
+          <div
+            className={`absolute rounded-full bg-[#19CA32]/25 blur-xl animate-pulse ${currentSize.container}`}
           />
-          {/* Animated spinner */}
-          <div 
-            className={`${sizeClasses[size]} border-4 border-[#19CA32] border-t-transparent rounded-full animate-spin absolute top-0 left-0`}
-          />
-          {/* Inner dot */}
-          <div 
-            className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${size === 'sm' ? 'h-2 w-2' : size === 'md' ? 'h-3 w-3' : 'h-4 w-4'} bg-[#19CA32] rounded-full animate-pulse`}
-          />
+
+          {/* SVG Circular Loader */}
+          <svg
+            className={`${currentSize.container} animate-spin text-[#19CA32] relative z-10`}
+            viewBox="0 0 50 50"
+          >
+            {/* Background Track */}
+            <circle
+              className="text-gray-200/80"
+              strokeWidth="4"
+              stroke="currentColor"
+              fill="transparent"
+              r="20"
+              cx="25"
+              cy="25"
+            />
+            {/* Animated Progress Arc */}
+            <circle
+              className="text-[#19CA32]"
+              strokeWidth="4"
+              strokeDasharray="80, 200"
+              strokeDashoffset="0"
+              strokeLinecap="round"
+              stroke="currentColor"
+              fill="transparent"
+              r="20"
+              cx="25"
+              cy="25"
+            />
+          </svg>
+
+          {/* Center Brand Pulse Dot */}
+          {size !== "sm" && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#19CA32] animate-ping opacity-75" />
+            </div>
+          )}
         </div>
-        
-        {/* Loading text */}
+
+        {/* Text */}
         {text && (
-          <div className="text-sm font-medium text-gray-600 animate-pulse">
+          <p
+            className={`${currentSize.text} text-gray-700 tracking-wide animate-pulse max-w-xs`}
+          >
             {text}
-          </div>
+          </p>
         )}
       </div>
     </div>
-  )
+  );
 }
 

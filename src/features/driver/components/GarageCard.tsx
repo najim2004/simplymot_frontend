@@ -33,32 +33,10 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
   const [selectedGarage, setSelectedGarage] = useState<GarageData | null>(null);
 
   const handleMoreDetails = (garageId: string) => {
-    saveBookMyMotResultsContext();
-    const params = new URLSearchParams();
-    params.set("id", garageId);
-    if (vehicle?.vehicle_id) params.set("vehicle_id", vehicle.vehicle_id);
-    if (vehicle?.registration_number)
-      params.set("registration", vehicle.registration_number);
-    const mainPostcode = new URLSearchParams(window.location.search).get(
-      "postcode",
-    );
-    if (mainPostcode) params.set("postcode", mainPostcode);
-    const sortBy = new URLSearchParams(window.location.search).get("sort_by");
-    if (sortBy) params.set("sort_by", sortBy);
-    router.push(`/driver/book-my-mot/details?${params.toString()}`);
+    router.push(`/driver/book-my-mot/details?id=${garageId}`);
   };
 
   const handleBookNow = (garage: GarageData) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("garage_id", garage.id);
-    if (vehicle?.vehicle_id) params.set("vehicle_id", vehicle.vehicle_id);
-    if (vehicle?.registration_number)
-      params.set("registration", vehicle.registration_number);
-    window.history.pushState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`,
-    );
     setSelectedGarage(garage);
     setIsBookingModalOpen(true);
   };

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/features/auth/store/auth.slice";
 import { resetReduxStore } from "@/lib/resetReduxStore";
+import { removeCookie } from "@/lib/cookies";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,9 +30,8 @@ export const UserMenu: React.FC = () => {
 
   const handleLogout = () => {
     resetReduxStore();
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-    }
+    removeCookie("access_token");
+    removeCookie("user_kind");
     dispatch(logout());
     router.push("/login/driver");
   };

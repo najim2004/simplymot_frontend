@@ -44,6 +44,8 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+import { removeCookie } from "@/lib/cookies";
+
 export default function Sidebar({ onClose }: SidebarProps) {
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -52,9 +54,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
   const handleLogout = () => {
     resetReduxStore();
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-    }
+    removeCookie("access_token");
+    removeCookie("user_kind");
     dispatch(logoutAction());
     router.push("/login/driver");
   };

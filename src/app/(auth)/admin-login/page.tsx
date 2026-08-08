@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useLoginMutation, useLazyGetMeQuery } from "@/features/auth/api/auth.api";
 import { setUser, setLoading as setAuthLoading, User } from "@/features/auth/store/auth.slice";
 import { useAppDispatch } from "@/store/hooks";
+import { setCookie } from "@/lib/cookies";
 
 interface FormData {
   email: string;
@@ -44,10 +45,9 @@ export default function AdminLogin() {
         email: data.email,
         password: data.password,
         type: "ADMIN",
-      } as any).unwrap();
-
       if (res.authorization?.token) {
-        localStorage.setItem("token", res.authorization.token);
+        setCookie("access_token", res.authorization.token);
+        setCookie("user_kind", "ADMIN");
       }
 
       let userDetails = null;

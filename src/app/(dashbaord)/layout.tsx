@@ -1,17 +1,14 @@
-import DashboardLayout from '@/components/reusable/Dashboard/MainLayout/DashboardLayout'
-import { RouteProtection } from '@/lib/routeProtection'
-import { SubscriptionProtection } from '@/lib/subscriptionProtection'
+import DashboardLayout from "@/components/reusable/Dashboard/MainLayout/DashboardLayout";
+import { SubscriptionProtection } from "@/lib/subscriptionProtection";
 
 export default function DashboardLayoutWrapper({
-    children,
+  children,
 }: {
-    children: React.ReactNode
+  children: React.ReactNode;
 }) {
-    return (
-        <RouteProtection>
-            <SubscriptionProtection>
-                <DashboardLayout>{children}</DashboardLayout>
-            </SubscriptionProtection>
-        </RouteProtection>
-    )
+  return (
+    <SubscriptionProtection>
+      <DashboardLayout>{children}</DashboardLayout>
+    </SubscriptionProtection>
+  );
 }

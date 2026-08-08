@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { GarageItem, RoleItem, SubscriptionItem } from "../types/auth.types";
+import { removeCookie } from "@/lib/cookies";
 
 export interface User {
   id: string;
@@ -51,6 +52,8 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.isLoading = false;
+      removeCookie("access_token");
+      removeCookie("user_kind");
     },
   },
 });

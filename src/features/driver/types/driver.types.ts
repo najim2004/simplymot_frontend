@@ -169,21 +169,69 @@ export interface GarageSlotsApiResponse {
   data?: GarageSlotsData;
 }
 
+export interface MotServiceItem {
+  id: string;
+  title: string;
+  price: string | number;
+  type: string;
+  vehicle_class?: string;
+}
+
+export interface MotClassGroup {
+  vehicle_class: string;
+  mot?: MotServiceItem;
+  mot_retest?: MotServiceItem;
+}
+
+export interface OtherServiceItem {
+  id: string;
+  title: string;
+  price: string | number;
+  type: string;
+  vehicle_class?: string | null;
+}
+
+export interface ScheduleIntervalItem {
+  id: string;
+  day_of_week: string;
+  is_closed: boolean;
+  slot_duration: number;
+  buffer_time?: number;
+  open_time: string | null;
+  close_time: string | null;
+}
+
+export interface GarageDetailsData {
+  id: string;
+  garage_name: string;
+  vts_number?: string;
+  contact_email?: string;
+  phone_number?: string;
+  address?: string;
+  post_code?: string;
+  garage_image?: string | null;
+  services?: {
+    mot_services?: MotClassGroup[];
+    other_services?: OtherServiceItem[];
+  };
+  schedule?: {
+    id?: string;
+    schedule_intervals?: ScheduleIntervalItem[];
+  };
+}
+
 export interface GarageServicesApiResponse {
   success: boolean;
   message?: string;
-  data?: Record<string, unknown>;
+  data?: GarageDetailsData;
 }
 
 export interface BookSlotRequest {
   garage_id: string;
-  vehicle_id: string;
-  service_type: string;
-  additional_services?: string;
   slot_id?: string;
-  start_time?: string;
-  end_time?: string;
-  date?: string;
+  starts_at?: string;
+  ends_at?: string;
+  additional_services?: string;
 }
 
 export interface BookSlotResponse {

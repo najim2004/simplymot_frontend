@@ -66,11 +66,11 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
   }, [isAuthenticated, isLoading, user, pathname, router]);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner fullScreen />;
   }
 
   if (!isAuthenticated && !pathname.startsWith("/driver/book-my-mot")) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner fullScreen />;
   }
 
   if (user) {
@@ -80,17 +80,17 @@ export const RouteProtection: React.FC<RouteProtectionProps> = ({
     const isAdminRoute = pathname.startsWith("/admin");
 
     if (isDriverRoute && userKind !== "DRIVER" && userKind !== "USER") {
-      return <LoadingSpinner />;
+      return <LoadingSpinner fullScreen />;
     }
     if (isGarageRoute && userKind !== "GARAGE") {
-      return <LoadingSpinner />;
+      return <LoadingSpinner fullScreen />;
     }
     if (
       isAdminRoute &&
       userKind !== "ADMIN" &&
       !user.roles?.some((r) => r.name?.toLowerCase().includes("admin"))
     ) {
-      return <LoadingSpinner />;
+      return <LoadingSpinner fullScreen />;
     }
   }
 

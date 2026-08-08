@@ -9,6 +9,8 @@ import {
   PasswordChangeRequest,
 } from "../types";
 
+import { setCookie, removeCookie } from "@/lib/cookies";
+
 export * from "../types";
 
 export const authApi = apiSlice.injectEndpoints({
@@ -24,15 +26,16 @@ export const authApi = apiSlice.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           const token = data.authorization?.access_token || data.authorization?.token;
-          if (token && typeof window !== "undefined") {
-            localStorage.setItem("token", token);
-            localStorage.setItem("access_token", token);
+          if (token) {
+            setCookie("access_token", token);
           }
           if (data.user) {
+            const userKind = data.user.kind || data.type || "DRIVER";
+            setCookie("user_kind", userKind);
             const userObj: User = {
               ...(data.user as unknown as User),
-              type: data.user.kind || data.type || "DRIVER",
-              kind: data.user.kind || data.type || "DRIVER",
+              type: userKind,
+              kind: userKind,
             };
             dispatch(setUser(userObj));
           }
@@ -49,20 +52,22 @@ export const authApi = apiSlice.injectEndpoints({
           const { data } = await queryFulfilled;
           if (data?.data) {
             const userData = data.data;
+            const userKind = userData.kind || userData.type || "DRIVER";
+            setCookie("user_kind", userKind);
             const userObj: User = {
               ...(userData as unknown as User),
-              type: userData.kind || userData.type || "DRIVER",
-              kind: userData.kind || userData.type || "DRIVER",
+              type: userKind,
+              kind: userKind,
             };
             dispatch(setUser(userObj));
           } else {
+            removeCookie("access_token");
+            removeCookie("user_kind");
             dispatch(setUser(null));
           }
         } catch {
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("token");
-            localStorage.removeItem("access_token");
-          }
+          removeCookie("access_token");
+          removeCookie("user_kind");
           dispatch(setUser(null));
         }
       },

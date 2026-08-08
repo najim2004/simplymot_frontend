@@ -16,20 +16,43 @@ import {
   BookMyMotResultsSection,
 } from "@/features/driver/components/bookMyMot";
 
+// --- Helper Utilities ---
+function formatMotExpiryDate(date: string) {
+  if (!date) return "N/A";
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime())
+    ? date
+    : parsedDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+}
+
+function parseApiErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "data" in error) {
+    const msg = (error as { data?: { message?: string | string[] } }).data?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+  }
+  return "Failed to search data. Please try again.";
+}
+
 function BookMyMOTContent() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParamsFromURL = useSearchParams();
+  const searchParams = useSearchParams();
   const { user } = useAppSelector((state) => state.auth);
 
-  const registrationFromURL = searchParamsFromURL?.get("registration") || "";
-  const postcodeFromURL = searchParamsFromURL?.get("postcode") || "";
-  const pageFromURL = Number(searchParamsFromURL?.get("page")) || 1;
-  const limitFromURL = Number(searchParamsFromURL?.get("limit")) || 10;
-  const sortByFromURL = searchParamsFromURL?.get("sort_by") || GarageSortBy.DISTANCE;
+  // Extract search parameters from URL
+  const registration = searchParams?.get("registration") || "";
+  const postcode = searchParams?.get("postcode") || "";
+  const page = Number(searchParams?.get("page")) || 1;
+  const limit = Number(searchParams?.get("limit")) || 10;
+  const sortBy = (searchParams?.get("sort_by") || GarageSortBy.DISTANCE) as GarageSortBy;
 
   const shouldShowMotExpiry = Boolean(user?.id);
-  const isSearchActive = !!(registrationFromURL && postcodeFromURL);
+  const isSearchActive = Boolean(registration && postcode);
 
   const resultsRef = useRef<HTMLDivElement>(null);
   const pendingScrollRestore = useRef<number | null>(null);
@@ -38,101 +61,68 @@ function BookMyMOTContent() {
     pendingScrollRestore.current = consumeBookMyMotScrollPosition();
   }, []);
 
-  const formatMotExpiryDate = (date: string) => {
-    if (!date) return "N/A";
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) return date;
-    return parsedDate.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  // Discover API Query (API handles sorting, pagination, and vehicle/garage discovery)
+  // Discover API Query (handles sorting, pagination, vehicle & garage discovery)
   const { data, isLoading, error, refetch, isFetching } =
     useSearchVehiclesAndGaragesQuery(
-      {
-        registration_number: registrationFromURL,
-        postcode: postcodeFromURL,
-        page: pageFromURL,
-        limit: limitFromURL,
-        sort_by: sortByFromURL as GarageSortBy,
-      },
-      {
-        skip: !isSearchActive,
-      },
+      { registration_number: registration, postcode, page, limit, sort_by: sortBy },
+      { skip: !isSearchActive }
     );
 
-  // Directly derived data from API response to avoid stale local state
-  const vehicle = isSearchActive ? (data?.data?.vehicle || null) : null;
-  const garages = isSearchActive ? (data?.data?.garages || []) : [];
+  const vehicle = isSearchActive ? data?.data?.vehicle || null : null;
+  const garages = isSearchActive ? data?.data?.garages || [] : [];
+  const showResults = isSearchActive && (vehicle !== null || garages.length > 0);
 
   // Scroll restoration on search finish
   useEffect(() => {
-    if (isSearchActive && data && !isFetching) {
-      const savedScroll = pendingScrollRestore.current;
-      if (savedScroll !== null) {
-        pendingScrollRestore.current = null;
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: savedScroll, behavior: "auto" });
-        });
-      } else {
-        resultsRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
+    if (!isSearchActive || !data || isFetching) return;
+
+    const savedScroll = pendingScrollRestore.current;
+    if (savedScroll !== null) {
+      pendingScrollRestore.current = null;
+      requestAnimationFrame(() => window.scrollTo({ top: savedScroll, behavior: "auto" }));
+    } else {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [data, isFetching, isSearchActive]);
 
   // Handle search errors
   useEffect(() => {
     if (error) {
-      let errorMessage = "Failed to search data. Please try again.";
-      if ("data" in error && (error.data as any)?.message) {
-        const msg = (error.data as any).message;
-        if (Array.isArray(msg)) {
-          errorMessage = msg.join(", ");
-        } else {
-          errorMessage =
-            typeof msg === "string" ? msg : msg.message || errorMessage;
-        }
-      }
-      toast.error(errorMessage, { toastId: "search-api-error" });
+      toast.error(parseApiErrorMessage(error), { toastId: "search-api-error" });
     }
   }, [error]);
 
-  const handleSearchSubmit = (registration: string, postcode: string) => {
-    const normalizedReg = normalizeRegistration(registration);
-    if (registrationFromURL === normalizedReg && postcodeFromURL === postcode) {
+  // Helper to push URL param changes cleanly
+  const updateURLParams = (updates: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams?.toString());
+    Object.entries(updates).forEach(([key, val]) => params.set(key, val));
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleSearchSubmit = (newReg: string, newPostcode: string) => {
+    const normalizedReg = normalizeRegistration(newReg);
+    if (registration === normalizedReg && postcode === newPostcode) {
       refetch();
     } else {
-      const params = new URLSearchParams(searchParamsFromURL?.toString());
-      params.set("registration", normalizedReg);
-      params.set("postcode", postcode);
-      params.set("page", "1");
-      params.set("limit", String(limitFromURL));
-      params.set("sort_by", sortByFromURL);
-
-      router.push(`${pathname}?${params.toString()}`);
+      updateURLParams({
+        registration: normalizedReg,
+        postcode: newPostcode,
+        page: "1",
+        limit: String(limit),
+        sort_by: sortBy,
+      });
     }
   };
 
   const handleSortChange = (newSortBy: string) => {
-    const params = new URLSearchParams(searchParamsFromURL?.toString());
-    params.set("sort_by", newSortBy);
-    router.push(`${pathname}?${params.toString()}`);
+    updateURLParams({ sort_by: newSortBy });
   };
-
-  const showResults = isSearchActive && (vehicle !== null || garages.length > 0);
 
   return (
     <div className="w-full mx-auto">
-      {/* Search Header Form Component */}
       <BookMyMotSearchForm
-        defaultRegistration={registrationFromURL}
-        defaultPostcode={postcodeFromURL}
+        defaultRegistration={registration}
+        defaultPostcode={postcode}
         isLoading={isLoading}
         isFetching={isFetching}
         showResults={showResults}
@@ -142,13 +132,12 @@ function BookMyMOTContent() {
         formatMotExpiryDate={formatMotExpiryDate}
       />
 
-      {/* Results Section Component */}
       <BookMyMotResultsSection
         resultsRef={resultsRef}
         showResults={showResults}
         vehicle={vehicle}
         garages={garages}
-        currentSortBy={sortByFromURL}
+        currentSortBy={sortBy}
         onSortChange={handleSortChange}
       />
     </div>
@@ -168,3 +157,4 @@ export default function BookMyMOT() {
     </Suspense>
   );
 }
+

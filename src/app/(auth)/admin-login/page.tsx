@@ -1,100 +1,76 @@
 "use client";
+
 import React, { useState } from "react";
 import bgImage from "@/public/Image/register/bgImage.png";
 import carImage from "@/public/Image/register/registerLargeImg.png";
 import Link from "next/link";
-import { ArrowLeft, EyeOff } from "lucide-react";
-import { Eye } from "lucide-react";
-import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { toast } from "react-toastify";
+import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useRouter } from "next/navigation";
-import { useLoginMutation, useLazyGetMeQuery } from "@/features/auth/api/auth.api";
-import { setUser, setLoading as setAuthLoading, User } from "@/features/auth/store/auth.slice";
+import { useLoginMutation } from "@/features/auth/api/auth.api";
+import { setLoading as setAuthLoading } from "@/features/auth/store/auth.slice";
 import { useAppDispatch } from "@/store/hooks";
-import { setCookie } from "@/lib/cookies";
 
-interface FormData {
+interface LoginFormData {
   email: string;
   password: string;
-  agreeToTerms: boolean;
 }
 
 export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
-  const [login] = useLoginMutation();
-  const [triggerGetMe] = useLazyGetMeQuery();
-  const dispatch = useAppDispatch();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
-  const onSubmit = async (data: FormData) => {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const [login] = useLoginMutation();
+
+  const form = useForm<LoginFormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
       dispatch(setAuthLoading(true));
-      const res = await login({
+      await login({
         email: data.email,
         password: data.password,
         type: "ADMIN",
-      if (res.authorization?.token) {
-        setCookie("access_token", res.authorization.token);
-        setCookie("user_kind", "ADMIN");
-      }
+      }).unwrap();
 
-      let userDetails = null;
-      try {
-        userDetails = await triggerGetMe().unwrap();
-      } catch (e) {
-        console.warn("AuthMe fallback");
-      }
-
-      const userObj: User = userDetails?.data
-        ? {
-            id: userDetails.data.id,
-            email: userDetails.data.email,
-            name: userDetails.data.name,
-            type: userDetails.data.type,
-            avatar_url: userDetails.data.avatar_url || undefined,
-            garage_name: userDetails.data.garage_name || undefined,
-          }
-        : {
-            id: "temp-id",
-            email: data.email,
-            name: "Admin User",
-            type: "ADMIN",
-          };
-
-      dispatch(setUser(userObj));
       toast.success("Login successful");
       router.push("/admin/dashboard");
-    } catch (error: any) {
-      toast.error(error.data?.message || error.message || "Login failed");
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string }; message?: string };
+      const msg = error.data?.message || error.message || "Login failed";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
       dispatch(setAuthLoading(false));
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleBack = () => {
-    router.back();
-  };
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row p-4  gap-4">
+    <div className="min-h-screen flex flex-col lg:flex-row p-4 gap-4">
+      {/* Left Side Banner */}
       <div
-        className="flex-1 lg:flex-1 text-white relative overflow-hidden rounded-2xl min-h-[50vh] lg:min-h-full"
+        className="flex-1 text-white relative overflow-hidden rounded-2xl min-h-[50vh] lg:min-h-full"
         style={{
           backgroundImage: `url(${bgImage.src})`,
           backgroundSize: "cover",
@@ -103,14 +79,12 @@ export default function AdminLogin() {
       >
         <div className="relative z-10 p-6 lg:p-12 flex flex-col h-full">
           <div className="flex-shrink-0">
-            {/* back button */}
             <button
-              onClick={handleBack}
-              className="flex justify-start cursor-pointer border border-white  rounded-full p-2 w-fit group mb-4"
+              type="button"
+              onClick={() => router.back()}
+              className="flex justify-start cursor-pointer border border-white rounded-full p-2 w-fit group mb-4"
             >
-              <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white flex-shrink-0" />
-              </div>
+              <ArrowLeft className="w-4 h-4 text-white flex-shrink-0 group-hover:scale-125 transition-transform duration-200" />
             </button>
 
             <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center">
@@ -121,7 +95,7 @@ export default function AdminLogin() {
           <div className="flex-1 flex justify-center items-center min-h-0">
             <Image
               src={carImage}
-              alt="Car with people illustration"
+              alt="Car illustration"
               className="max-w-sm md:max-w-2xl w-full h-auto object-contain"
               priority
             />
@@ -131,107 +105,111 @@ export default function AdminLogin() {
 
       {/* Right Side - Form */}
       <div className="flex-1 lg:flex-1 flex items-center justify-center rounded-2xl">
-        <div className="w-full max-w-full  lg:max-w-lg xl:max-w-xl">
-          <div className="bg-white rounded-xl border border-[#19CA32]  p-8 sm:p-10 ">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10">
+        <div className="w-full max-w-full lg:max-w-lg xl:max-w-xl">
+          <div className="bg-white rounded-xl border border-[#19CA32] p-8 sm:p-10 lg:p-12">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10 text-center">
               Admin Login
             </h2>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 ">
-              {/* Email Field */}
-              <div>
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-medium text-gray-700 mb-2 block"
-                >
-                  Email <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="mt-2 py-5 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
-                  {...register("email", {
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4 sm:space-y-5"
+              >
+                {/* Email Field */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  rules={{
                     required: "Email is required",
                     pattern: {
-                      value: /^\S+@\S+$/i,
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                       message: "Invalid email address",
                     },
-                  })}
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 block">
+                        Email <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="email@example.com"
+                          className="mt-2 py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm" />
+                    </FormItem>
+                  )}
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-2">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
 
-              {/* Password Field */}
-              <div>
-                <Label
-                  htmlFor="password"
-                  className="text-sm font-medium text-gray-700 mb-2 block"
-                >
-                  Password <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative mt-2">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    className="py-5 pr-12 border border-[#19CA32] focus:border-[#19CA32] focus:ring-[#19CA32] text-base px-4 rounded-lg"
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: {
-                        value: 8,
-                        message: "Password must be at least 8 characters",
-                      },
-                    })}
-                  />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-[#19CA32] cursor-pointer" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-[#19CA32] cursor-pointer" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-2">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-              {/* forget password */}
-              <div className="flex justify-end ">
-                <Link
-                  href="/forgot-password"
-                  className="text-[#19CA32] underline  text-sm hover:scale-105 transition-all duration-300"
-                >
-                  Forgot Password
-                </Link>
-              </div>
+                {/* Password Field */}
+                <FormField
+                  control={form.control}
+                  name="password"
+                  rules={{
+                    required: "Password is required",
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel className="text-sm font-medium text-gray-700 block">
+                          Password <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Link
+                          href="/forgot-password"
+                          className="text-xs font-semibold text-[#19CA32] hover:underline"
+                        >
+                          Forgot Password?
+                        </Link>
+                      </div>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            className="py-6 pr-12 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5 text-[#19CA32]" />
+                            ) : (
+                              <Eye className="h-5 w-5 text-[#19CA32]" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage className="text-red-500 text-sm mt-2" />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full cursor-pointer bg-[#19CA32] hover:bg-[#19CA32] disabled:bg-[#19CA32]/70 disabled:cursor-not-allowed text-white py-5 rounded-lg font-medium text-base transition-all duration-200  hover:shadow-lg hover:shadow-green-500"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Please wait...</span>
-                  </div>
-                ) : (
-                  "Log In"
-                )}
-              </Button>
-            </form>
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full cursor-pointer bg-[#19CA32] hover:bg-[#19CA32]/90 disabled:bg-[#19CA32]/70 disabled:cursor-not-allowed text-white py-6 rounded-lg font-medium text-base transition-all duration-200 hover:shadow-lg hover:shadow-green-500/20 disabled:hover:shadow-none"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    "Sign in"
+                  )}
+                </Button>
+              </form>
+            </Form>
           </div>
         </div>
       </div>

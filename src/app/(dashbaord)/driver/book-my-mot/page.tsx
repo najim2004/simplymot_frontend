@@ -31,7 +31,8 @@ function formatMotExpiryDate(date: string) {
 
 function parseApiErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "data" in error) {
-    const msg = (error as { data?: { message?: string | string[] } }).data?.message;
+    const msg = (error as { data?: { message?: string | string[] } }).data
+      ?.message;
     if (Array.isArray(msg)) return msg.join(", ");
     if (typeof msg === "string") return msg;
   }
@@ -49,7 +50,8 @@ function BookMyMOTContent() {
   const postcode = searchParams?.get("postcode") || "";
   const page = Number(searchParams?.get("page")) || 1;
   const limit = Number(searchParams?.get("limit")) || 10;
-  const sortBy = (searchParams?.get("sort_by") || GarageSortBy.DISTANCE) as GarageSortBy;
+  const sortBy = (searchParams?.get("sort_by") ||
+    GarageSortBy.DISTANCE) as GarageSortBy;
 
   const shouldShowMotExpiry = Boolean(user?.id);
   const isSearchActive = Boolean(registration && postcode);
@@ -64,13 +66,20 @@ function BookMyMOTContent() {
   // Discover API Query (handles sorting, pagination, vehicle & garage discovery)
   const { data, isLoading, error, refetch, isFetching } =
     useSearchVehiclesAndGaragesQuery(
-      { registration_number: registration, postcode, page, limit, sort_by: sortBy },
-      { skip: !isSearchActive }
+      {
+        registration_number: registration,
+        postcode,
+        page,
+        limit,
+        sort_by: sortBy,
+      },
+      { skip: !isSearchActive },
     );
 
   const vehicle = isSearchActive ? data?.data?.vehicle || null : null;
   const garages = isSearchActive ? data?.data?.garages || [] : [];
-  const showResults = isSearchActive && (vehicle !== null || garages.length > 0);
+  const showResults =
+    isSearchActive && (vehicle !== null || garages.length > 0);
 
   // Scroll restoration on search finish
   useEffect(() => {
@@ -79,9 +88,14 @@ function BookMyMOTContent() {
     const savedScroll = pendingScrollRestore.current;
     if (savedScroll !== null) {
       pendingScrollRestore.current = null;
-      requestAnimationFrame(() => window.scrollTo({ top: savedScroll, behavior: "auto" }));
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: savedScroll, behavior: "auto" }),
+      );
     } else {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }, [data, isFetching, isSearchActive]);
 
@@ -157,4 +171,3 @@ export default function BookMyMOT() {
     </Suspense>
   );
 }
-

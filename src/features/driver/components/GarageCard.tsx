@@ -104,7 +104,7 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
                   <Navigation className="w-3 h-3 shrink-0" />
                   {formatDistance(garage.distance_miles)
                     ? `${formatDistance(garage.distance_miles)} · ${garage.post_code || garage.postcode}`
-                    : (garage.post_code || garage.postcode)}
+                    : garage.post_code || garage.postcode}
                 </p>
               </div>
               <div className="shrink-0 flex flex-col items-end gap-0.5">

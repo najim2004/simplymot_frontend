@@ -129,24 +129,142 @@ export interface Additional {
   type: string;
 }
 
-export interface GarageServicesResponse {
-  garage: GarageServiceGarage;
-  services: Service[];
-  additionals: Additional[];
-  schedule: Schedule;
+export interface SlotItem {
+  id?: string;
+  starts_at: string;
+  ends_at: string;
+  source?: string;
+  status?: string;
+  bookable?: boolean;
+  description?: string | null;
 }
 
-export interface Slot {
+export interface GarageSlotsData {
+  garage_id?: string;
+  schedule_id?: string;
+  date?: string;
+  day_of_week?: string;
+  is_closed?: boolean;
+  is_holiday?: boolean;
+  holiday_name?: string | null;
+  slot_duration?: number;
+  buffer_time?: number;
+  open_time?: string;
+  close_time?: string;
+  slots: SlotItem[];
+  summary?: {
+    total_slots?: number;
+    past_slots?: number;
+    break_slots?: number;
+    available_slots?: number;
+    booked_slots?: number;
+    blocked_slots?: number;
+    bookable_slots?: number;
+  };
+}
+
+export interface GarageSlotsApiResponse {
+  success: boolean;
+  message?: string;
+  data?: GarageSlotsData;
+}
+
+export interface GarageServicesApiResponse {
+  success: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface BookSlotRequest {
+  garage_id: string;
+  vehicle_id: string;
+  service_type: string;
+  additional_services?: string;
+  slot_id?: string;
+  start_time?: string;
+  end_time?: string;
+  date?: string;
+}
+
+export interface BookSlotResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    id?: string;
+    order_id?: string;
+    total_amount?: number | string;
+    status?: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface GetMyBookingsRequest {
+  search: string;
+  status: string;
+  page: number;
+  limit: number;
+}
+
+export interface BookingRecord {
   id: string;
-  start_time: string;
-  end_time: string;
-  date: string;
-  status?: string[];
-  has_id: boolean;
+  created_at: string;
+  order_date?: string;
+  status: string;
+  total_amount?: number | string;
+  garage_id: string;
+  additional_services?: string;
+  vehicle?: {
+    id: string;
+    registration_number: string;
+    make?: string;
+    model?: string;
+  };
+  garage?: {
+    id: string;
+    garage_name: string;
+    address?: string;
+    phone_number?: string;
+    avatar?: string;
+    garage_image?: string;
+  };
+  slot?: {
+    starts_at?: string;
+    ends_at?: string;
+    start_time?: string;
+    end_time?: string;
+    date?: string;
+  };
 }
 
-export interface GarageSlotsResponse {
-  slots: Slot[];
+export interface GetMyBookingsResponse {
+  success: boolean;
+  message?: string;
+  data?: BookingRecord[];
+  meta_data?: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export interface CancelMyBookingRequest {
+  id: string;
+  reason: string;
+}
+
+export interface RescheduleMyBookingRequest {
+  id: string;
+  slot_id?: string;
+  date?: string;
+  start_time?: string;
+  end_time?: string;
+  reason?: string;
+}
+
+export interface BookingMutationResponse {
+  success: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
 }
 
 export interface ApiVehicle {

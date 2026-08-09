@@ -24,6 +24,13 @@ interface ProfileFormData {
   phone: string;
 }
 
+interface ApiErrorResponse {
+  data?: {
+    message?: string;
+  };
+  message?: string;
+}
+
 const profileValidation = {
   name: {
     required: "Name is required",
@@ -82,9 +89,7 @@ export default function MyProfile() {
       };
       profileForm.reset(formValues);
       setProfileImage(
-        (profile as any).avatar_url ||
-          profile.avatar ||
-          "/api/placeholder/96/96",
+        profile.avatar || "/api/placeholder/96/96",
       );
     }
   }, [profile, profileForm]);
@@ -108,36 +113,37 @@ export default function MyProfile() {
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     try {
-      let payload: any;
+      let payload: FormData | { name: string; email: string; phone: string; image?: string };
       if (selectedFile) {
-        payload = new FormData();
-        payload.append("name", data.name);
-        payload.append("email", data.email);
-        payload.append("phone", data.phone);
-        payload.append("image", selectedFile);
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("email", data.email);
+        formData.append("phone", data.phone);
+        formData.append("image", selectedFile);
+        payload = formData;
       } else {
-        payload = {
+        const currentAvatar = profile?.avatar;
+        const jsonPayload: { name: string; email: string; phone: string; image?: string } = {
           name: data.name,
           email: data.email,
           phone: data.phone,
         };
-        if (
-          profileImage &&
-          profileImage !== ((profile as any)?.avatar_url || profile?.avatar)
-        ) {
-          payload.image = profileImage;
+        if (profileImage && profileImage !== currentAvatar) {
+          jsonPayload.image = profileImage;
         }
+        payload = jsonPayload;
       }
       await updateProfile(payload).unwrap();
       await refetch();
       setIsEditing(false);
       setSelectedFile(null);
       toast.success("Profile updated successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating profile:", error);
+      const apiErr = error as ApiErrorResponse;
       toast.error(
-        error.data?.message ||
-          error.message ||
+        apiErr.data?.message ||
+          apiErr.message ||
           "Failed to update profile. Please try again.",
       );
     }
@@ -180,6 +186,8 @@ export default function MyProfile() {
     );
   }
 
+  const typedUpdateError = updateError as ApiErrorResponse | undefined;
+
   return (
     <Card className="shadow-sm">
       {/* Header with single Edit Profile Toggle Button */}
@@ -205,9 +213,9 @@ export default function MyProfile() {
           onImageError={() => setProfileImage("")}
         />
 
-        {updateError && (
+        {typedUpdateError && (
           <p className="text-sm text-red-500 mb-2">
-            {(updateError as any)?.data?.message || "Failed to update profile"}
+            {typedUpdateError.data?.message || "Failed to update profile"}
           </p>
         )}
 

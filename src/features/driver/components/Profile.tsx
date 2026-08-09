@@ -16,7 +16,7 @@ const TabButton = ({
 }: {
   isActive: boolean;
   onClick: () => void;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
 }) => (
   <button

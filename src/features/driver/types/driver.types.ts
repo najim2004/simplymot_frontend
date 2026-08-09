@@ -131,12 +131,30 @@ export interface Additional {
 
 export interface SlotItem {
   id?: string;
-  starts_at: string;
-  ends_at: string;
+  starts_at?: string;
+  ends_at?: string;
+  start_time?: string;
+  end_time?: string;
+  date?: string;
   source?: string;
   status?: string;
   bookable?: boolean;
   description?: string | null;
+}
+
+export type Slot = SlotItem;
+
+export interface BookSlotRequest {
+  garage_id: string;
+  slot_id?: string;
+  starts_at?: string;
+  ends_at?: string;
+  additional_services?: string;
+  service_type?: string;
+  vehicle_id?: string;
+  date?: string;
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface GarageSlotsData {

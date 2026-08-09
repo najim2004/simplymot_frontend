@@ -1,6 +1,6 @@
 "use client";
+
 import {
-  Check,
   ChevronDown,
   FileText,
   Package,
@@ -8,25 +8,35 @@ import {
   Tag,
   TrendingUp,
 } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useGetSubscriptionPlansQuery,
   useCheckoutSubscriptionMutation,
   useGetCurrentSubscriptionQuery,
-  subscriptionApi,
-} from "@/features/garage";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCheckoutLoading, setSelectedPlan } from "@/features/subscriptions";
-import { PAGINATION_CONFIG } from "@/config/pagination.config";
-import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
-import {
-  SubscriptionDetails,
   CancelSubscription,
 } from "@/features/garage";
+import { PAGINATION_CONFIG } from "@/config/pagination.config";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { isTestSubscriptionPlanName } from "../../../../config/test-subscription-plan.config";
+
+interface PlanItem {
+  id: string;
+  name: string;
+  description: string;
+  price_pence: number;
+  currency: string;
+  price_formatted: string;
+  [key: string]: unknown;
+}
+
+interface ApiError {
+  data?: {
+    message?: string | { message?: string };
+  };
+  error?: string;
+}
 
 // Date formatter helper
 const formatDate = (value: string | null | undefined) => {
@@ -42,7 +52,16 @@ const formatDate = (value: string | null | undefined) => {
   }
 };
 
-const isPromotionCurrentlyActive = (promotion: any) => {
+const isPromotionCurrentlyActive = (
+  promotion:
+    | {
+        code?: string | null;
+        stripe_promotion_code_id?: string | null;
+        active_until?: string | null;
+      }
+    | null
+    | undefined,
+) => {
   if (!promotion?.code && !promotion?.stripe_promotion_code_id) return false;
   if (!promotion?.active_until) return true;
 
@@ -54,8 +73,6 @@ const isPromotionCurrentlyActive = (promotion: any) => {
 
 export default function SubscriptionPage() {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [isCheckoutInProgress, setIsCheckoutInProgress] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [promoPlanId, setPromoPlanId] = useState<string | null>(null);
 
@@ -70,21 +87,13 @@ export default function SubscriptionPage() {
   });
 
   // Fetch current subscription
-  const {
-    data: currentSubscriptionData,
-    isLoading: isLoadingCurrent,
-    refetch: refetchCurrentSubscription,
-  } = useGetCurrentSubscriptionQuery();
+  const { data: currentSubscriptionData, isLoading: isLoadingCurrent } =
+    useGetCurrentSubscriptionQuery();
+
   const [checkoutSubscription] = useCheckoutSubscriptionMutation();
 
-  const dispatch = useAppDispatch();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleSelectPlan = async (plan: any) => {
+  const handleSelectPlan = async (plan: PlanItem) => {
     setLoadingPlanId(plan.id);
-    dispatch(setSelectedPlan(plan));
-    dispatch(setCheckoutLoading(true));
-    setIsCheckoutInProgress(true);
 
     try {
       const cleanPromoCode = promoPlanId === plan.id ? promoCode.trim() : "";
@@ -92,90 +101,26 @@ export default function SubscriptionPage() {
         plan_id: plan.id,
         ...(cleanPromoCode ? { promo_code: cleanPromoCode } : {}),
       }).unwrap();
-      if (result.success && result.data.checkout_url) {
-        // Use direct redirection instead of window.open to avoid popup blockers and ensure mobile compatibility
+
+      if (result.success && result.data?.checkout_url) {
         window.location.href = result.data.checkout_url;
       }
-    } catch (error) {
-      const err: any = error;
-      const status = err?.status;
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
       const apiMessage =
-        err?.data?.message?.message ||
-        err?.data?.message ||
-        err?.error ||
-        "Checkout failed. Please try again.";
-      if (status === 409) {
-        toast.error(apiMessage);
-      } else {
-        toast.error(apiMessage);
-      }
+        typeof apiErr?.data?.message === "string"
+          ? apiErr.data.message
+          : apiErr?.data?.message?.message ||
+            apiErr?.error ||
+            "Checkout failed. Please try again.";
+      toast.error(apiMessage);
+    } finally {
       setLoadingPlanId(null);
-      dispatch(setCheckoutLoading(false));
-      setIsCheckoutInProgress(false);
     }
   };
 
-  // Smart polling - only when checkout is in progress
-  useEffect(() => {
-    if (!isCheckoutInProgress) return;
-
-    const checkSubscriptionStatus = async () => {
-      try {
-        // Invalidate cache to get fresh data
-        dispatch(
-          subscriptionApi.util.invalidateTags([
-            "Subscription",
-          ]),
-        );
-
-        const result = await refetchCurrentSubscription();
-        const updated = (result as any)?.data?.data;
-
-        if (updated?.status === "ACTIVE") {
-          // Payment successful!
-          setLoadingPlanId(null);
-          dispatch(setCheckoutLoading(false));
-          dispatch(setSelectedPlan(null));
-          setIsCheckoutInProgress(false);
-
-          // Stop polling
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-
-          toast.success("Subscription activated successfully!");
-        }
-      } catch (error) {
-        // Silent error handling
-        console.error("Polling error:", error);
-      }
-    };
-
-    // Start polling every 5 seconds when checkout is in progress
-    pollingIntervalRef.current = setInterval(checkSubscriptionStatus, 5000);
-
-    // Stop polling after 5 minutes max
-    const timeoutId = setTimeout(() => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-        setIsCheckoutInProgress(false);
-        setLoadingPlanId(null);
-        dispatch(setCheckoutLoading(false));
-      }
-    }, 300000); // 5 minutes
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-      clearTimeout(timeoutId);
-    };
-  }, [isCheckoutInProgress, dispatch, refetchCurrentSubscription]);
-
   const plans = useMemo(() => {
-    const fetchedPlans = plansData?.data?.plans || [];
+    const fetchedPlans: PlanItem[] = plansData?.data?.plans || [];
     return fetchedPlans.filter(
       (plan) => !isTestSubscriptionPlanName(plan.name),
     );
@@ -185,31 +130,14 @@ export default function SubscriptionPage() {
     return (
       <div className="flex-1 lg:flex-1 flex items-center justify-center p-4 lg:p-8">
         <div className="w-full">
-          {/* <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Choose Your Plan
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Select the perfect plan for your garage business
-            </p>
-          </div> */}
-
-          {/* Shimmer Skeleton Card */}
           <div className="flex justify-center items-center">
             <div className="w-full max-w-md">
               <div className="bg-white rounded-lg border-2 border-gray-200 p-6 shadow-sm animate-pulse">
-                {/* Badge Skeleton */}
                 <div className="flex justify-center mb-4">
                   <Skeleton className="h-6 w-24 rounded-full" />
                 </div>
-
-                {/* Title Skeleton */}
                 <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
-
-                {/* Description Skeleton */}
                 <Skeleton className="h-4 w-full mb-6 mx-auto" />
-
-                {/* Membership Section Skeleton */}
                 <div className="mb-6">
                   <div className="flex justify-center items-baseline gap-2 mb-1">
                     <Skeleton className="h-10 w-32" />
@@ -217,11 +145,7 @@ export default function SubscriptionPage() {
                   </div>
                   <Skeleton className="h-3 w-full" />
                 </div>
-
-                {/* Button Skeleton */}
                 <Skeleton className="h-12 w-full mb-6 rounded-md" />
-
-                {/* Features Section Skeleton */}
                 <div>
                   <Skeleton className="h-6 w-24 mb-3" />
                   <div className="space-y-3">
@@ -245,7 +169,7 @@ export default function SubscriptionPage() {
     return (
       <div className="flex-1 lg:flex-1 flex items-center justify-center h-full">
         <div className="text-center">
-          <p className="text-red-600">
+          <p className="text-red-600 font-medium">
             Error loading subscription plans. Please try again.
           </p>
         </div>
@@ -258,7 +182,7 @@ export default function SubscriptionPage() {
   // If no plans available, show empty state
   if (plans.length === 0) {
     return (
-      <div className="flex-1 lg:flex-1 flex items-center justify-center  h-full">
+      <div className="flex-1 lg:flex-1 flex items-center justify-center h-full">
         <div className="text-center max-w-md mx-auto">
           <div className="mb-8">
             <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
@@ -280,8 +204,8 @@ export default function SubscriptionPage() {
               No Subscription Plans Available
             </h1>
             <p className="text-gray-600 text-lg mb-6">
-              We&apos;re currently working on setting up subscription plans for your
-              garage business.
+              We&apos;re currently working on setting up subscription plans for
+              your garage business.
             </p>
             <p className="text-gray-500 text-sm">
               Please check back later or contact our support team for more
@@ -294,8 +218,8 @@ export default function SubscriptionPage() {
   }
 
   // Get features list for a subscription
-  const getFeatures = (subscription: any) => {
-    const features = [
+  const getFeatures = () => {
+    return [
       {
         icon: Package,
         text: "Unlimited opportunity to receive MOT bookings 24/7.",
@@ -317,45 +241,35 @@ export default function SubscriptionPage() {
         text: "Simple set up.",
       },
     ];
-
-    return features;
   };
 
   return (
     <div className="flex-1 h-full lg:flex-1 flex items-center justify-center p-4 lg:p-8">
       <div className="w-full">
-        {/* <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Choose Your Plan
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Select the perfect plan for your garage business
-          </p>
-        </div> */}
-
         <div className="flex justify-center items-center gap-4">
           {plans.map((plan) => {
-            // Check if this plan is the current subscription (regardless of status)
+            const planSub = (plan.current_subscription as Record<string, unknown> | null) || null;
+            const sub = (planSub || currentSubscription) as Record<string, any> | null;
             const isCurrentPlan =
-              currentSubscription && currentSubscription.plan?.id === plan.id;
+              Boolean(planSub) ||
+              Boolean(
+                currentSubscription &&
+                  (currentSubscription.plan?.id === plan.id ||
+                    currentSubscription.plan_id === plan.id),
+              );
 
-            // Check if the current subscription is active
-            const isActiveSubscription =
-              currentSubscription && currentSubscription.status === "ACTIVE";
+            const isActiveSubscription = sub?.status === "ACTIVE";
+            const isSuspended = sub?.status === "SUSPENDED" || sub?.status === "PAST_DUE";
 
-            // Check if the subscription is suspended (payment failed/card disabled)
-            const isSuspended =
-              currentSubscription && currentSubscription.status === "SUSPENDED";
+            const periodEnd = sub?.billing?.current_period_end || sub?.current_period_end;
+            const daysRemaining = sub?.trial?.days_remaining ?? sub?.trial_information?.days_remaining ?? 0;
 
-            // Check if the subscription is cancelled but still in period (including trial)
             const isCancelledButActive =
-              currentSubscription &&
-              currentSubscription.status === "CANCELLED" &&
-              (new Date(currentSubscription.current_period_end) > new Date() ||
-                (currentSubscription.trial_information?.days_remaining &&
-                  currentSubscription.trial_information.days_remaining > 0));
+              sub?.status === "CANCELLED" &&
+              (new Date(periodEnd).getTime() > Date.now() || daysRemaining > 0);
+
             const hasActivePromotion = isPromotionCurrentlyActive(
-              currentSubscription?.promotion,
+              sub?.promotion,
             );
 
             return (
@@ -413,8 +327,9 @@ export default function SubscriptionPage() {
                           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      {currentSubscription.trial_information?.days_remaining > 0
-                        ? `Cancelled (${currentSubscription.trial_information.days_remaining} days trial left)`
+                      {(currentSubscription?.trial_information?.days_remaining ??
+                        0) > 0
+                        ? `Cancelled (${currentSubscription.trial_information?.days_remaining} days trial left)`
                         : `Cancelled (Active Until ${formatDate(
                             currentSubscription.current_period_end,
                           )})`}
@@ -463,29 +378,6 @@ export default function SubscriptionPage() {
                     </span>
                     <span className="text-gray-600 ml-1">/month</span>
                   </div>
-
-                  {/* {isCurrentPlan && isActiveSubscription ? (
-                                        <div className="space-y-2">
-                                            <p className="text-green-600 text-sm font-medium">
-                                                ✓ Currently Active
-                                            </p>
-                                        </div>
-                                    ) : isCurrentPlan && isCancelledButActive ? (
-                                        <div className="space-y-2">
-                                            <p className="text-orange-600 text-sm font-medium">
-                                                ⚠ Cancelled - {currentSubscription.trial_information?.days_remaining > 0
-                                                    ? `Trial active for ${currentSubscription.trial_information.days_remaining} more days`
-                                                    : `Active until ${new Date(currentSubscription.current_period_end).toLocaleDateString()}`
-                                                }
-                                            </p>
-                                        </div>
-                                    ) : isCurrentPlan && !isActiveSubscription && !isCancelledButActive ? (
-                                        <div className="space-y-2">
-                                            <p className="text-red-600 text-sm font-medium">
-                                                ✗ Cancelled
-                                            </p>
-                                        </div>
-                                    ) : null} */}
 
                   <p className="text-sm">
                     {plan.price_formatted} billed automatically every month on
@@ -596,9 +488,8 @@ export default function SubscriptionPage() {
                       </button>
                     )}
 
-                    {/* Subscription Details - Same Line */}
+                    {/* Subscription Type Badge */}
                     <div className="flex items-center justify-center gap-2 flex-wrap">
-                      {/* Subscription Type Badge */}
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           isActiveSubscription
@@ -627,18 +518,10 @@ export default function SubscriptionPage() {
                           days left
                         </span>
                       )}
-
-                      {/* View Details Button */}
-                      <button
-                        onClick={() => setShowDetailsModal(true)}
-                        className="text-blue-600 cursor-pointer hover:bg-blue-100 hover:text-blue-700 text-sm font-medium py-1 px-2 rounded transition-colors duration-200"
-                      >
-                        View Details →
-                      </button>
                     </div>
                   </div>
                 ) : (
-                  //  choose plan button
+                  // choose plan button
                   <button
                     onClick={() => handleSelectPlan(plan)}
                     disabled={loadingPlanId === plan.id}
@@ -655,7 +538,7 @@ export default function SubscriptionPage() {
                     Features
                   </h4>
                   <div className="space-y-3">
-                    {getFeatures(plan).map((feature, index) => (
+                    {getFeatures().map((feature, index) => (
                       <div key={index} className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-0.5">
                           <feature.icon className="w-4 h-4" />
@@ -672,45 +555,6 @@ export default function SubscriptionPage() {
           })}
         </div>
       </div>
-
-      {/* Subscription Details Modal */}
-      <CustomReusableModal
-        isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
-        title="Subscription Details"
-        className="max-w-xl"
-        customHeader={
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Subscription Details
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {currentSubscription?.plan.name}
-                </p>
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <SubscriptionDetails currentSubscription={currentSubscription} />
-      </CustomReusableModal>
     </div>
   );
 }

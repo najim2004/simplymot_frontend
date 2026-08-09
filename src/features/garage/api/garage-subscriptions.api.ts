@@ -109,6 +109,7 @@ export const subscriptionsMeApi = apiSlice.injectEndpoints({
               stripe_price_id: p.stripe_price_id || "",
               price_formatted: p.price_formatted || `£${((p.price_pence || 0) / 100).toFixed(2)}`,
               features: [],
+              current_subscription: p.current_subscription || null,
             })),
             pagination: {
               page,

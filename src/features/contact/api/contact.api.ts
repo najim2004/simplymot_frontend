@@ -3,6 +3,7 @@ import { apiSlice } from "@/lib/api/api-slice";
 export interface ContactMessageRequest {
   garage_name?: string;
   primary_contact_person_name?: string;
+  primary_contact?: string;
   name?: string;
   email: string;
   phone_number: string;
@@ -30,7 +31,7 @@ export const contactApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Contact"],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: process.env.NODE_ENV !== "production",
 });
 
 export const { useCreateContactMessageMutation } = contactApi;

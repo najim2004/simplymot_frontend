@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import { GarageProfileCard, GarageProfileAdd } from "@/features/garage";
+import { GarageProfileAdd } from "@/features/garage";
 import { useGetProfileQuery } from "@/features/garage";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,70 +12,26 @@ export default function GarageProfile() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        {/* Profile Card Shimmer */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar Shimmer */}
-            <div className="shrink-0">
-              <Skeleton className="h-24 w-24 rounded-full" />
-            </div>
-
-            {/* Profile Info Shimmer */}
-            <div className="flex-1 space-y-4">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                <div>
-                  <Skeleton className="h-4 w-20 mb-2" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-                <div>
-                  <Skeleton className="h-4 w-20 mb-2" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-                <div>
-                  <Skeleton className="h-4 w-20 mb-2" />
-                  <Skeleton className="h-5 w-40" />
-                </div>
-                <div>
-                  <Skeleton className="h-4 w-20 mb-2" />
-                  <Skeleton className="h-5 w-32" />
-                </div>
-              </div>
+      <div className="w-full py-6 space-y-6">
+        <div className="w-full bg-white rounded-xl border border-[#19CA32] p-8 space-y-6 animate-pulse">
+          <div className="flex items-center justify-between pb-6 border-b border-gray-200">
+            <Skeleton className="h-28 w-28 rounded-lg" />
+            <div className="flex flex-col items-end gap-3">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-10 w-28 rounded-lg" />
             </div>
           </div>
-        </div>
-
-        {/* Profile Form Shimmer */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
-          <Skeleton className="h-7 w-40 mb-6" />
-
           <div className="space-y-4">
-            <div>
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div>
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div>
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div>
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-10 w-full" />
-              </div>
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
             </div>
+            <Skeleton className="h-12 w-full rounded-lg" />
           </div>
         </div>
       </div>
@@ -84,12 +40,22 @@ export default function GarageProfile() {
 
   if (isError || !profile) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 space-y-3">
-        <p className="text-red-500 text-sm">Unable to load garage profile.</p>
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900">
+          Unable to Load Profile
+        </h2>
+        <p className="text-sm text-gray-500 max-w-sm">
+          Failed to fetch garage profile information. Please check your network
+          and try again.
+        </p>
         <Button
           onClick={() => refetch()}
-          className="bg-[#19CA32] hover:bg-[#16b82e]"
+          className="bg-[#19CA32] hover:bg-[#16b82e] text-white px-6 py-2 rounded-lg"
         >
+          <RefreshCw className="w-4 h-4 mr-2" />
           Retry
         </Button>
       </div>
@@ -97,18 +63,7 @@ export default function GarageProfile() {
   }
 
   return (
-    <div className="space-y-8">
-      <GarageProfileCard
-        garageName={profile.garage_name}
-        address={profile.address}
-        postcode={profile.zip_code}
-        contact={profile.primary_contact || profile.phone_number}
-        email={profile.email}
-        vtsNumber={profile.vts_number}
-        phoneNumber={profile.phone_number}
-        avatarUrl={profile.avatar_url}
-        price={profile.mot_price.toString()}
-      />
+    <div className="w-full">
       <GarageProfileAdd profile={profile} />
     </div>
   );

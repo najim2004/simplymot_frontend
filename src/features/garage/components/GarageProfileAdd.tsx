@@ -5,15 +5,13 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Pencil, X, Tag, Camera, Check } from "lucide-react";
 import { toast } from "react-toastify";
+import Image from "next/image";
+import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
 
-import {
-  GarageProfile,
-  useUpdateProfileMutation,
-} from "@/features/garage";
+import { useUpdateProfileMutation } from "@/features/garage";
+import type { GarageProfile } from "../types";
 
 interface GarageProfileFormData {
   garageName: string;
@@ -24,153 +22,18 @@ interface GarageProfileFormData {
   address: string;
 }
 
-interface FileUploadProps {
-  onFileSelect: (file: File | null) => void;
-  selectedFile: File | null;
-  initialImage?: string | null;
-  className?: string;
-}
-
-const FileUpload: React.FC<FileUploadProps> = ({
-  onFileSelect,
-  selectedFile,
-  initialImage,
-  className,
-}) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputId = useId();
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      handleFileSelection(files[0]);
-    }
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelection(file);
-    }
-  };
-
-  const handleFileSelection = (file: File) => {
-    onFileSelect(file);
-
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  React.useEffect(() => {
-    if (!selectedFile) {
-      setImagePreview(initialImage || null);
-    }
-  }, [selectedFile, initialImage]);
-
-  const hasNewSelection = Boolean(selectedFile && imagePreview);
-
-  return (
-    <div className={cn("space-y-2", className)}>
-      <Label className="text-sm font-medium text-gray-700">
-        Upload Garage Profile
-      </Label>
-
-      <div
-        className={cn(
-          "border-2 border-dashed rounded-lg text-center transition-colors overflow-hidden",
-          hasNewSelection ? "h-52 p-2" : "p-8",
-          "hover:border-green-400 hover:bg-green-50/50",
-          isDragOver
-            ? "border-green-400 bg-green-50"
-            : "border-gray-300 bg-gray-50",
-          "cursor-pointer",
-        )}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        {hasNewSelection ? (
-          <div className="h-full w-full rounded-md bg-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imagePreview}
-              alt="Selected image preview"
-              className="h-full w-full object-contain rounded-md"
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-              <Download className="w-6 h-6 text-gray-500" />
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-900">
-                Drag and drop files here
-              </p>
-              <p className="text-xs text-gray-500">Maximum file size is 5MB</p>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                fileInputRef.current?.click();
-              }}
-            >
-              Browse file
-            </Button>
-          </div>
-        )}
-
-        <input
-          id={inputId}
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="image/*"
-          onChange={handleFileInput}
-        />
-      </div>
-
-      {hasNewSelection && (
-        <p className="text-xs text-gray-500 mt-2">
-          To reupload, click the image.
-        </p>
-      )}
-    </div>
-  );
-};
-
 interface GarageProfileAddProps {
-  profile: any;
+  profile: GarageProfile;
 }
 
 export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
+
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
   const {
@@ -182,8 +45,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
     defaultValues: {
       garageName: profile?.garage_name || "",
       vtsNumber: profile?.vts_number || "",
-      postcode: profile?.zip_code || "",
-      email: profile?.email || "",
+      postcode: profile?.post_code || "",
+      email: profile?.contact_email || "",
       contactNumber: profile?.phone_number || "",
       address: profile?.address || "",
     },
@@ -193,163 +56,305 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
     reset({
       garageName: profile?.garage_name || "",
       vtsNumber: profile?.vts_number || "",
-      postcode: profile?.zip_code || "",
-      email: profile?.email || "",
+      postcode: profile?.post_code || "",
+      email: profile?.contact_email || "",
       contactNumber: profile?.phone_number || "",
       address: profile?.address || "",
     });
   }, [profile, reset]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setImagePreview(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   const onSubmit = async (data: GarageProfileFormData) => {
     try {
-      const basePayload = {
-        garage_name: data.garageName,
-        vts_number: data.vtsNumber,
-        zip_code: data.postcode,
-        email: data.email,
-        phone_number: data.contactNumber,
-        address: data.address,
-        primary_contact: profile?.primary_contact || "",
-      };
-
-      let payload: FormData | typeof basePayload = basePayload;
-
+      const formData = new FormData();
+      if (data.garageName) formData.append("garage_name", data.garageName);
+      if (data.vtsNumber) formData.append("vts_number", data.vtsNumber);
+      if (data.email) formData.append("contact_email", data.email);
+      if (data.contactNumber) formData.append("phone_number", data.contactNumber);
+      if (data.postcode) formData.append("post_code", data.postcode);
+      if (data.address) formData.append("address", data.address);
       if (selectedFile) {
-        const formData = new FormData();
-        Object.entries(basePayload).forEach(([key, value]) => {
-          if (value) formData.append(key, value);
-        });
-        formData.append("avatar", selectedFile);
-        payload = formData;
+        formData.append("garage_image", selectedFile);
       }
 
-      await updateProfile(payload).unwrap();
+      const garageId = profile?.id;
+      if (garageId) {
+        await updateProfile({ id: garageId, body: formData }).unwrap();
+      } else {
+        await updateProfile(formData).unwrap();
+      }
+
       toast.success("Garage profile updated successfully!");
       if (!selectedFile) {
-        // ensure form stays in sync even if response takes a bit to refresh
         reset(data);
       }
       setSelectedFile(null);
+      setImagePreview(null);
+      setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Failed to update garage profile. Please try again.");
     }
   };
 
-  return (
-    <div className="mt-10">
-      <Card className="py-10 border border-[#19CA32]">
-        <CardHeader className="pb-6">
-          <CardTitle className="text-xl font-semibold text-gray-900">
-            Add Garage Profile
-          </CardTitle>
-        </CardHeader>
+  const handleCancel = () => {
+    reset({
+      garageName: profile?.garage_name || "",
+      vtsNumber: profile?.vts_number || "",
+      postcode: profile?.post_code || "",
+      email: profile?.contact_email || "",
+      contactNumber: profile?.phone_number || "",
+      address: profile?.address || "",
+    });
+    setSelectedFile(null);
+    setImagePreview(null);
+    setIsEditing(false);
+  };
 
-        <CardContent>
+  const avatarSrc =
+    imagePreview ||
+    (profile?.garage_image && !imageError
+      ? profile.garage_image.trim()
+      : DEFAULT_GARAGE_AVATAR_SRC);
+
+  const motPrice = profile?.mot_price ? profile.mot_price.toString() : "00.00";
+
+  return (
+    <div className="w-full">
+      <div className="w-full bg-white rounded-xl border border-[#19CA32] shadow-lg overflow-hidden">
+        {/* Hidden File Input */}
+        <input
+          id={fileInputId}
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handleFileChange}
+        />
+
+        {/* Card Top Header (Logo + Price + Edit / Cancel Button) */}
+        <div className="p-6 sm:p-8 border-b border-gray-200 bg-gray-50/50 relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          {/* Absolutely Positioned Edit / Cancel Button at Top Right Corner */}
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+            {!isEditing ? (
+              <Button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="bg-[#19CA32] hover:bg-[#16b82e] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer shadow-sm transition-all active:scale-95"
+              >
+                <Pencil className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 px-3.5 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancel</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Top Left: Enlarged Garage Logo Image */}
+          <div className="flex items-center gap-5 pt-4 sm:pt-0">
+            <div className="relative group shrink-0">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl border-2 border-gray-200 bg-white p-2.5 shadow-md flex items-center justify-center overflow-hidden">
+                <Image
+                  width={160}
+                  height={160}
+                  src={avatarSrc}
+                  alt="Garage logo"
+                  className="w-full h-full object-contain rounded-lg"
+                  onError={() => setImageError(true)}
+                  unoptimized={Boolean(imagePreview)}
+                />
+              </div>
+
+              {/* Edit Mode: Camera Replace Icon Badge on Image */}
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-2 right-2 bg-[#19CA32] hover:bg-[#16b82e] text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center border-2 border-white"
+                  title="Replace garage logo"
+                >
+                  <Camera className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {selectedFile && isEditing && (
+              <div className="flex items-center gap-1.5 text-xs text-[#19CA32] font-semibold bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
+                <Check className="w-4 h-4" />
+                <span>New logo ready</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Header Area: Price Display below the Edit button */}
+          <div className="mt-8 sm:mt-10 self-end sm:self-auto pr-2">
+            <div className="flex items-center gap-1.5 text-2xl sm:text-3xl font-extrabold text-[#19CA32]">
+              <Tag className="w-6 h-6 text-[#19CA32]" />
+              <span>£{motPrice}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Main Body (Full Width Form Fields) */}
+        <div className="p-6 sm:p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Name of Garage - Full Width */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Name of Garage
+              <Label className="text-sm font-medium text-gray-700 block">
+                Name of Garage {isEditing && <span className="text-red-500">*</span>}
               </Label>
-              <Input
-                {...register("garageName", {
-                  required: "Garage name is required",
-                  minLength: {
-                    value: 2,
-                    message: "Garage name must be at least 2 characters",
-                  },
-                })}
-                placeholder="Enter garage name"
-                className="w-full h-11  border border-[#19CA32] focus:border-green-500 focus:ring-green-500"
-              />
-              {errors.garageName && (
-                <p className="text-sm text-red-500">
-                  {errors.garageName.message}
-                </p>
+
+              {isEditing ? (
+                <Input
+                  {...register("garageName", {
+                    required: "Garage name is required",
+                    minLength: {
+                      value: 2,
+                      message: "Garage name must be at least 2 characters",
+                    },
+                  })}
+                  placeholder="Enter garage name"
+                  className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                />
+              ) : (
+                <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold text-gray-900 rounded-lg">
+                  {profile?.garage_name || "N/A"}
+                </div>
+              )}
+
+              {errors.garageName && isEditing && (
+                <p className="text-sm text-red-500">{errors.garageName.message}</p>
               )}
             </div>
 
             {/* VTS Number & Postcode */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  VTS Number
+                <Label className="text-sm font-medium text-gray-700 block">
+                  VTS Number {isEditing && <span className="text-red-500">*</span>}
                 </Label>
-                <Input
-                  {...register("vtsNumber", {
-                    required: "VTS Number is required",
-                  })}
-                  placeholder="Enter VTS number"
-                  className="h-11 border border-[#19CA32] focus:border-green-500 focus:ring-green-500"
-                />
-                {errors.vtsNumber && (
-                  <p className="text-sm text-red-500">
-                    {errors.vtsNumber.message}
-                  </p>
+
+                {isEditing ? (
+                  <Input
+                    {...register("vtsNumber", {
+                      required: "VTS Number is required",
+                    })}
+                    placeholder="Enter VTS number"
+                    className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                  />
+                ) : (
+                  <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold font-mono text-[#19CA32] rounded-lg">
+                    {profile?.vts_number || "N/A"}
+                  </div>
+                )}
+
+                {errors.vtsNumber && isEditing && (
+                  <p className="text-sm text-red-500">{errors.vtsNumber.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Postcode
+                <Label className="text-sm font-medium text-gray-700 block">
+                  Postcode {isEditing && <span className="text-red-500">*</span>}
                 </Label>
-                <Input
-                  {...register("postcode", {
-                    required: "Postcode is required",
-                  })}
-                  placeholder="Enter postcode"
-                  className="h-11 border border-[#19CA32] focus:border-green-500 focus:ring-green-500"
-                />
-                {errors.postcode && (
-                  <p className="text-sm text-red-500">
-                    {errors.postcode.message}
-                  </p>
+
+                {isEditing ? (
+                  <Input
+                    {...register("postcode", {
+                      required: "Postcode is required",
+                    })}
+                    placeholder="Enter postcode"
+                    className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                  />
+                ) : (
+                  <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold font-mono text-gray-900 rounded-lg">
+                    {profile?.post_code || "N/A"}
+                  </div>
+                )}
+
+                {errors.postcode && isEditing && (
+                  <p className="text-sm text-red-500">{errors.postcode.message}</p>
                 )}
               </div>
             </div>
 
-            {/* Email & Contact Number */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Garage Contact Email & Garage Phone Number */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Email
+                <Label className="text-sm font-medium text-gray-700 block">
+                  Garage Contact Email {isEditing && <span className="text-red-500">*</span>}
                 </Label>
-                <Input
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Please enter a valid email address",
-                    },
-                  })}
-                  type="email"
-                  disabled={true}
-                  placeholder="Enter email address"
-                  className="h-11 border border-[#19CA32] bg-gray-100 cursor-not-allowed text-gray-500 focus:border-green-500 focus:ring-green-500"
-                />
-                {errors.email && (
+
+                {isEditing ? (
+                  <Input
+                    {...register("email", {
+                      required: "Garage contact email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Please enter a valid email address",
+                      },
+                    })}
+                    type="email"
+                    placeholder="Enter garage contact email"
+                    className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                  />
+                ) : (
+                  <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold text-gray-900 rounded-lg">
+                    {profile?.contact_email || "N/A"}
+                  </div>
+                )}
+
+                {errors.email && isEditing && (
                   <p className="text-sm text-red-500">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Contact Number
+                <Label className="text-sm font-medium text-gray-700 block">
+                  Garage Phone Number {isEditing && <span className="text-red-500">*</span>}
                 </Label>
-                <Input
-                  {...register("contactNumber", {
-                    required: "Contact number is required",
-                    minLength: {
-                      value: 10,
-                      message: "Contact number must be at least 10 digits",
-                    },
-                  })}
-                  type="tel"
-                  placeholder="Enter contact number"
-                  className="h-11 border border-[#19CA32] focus:border-green-500 focus:ring-green-500"
-                />
-                {errors.contactNumber && (
+
+                {isEditing ? (
+                  <Input
+                    {...register("contactNumber", {
+                      required: "Garage phone number is required",
+                      minLength: {
+                        value: 10,
+                        message: "Contact number must be at least 10 digits",
+                      },
+                    })}
+                    type="tel"
+                    placeholder="Enter garage phone number"
+                    className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                  />
+                ) : (
+                  <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold text-gray-900 rounded-lg">
+                    {profile?.phone_number || "N/A"}
+                  </div>
+                )}
+
+                {errors.contactNumber && isEditing && (
                   <p className="text-sm text-red-500">
                     {errors.contactNumber.message}
                   </p>
@@ -359,40 +364,60 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
 
             {/* Address */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Address
+              <Label className="text-sm font-medium text-gray-700 block">
+                Address {isEditing && <span className="text-red-500">*</span>}
               </Label>
-              <Input
-                {...register("address", {
-                  required: "Address is required",
-                })}
-                placeholder="Enter address"
-                className="h-11 border border-[#19CA32] focus:border-green-500 focus:ring-green-500"
-              />
-              {errors.address && (
+
+              {isEditing ? (
+                <Input
+                  {...register("address", {
+                    required: "Address is required",
+                  })}
+                  placeholder="Enter address"
+                  className="py-6 border border-gray-300 focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] text-base px-4 rounded-lg"
+                />
+              ) : (
+                <div className="py-3 px-4 border border-gray-200 bg-gray-50/50 text-base font-semibold text-gray-900 rounded-lg">
+                  {profile?.address || "N/A"}
+                </div>
+              )}
+
+              {errors.address && isEditing && (
                 <p className="text-sm text-red-500">{errors.address.message}</p>
               )}
             </div>
 
-            {/* File Upload */}
-            <FileUpload
-              onFileSelect={setSelectedFile}
-              selectedFile={selectedFile}
-              initialImage={profile?.avatar_url || null}
-              className="w-full"
-            />
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isUpdating}
-              className="w-full h-12 bg-[#19CA32] cursor-pointer hover:bg-[#16b82e] text-white font-medium text-base"
-            >
-              {isUpdating ? "Saving..." : "Save"}
-            </Button>
+            {/* Submit & Cancel Buttons (Only visible in Edit mode) */}
+            {isEditing && (
+              <div className="flex items-center justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={isUpdating}
+                  className="py-6 px-6 text-base font-semibold rounded-lg border-gray-300 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="py-6 px-8 bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-base rounded-lg transition-all cursor-pointer"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
+            )}
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

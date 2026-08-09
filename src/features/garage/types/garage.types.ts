@@ -1,19 +1,13 @@
 export interface GarageProfile {
   id: string;
   garage_name: string;
-  address: string;
-  zip_code: string;
-  email: string;
-  vts_number: string;
-  primary_contact: string;
-  phone_number: string;
-  avatar: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  created_at: string;
-  updated_at: string;
-  mot_price: number;
-  avatar_url: string | null;
+  vts_number: string | null;
+  contact_email: string | null;
+  phone_number: string | null;
+  address: string | null;
+  garage_image: string | null;
+  mot_price: string | number | null;
+  post_code: string | null;
 }
 
 export interface ProfileResponse {
@@ -23,14 +17,13 @@ export interface ProfileResponse {
 }
 
 export interface UpdateProfileRequest {
-  garage_name: string;
-  address?: string;
-  zip_code?: string;
-  email?: string;
+  garage_name?: string;
   vts_number?: string;
-  primary_contact?: string;
+  contact_email?: string;
   phone_number?: string;
-  avatar?: File | null | string;
+  address?: string;
+  post_code?: string;
+  garage_image?: File | null | string;
 }
 
 export interface UpdateProfileResponse {

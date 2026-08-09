@@ -1,13 +1,13 @@
 "use client";
 import React from "react";
 import { GarageProfileAdd } from "@/features/garage";
-import { useGetProfileQuery } from "@/features/garage";
+import { useGetGarageProfileQuery } from "@/features/garage";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GarageProfile() {
-  const { data, isLoading, isError, refetch } = useGetProfileQuery();
+  const { data, isLoading, isError, refetch } = useGetGarageProfileQuery();
   const profile = data?.data;
 
   if (isLoading) {

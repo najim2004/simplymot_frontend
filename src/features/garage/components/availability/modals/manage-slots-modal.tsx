@@ -1,556 +1,345 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { X, Lock, Unlock, AlertTriangle } from "lucide-react"
+import React, { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useToast } from "@/hooks/use-toast"
-import { useAppDispatch } from "@/store/hooks"
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query"
-import type { SerializedError } from "@reduxjs/toolkit"
+  Lock,
+  Unlock,
+  AlertTriangle,
+  Loader2,
+  Clock,
+  CalendarDays,
+  Coffee,
+  CheckCircle2,
+  Ban,
+} from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import {
-  type ApiResponse,
-  scheduleApi,
-  useBulkSlotOperationMutation,
   useGetSlotDetailsQuery,
-} from "@/features/garage"
-
-interface Slot {
-  id?: string
-  time: string
-  status: string[]
-  source: "DATABASE" | "TEMPLATE"
-  description?: string
-  modification_reason?: string
-  modification_type?: string
-}
-
-interface SlotData {
-  garage_id: string
-  date: string
-  working_hours: {
-    start: string | null
-    end: string | null
-  }
-  working_intervals?: Array<{
-    start_time: string
-    end_time: string
-  }>
-  effective_slot_duration?: number
-  slots: Slot[]
-  summary: {
-    total_slots: number
-    by_status: {
-      available: number
-      booked: number
-      blocked: number
-      breaks: number
-      modified: number
-      holiday: number
-      dual_status: number
-    }
-    by_source: {
-      template: number
-      database: number
-    }
-    modifications: number
-  }
-  is_holiday?: boolean
-}
+  useBlockSlotMutation,
+  useUnblockSlotMutation,
+  useGetGarageProfileQuery,
+  type SlotItem,
+} from "@/features/garage";
 
 interface ManageSlotsModalProps {
-  isOpen: boolean
-  onClose: () => void
-  date: string
-  onSuccess: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  date: string;
+  onSuccess?: () => void;
 }
 
-const recalcSummary = (slots: Slot[]): SlotData["summary"] => {
-  const byStatus = {
-    available: 0,
-    booked: 0,
-    blocked: 0,
-    breaks: 0,
-    modified: 0,
-    holiday: 0,
-    dual_status: 0,
-  }
-  const bySource = {
-    template: 0,
-    database: 0,
-  }
-  let modifications = 0
+export default function ManageSlotsModal({
+  isOpen,
+  onClose,
+  date,
+  onSuccess,
+}: ManageSlotsModalProps) {
+  const { toast } = useToast();
+  const [actionSlotId, setActionSlotId] = useState<string | null>(null);
 
-  slots.forEach((slot) => {
-    const statuses = slot.status || []
-
-    if (statuses.includes("BOOKED")) {
-      byStatus.booked += 1
-    } else if (statuses.includes("BLOCKED")) {
-      byStatus.blocked += 1
-    } else if (statuses.includes("BREAK")) {
-      byStatus.breaks += 1
-    } else if (statuses.includes("HOLIDAY")) {
-      byStatus.holiday += 1
-    } else if (statuses.includes("MODIFIED")) {
-      byStatus.modified += 1
-    } else {
-      byStatus.available += 1
-    }
-
-    if (statuses.length > 1) {
-      byStatus.dual_status += 1
-    }
-
-    if (slot.source === "TEMPLATE") {
-      bySource.template += 1
-    } else {
-      bySource.database += 1
-    }
-
-    if (slot.modification_reason || slot.modification_type) {
-      modifications += 1
-    }
-  })
-
-  return {
-    total_slots: slots.length,
-    by_status: byStatus,
-    by_source: bySource,
-    modifications,
-  }
-}
-
-const slotsMatch = (slot: Slot, identifier: { id?: string; time: string }) => {
-  if (slot.id && identifier.id) {
-    return slot.id === identifier.id
-  }
-  return slot.time === identifier.time
-}
-
-const getQueryErrorMessage = (error: FetchBaseQueryError | SerializedError | undefined): string => {
-  if (!error) return ""
-
-  if ("status" in error) {
-    const data = (error as FetchBaseQueryError).data as { message?: unknown }
-    return normalizeApiMessage(data?.message, "Failed to load slots. Please try again.")
-  }
-
-  return (error as SerializedError).message || "Something went wrong. Please try again."
-}
-
-const getMutationErrorMessage = (error: unknown): string => {
-  if (!error) return "Operation failed. Please try again."
-  if (typeof error === "string") return error
-  if (error instanceof Error) return error.message
-  if (typeof error === "object" && error !== null) {
-    const data = (error as { data?: { message?: unknown }; message?: unknown }).data
-    if (data?.message) return normalizeApiMessage(data.message, "Operation failed. Please try again.")
-
-    const directMessage = (error as { message?: unknown }).message
-    if (directMessage) return normalizeApiMessage(directMessage, "Operation failed. Please try again.")
-  }
-  return "Operation failed. Please try again."
-}
-
-const normalizeApiMessage = (raw: unknown, fallback: string): string => {
-  if (!raw) return fallback
-  if (typeof raw === "string") return raw
-  if (typeof raw === "object" && raw !== null && "message" in raw && typeof (raw as { message?: string }).message === "string") {
-    return (raw as { message?: string }).message as string
-  }
-  return fallback
-}
-
-/**
- * Manage Slots Modal with Redux-backed cache updates to prevent full reloads.
- */
-export default function ManageSlotsModal({ isOpen, onClose, date, onSuccess }: ManageSlotsModalProps) {
-  const dispatch = useAppDispatch()
-  const { toast } = useToast()
-  const [actionError, setActionError] = useState("")
-
+  const { data: profileResponse } = useGetGarageProfileQuery();
+  const garageId = profileResponse?.data?.id;
 
   const {
     data: slotResponse,
     isLoading: isSlotsLoading,
     isFetching: isSlotsFetching,
     error: slotQueryError,
-    refetch: refetchSlots,
-  } = useGetSlotDetailsQuery(date, { skip: !isOpen })
+  } = useGetSlotDetailsQuery(
+    { garageId: garageId!, date },
+    { skip: !isOpen || !garageId || !date }
+  );
 
-  const safeRefetchSlots = () => {
-    // RTK Query throws if refetch called when the query was never started (skip=true)
-    if (!isOpen) return
-    refetchSlots()
-  }
+  const [blockSlot, { isLoading: isBlocking }] = useBlockSlotMutation();
+  const [unblockSlot, { isLoading: isUnblocking }] = useUnblockSlotMutation();
 
-  const slotData = slotResponse?.success ? (slotResponse.data as SlotData) : null
-  const apiMessage = slotResponse?.message || ""
-  const responseError =
-    slotResponse && !slotResponse.success
-      ? normalizeApiMessage(slotResponse.message, "Failed to load slots")
-      : ""
-  const fetchErrorMessage = getQueryErrorMessage(slotQueryError as FetchBaseQueryError | SerializedError | undefined)
-  const displayError = actionError || responseError || fetchErrorMessage
+  const slotData = slotResponse?.data;
+  const slotsList: SlotItem[] = slotData?.slots || [];
+  const summary = slotData?.summary;
 
-  const [bulkSlotOperation, { isLoading: isBulkLoading }] = useBulkSlotOperationMutation()
-
-  const actionLoading = isBulkLoading
-
-  const updateSlotsCache = (updateFn: (draft: ApiResponse<SlotData>) => void) => {
-    dispatch(
-      scheduleApi.util.updateQueryData("getSlotDetails", date, (draft: ApiResponse<SlotData>) => {
-        if (!draft.data) return
-        updateFn(draft)
-        draft.data.summary = recalcSummary(draft.data.slots)
-      }),
-    )
-  }
-
-
-  const handleToggleBlock = async (slot: Slot) => {
-    if (!slot.time) {
-      setActionError("Invalid slot time")
-      return
-    }
-
-    if (slot.status?.includes("BOOKED")) {
-      setActionError("Cannot modify booked slots")
-      return
-    }
-
-    const timeParts = slot.time.split("-")
-    const startTime = timeParts[0]
-    const endTime = timeParts[1]
-
-    if (!startTime || !endTime) {
-      setActionError("Invalid slot time format")
-      return
-    }
-
-    const isBlocked = slot.status?.includes("BLOCKED") || false
-    const action = isBlocked ? "UNBLOCK" : "BLOCK"
-
+  const formatTimeRange = (startsAtStr: string, endsAtStr: string) => {
     try {
-      setActionError("")
-
-      const response = await bulkSlotOperation({
-        start_date: date,
-        end_date: date,
-        start_time: startTime,
-        end_time: endTime,
-        action,
-        reason: `${action.toLowerCase()} slot via manage slots modal`,
-      }).unwrap()
-
-      if (response.success) {
-        updateSlotsCache((draft) => {
-          const target = draft.data?.slots.find((s) => slotsMatch(s, slot))
-          if (!target) return
-
-          if (action === "BLOCK") {
-            target.status = ["BLOCKED"]
-            target.description = slot.description || "Manually blocked slot"
-          } else {
-            const cleanedStatus = target.status.filter((status) => status !== "BLOCKED")
-            target.status = cleanedStatus.length > 0 ? cleanedStatus : ["AVAILABLE"]
-          }
-        })
-
-        const successMessage = normalizeApiMessage(
-          (response as { message?: unknown }).message,
-          `Successfully ${action === "BLOCK" ? "blocked" : "unblocked"} slot`,
-        )
-        toast({
-          title: action === "BLOCK" ? "Slot blocked" : "Slot unblocked",
-          description: successMessage,
-        })
-      } else {
-        const message = normalizeApiMessage(
-          response.message,
-          `Failed to ${action.toLowerCase()} slot`,
-        )
-        setActionError(message)
-        toast({
-          title: `Cannot ${action.toLowerCase()} slot`,
-          description: message,
-          variant: "destructive",
-        })
+      const start = new Date(startsAtStr);
+      const end = new Date(endsAtStr);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return `${startsAtStr} - ${endsAtStr}`;
       }
-    } catch (error) {
-      const message = getMutationErrorMessage(error)
-      console.error(`Error ${action.toLowerCase()}ing slot: ${message}`, error)
-      setActionError(message)
+      return `${format(start, "hh:mm a")} - ${format(end, "hh:mm a")}`;
+    } catch {
+      return `${startsAtStr} - ${endsAtStr}`;
+    }
+  };
+
+  const handleToggleBlock = async (slot: SlotItem) => {
+    if (!garageId || !slot) return;
+
+    if (slot.status === "BOOKED") {
       toast({
-        title: `Failed to ${action.toLowerCase()} slot`,
-        description: message,
+        title: "Action Not Allowed",
+        description: "Cannot block or unblock booked slots",
         variant: "destructive",
-      })
+      });
+      return;
     }
-  }
 
-  const formatTime = (time: string | null | undefined): string => {
-    if (!time) return "--:--"
+    const isBlocked = slot.status === "BLOCKED";
+    setActionSlotId(slot.id);
+
     try {
-      const [hours, minutes] = time.split(":").map(Number)
-      if (isNaN(hours) || isNaN(minutes)) return "--:--"
-      const period = hours >= 12 ? "PM" : "AM"
-      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
-      return `${displayHours}:${minutes.toString().padStart(2, "0")}${period}`
-    } catch (error) {
-      return "--:--"
-    }
-  }
+      if (isBlocked) {
+        await unblockSlot({
+          garageId,
+          body: { id: slot.id, start_time: slot.starts_at, end_time: slot.ends_at },
+        }).unwrap();
 
-  const getStatusBadge = (status: string[] | null | undefined) => {
-    if (!status || status.length === 0) {
-      return (
-        <Badge variant="outline" className="bg-gray-100 text-gray-800">
-          Unknown
-        </Badge>
-      )
+        toast({
+          title: "Slot Unblocked",
+          description: "Slot has been unblocked successfully",
+        });
+      } else {
+        await blockSlot({
+          garageId,
+          body: {
+            id: slot.id,
+            start_time: slot.starts_at,
+            end_time: slot.ends_at,
+            description: "Blocked by garage manager",
+          },
+        }).unwrap();
+
+        toast({
+          title: "Slot Blocked",
+          description: "Slot has been blocked successfully",
+        });
+      }
+      onSuccess?.();
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "object" && err !== null && "data" in err
+          ? (err as { data?: { message?: string } }).data?.message
+          : "Failed to update slot status";
+
+      toast({
+        title: "Error",
+        description: errorMsg || "Failed to update slot status",
+        variant: "destructive",
+      });
+    } finally {
+      setActionSlotId(null);
     }
-    const primaryStatus = status[0]
-    switch (primaryStatus) {
+  };
+
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
       case "AVAILABLE":
         return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            Available
+          <Badge className="bg-emerald-50 text-[#19CA32] border border-emerald-200 hover:bg-emerald-100 text-[11px] font-bold px-2 py-0.5 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>Available</span>
           </Badge>
-        )
+        );
       case "BOOKED":
-        return <Badge variant="destructive">Booked</Badge>
+        return (
+          <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-2 py-0.5 flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" />
+            <span>Booked</span>
+          </Badge>
+        );
       case "BLOCKED":
         return (
-          <Badge variant="outline" className="bg-red-100 text-red-800">
-            Blocked
+          <Badge className="bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold px-2 py-0.5 flex items-center gap-1">
+            <Ban className="w-3 h-3" />
+            <span>Blocked</span>
           </Badge>
-        )
+        );
       case "BREAK":
         return (
-          <Badge variant="outline" className="bg-orange-100 text-orange-800">
-            Break
+          <Badge className="bg-orange-50 text-orange-700 border border-orange-200 text-[11px] font-bold px-2 py-0.5 flex items-center gap-1">
+            <Coffee className="w-3 h-3" />
+            <span>Break</span>
           </Badge>
-        )
-      case "MODIFIED":
+        );
+      case "PAST":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800">
-            Modified
+          <Badge className="bg-gray-100 text-gray-500 border border-gray-200 text-[11px] font-bold px-2 py-0.5">
+            Past
           </Badge>
-        )
+        );
       default:
-        return <Badge variant="outline">{primaryStatus}</Badge>
+        return (
+          <Badge variant="outline" className="text-[11px] font-bold">
+            {status}
+          </Badge>
+        );
     }
-  }
+  };
 
-
-  if (!isOpen) return null
+  const formattedDate = () => {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return date;
+      return format(d, "EEEE, MMMM dd, yyyy");
+    } catch {
+      return date;
+    }
+  };
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
-          {/* Header */}
-          <div className="border-b bg-gradient-to-r from-gray-50 to-white px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Manage Slots
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-                {slotData && (
-                  <div className="flex flex-wrap items-center gap-4 mt-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Total Slots:</span>
-                      <span className="font-semibold text-gray-900">{slotData.summary.total_slots}</span>
-                    </div>
-                    <div className="h-4 w-px bg-gray-300"></div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Available:</span>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        {slotData.summary.by_status.available}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Booked:</span>
-                      <Badge variant="destructive">
-                        {slotData.summary.by_status.booked}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Blocked:</span>
-                      <Badge variant="outline" className="bg-red-100 text-red-800">
-                        {slotData.summary.by_status.blocked}
-                      </Badge>
-                    </div>
-                    <div className="h-4 w-px bg-gray-300"></div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Breaks:</span>
-                      <Badge variant="outline" className="bg-orange-100 text-orange-800">
-                        {slotData.summary.by_status.breaks}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                {isSlotsFetching && !isSlotsLoading && (
-                  <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                    <span className="animate-spin">⟳</span>
-                    Refreshing slots…
-                  </p>
-                )}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onClose} 
-                disabled={actionLoading}
-                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {displayError && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertTriangle className="w-4 h-4" />
-                <AlertDescription>{displayError}</AlertDescription>
-              </Alert>
-            )}
-
-            {isSlotsLoading && (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-600 font-medium">Loading slots...</p>
-              </div>
-            )}
-
-            {!isSlotsLoading && slotData && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Time Slots</h3>
-                  <span className="text-sm text-gray-500">
-                    {slotData.slots.length} {slotData.slots.length === 1 ? 'slot' : 'slots'}
-                  </span>
-                </div>
-
-                {slotData.slots.length === 0 ? (
-                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-500 font-medium">
-                      {apiMessage || "No slots found for this date"}
-                    </p>
-                 
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {slotData.slots.map((slot, index) => {
-                      const timeParts = slot.time?.split("-") || []
-                      const startTime = timeParts[0] || null
-                      const endTime = timeParts[1] || null
-                      const isBlocked = slot.status?.includes("BLOCKED") || false
-                      const isBooked = slot.status?.includes("BOOKED") || false
-                      const isBreak = slot.status?.includes("BREAK") || false
-                      
-                      return (
-                        <div
-                          key={slot.id || `slot-${index}`}
-                          className={`group relative p-4 border rounded-lg transition-all duration-200 ${
-                            isBlocked 
-                              ? 'bg-red-50 border-red-200 hover:border-red-300' 
-                              : isBooked
-                              ? 'bg-orange-50 border-orange-200 hover:border-orange-300'
-                              : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="font-semibold text-gray-900 text-base">
-                                  {formatTime(startTime)} - {formatTime(endTime)}
-                                </div>
-                              </div>
-                              
-                              <div className="flex flex-wrap items-center gap-2 mb-2">
-                                {getStatusBadge(slot.status)}
-                              </div>
-
-                              {slot.description && (
-                                <p className="text-xs text-gray-600 mt-2 line-clamp-1">
-                                  {slot.description}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex-shrink-0">
-                              <Button
-                                variant={isBlocked ? "destructive" : "outline"}
-                                size="sm"
-                                className={`cursor-pointer transition-all ${
-                                  isBlocked 
-                                    ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' 
-                                    : 'hover:bg-gray-100'
-                                }`}
-                                onClick={() => handleToggleBlock(slot)}
-                                disabled={isBooked || isBreak || actionLoading}
-                                title={
-                                  isBooked
-                                    ? "Cannot modify booked slots"
-                                    : isBreak
-                                    ? "Cannot modify break slots"
-                                    : isBlocked
-                                    ? "Unblock slot"
-                                    : "Block slot"
-                                }
-                              >
-                                {isBlocked ? (
-                                  <Lock className="w-4 h-4" />
-                                ) : (
-                                  <Unlock className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t bg-gray-50 px-6 py-4">
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
-                onClick={onClose} 
-                disabled={actionLoading}
-                className="min-w-[100px]"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md sm:max-w-2xl p-0 overflow-hidden rounded-2xl border border-gray-200 shadow-xl bg-white [&>button]:hidden">
+        {/* Brand Green Header */}
+        <div className="bg-[#19CA32] text-white p-4 text-center relative">
+          <h2 className="text-base sm:text-lg font-bold">Manage Time Slots</h2>
+          <p className="text-xs text-emerald-100 mt-0.5 font-medium">
+            {formattedDate()}
+          </p>
         </div>
-      </div>
-    </>
-  )
+
+        {/* Content Body */}
+        <div className="p-4 sm:p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Summary Badges Header Bar */}
+          {summary && (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-600">Total:</span>
+                <span className="font-bold text-gray-900">
+                  {summary.total_slots}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">Available:</span>
+                <span className="font-bold text-[#19CA32]">
+                  {summary.available_slots}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">Booked:</span>
+                <span className="font-bold text-amber-700">
+                  {summary.booked_slots}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">Blocked:</span>
+                <span className="font-bold text-rose-600">
+                  {summary.blocked_slots}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-500 font-medium">Breaks:</span>
+                <span className="font-bold text-orange-600">
+                  {summary.break_slots}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isSlotsLoading ? (
+            <div className="py-12 text-center text-gray-500">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#19CA32]" />
+              <p className="text-xs font-semibold">Loading time slots...</p>
+            </div>
+          ) : slotsList.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {slotsList.map((slot) => {
+                const isBlocked = slot.status === "BLOCKED";
+                const isBooked = slot.status === "BOOKED";
+                const isBreak = slot.status === "BREAK";
+                const isPast = slot.status === "PAST";
+                const isActionLoading = actionSlotId === slot.id;
+
+                return (
+                  <div
+                    key={slot.id}
+                    className={`border rounded-xl p-3.5 shadow-xs transition-all flex items-center justify-between gap-3 ${
+                      isBlocked
+                        ? "bg-rose-50/50 border-rose-200"
+                        : isBooked
+                        ? "bg-amber-50/40 border-amber-200"
+                        : isBreak
+                        ? "bg-orange-50/40 border-orange-200 opacity-90"
+                        : isPast
+                        ? "bg-gray-50 border-gray-200 opacity-75"
+                        : "bg-white border-gray-200 hover:border-emerald-300"
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                        <Clock className="w-3.5 h-3.5 text-[#19CA32]" />
+                        <span>{formatTimeRange(slot.starts_at, slot.ends_at)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {renderStatusBadge(slot.status)}
+                      </div>
+
+                      {slot.description && (
+                        <p className="text-[11px] text-gray-500 font-medium line-clamp-1">
+                          {slot.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Block / Unblock Action Button */}
+                    {!isBooked && !isBreak && !isPast ? (
+                      <Button
+                        type="button"
+                        variant={isBlocked ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => handleToggleBlock(slot)}
+                        disabled={isActionLoading || isBlocking || isUnblocking}
+                        className={`h-8 px-3 text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors ${
+                          isBlocked
+                            ? "border-rose-300 text-rose-700 hover:bg-rose-100 bg-white"
+                            : "bg-[#19CA32] hover:bg-[#15b02b] text-white shadow-xs"
+                        }`}
+                      >
+                        {isActionLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : isBlocked ? (
+                          <>
+                            <Unlock className="w-3.5 h-3.5" />
+                            <span>Unblock</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Block</span>
+                          </>
+                        )}
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-10 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+              <CalendarDays className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-xs font-medium text-gray-500">
+                No time slots available for this date
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Single Full-Width Close Footer */}
+        <div className="p-4 bg-gray-50 border-t border-gray-100">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="w-full h-10 text-sm font-semibold border-gray-300 hover:bg-gray-100 text-gray-700 rounded-xl cursor-pointer"
+          >
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

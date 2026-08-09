@@ -1,460 +1,139 @@
 import { apiSlice } from "@/lib/api/api-slice";
+import {
+  GetScheduleResponse,
+  UpsertScheduleRequest,
+  AddHolidayRequest,
+  HolidayItem,
+  BreakTimeItem,
+  GetGarageSlotsResponse,
+  BlockUnblockSlotsDto,
+} from "../types";
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   error?: string;
 }
 
-export interface DailyHourConfig {
-  is_closed?: boolean;
-  intervals?: Array<{
-    start_time: string;
-    end_time: string;
-  }>;
-  slot_duration?: number;
-}
-
-export interface BreakRestriction {
-  type: "BREAK";
-  day_of_week: number[];
-  start_time: string;
-  end_time: string;
-  description: string;
-}
-
-export interface ScheduleRequest {
-  daily_hours: Record<string, DailyHourConfig>;
-  restrictions: BreakRestriction[];
-}
-
-export interface ScheduleResponseData {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  garage_id: string;
-  start_time: string | null;
-  end_time: string | null;
-  slot_duration: number;
-  restrictions: BreakRestriction[];
-  daily_hours: Record<string, DailyHourConfig>;
-  is_active: boolean;
-}
-
-export interface ScheduleApiResponse {
-  success: boolean;
-  message: string;
-  data: ScheduleResponseData;
-  cleanup?: {
-    deleted_unbooked_future_slots: number;
-    note: string;
-  };
-}
-
-export interface CalendarViewData {
-  current_week: {
-    week_number: number;
-    start_date: string;
-    end_date: string;
-  };
-  week_schedule: {
-    days: Array<{
-      date: string;
-      day_name: string;
-      is_today: boolean;
-      is_holiday: boolean;
-      start_time?: string;
-      end_time?: string;
-      breaks: Array<{
-        start_time: string;
-        end_time: string;
-        description: string;
-      }>;
-      description?: string;
-    }>;
-  };
-  month_holidays: Array<{
-    date: string;
-    description: string;
-    type: string;
-  }>;
-}
-
-export interface BulkSlotRequest {
-  start_date: string;
-  end_date: string;
-  start_time: string;
-  end_time: string;
-  action: "BLOCK" | "UNBLOCK";
-  reason?: string;
-}
-
-export interface Holiday {
-  type: string;
-  month: number;
-  day: number;
-  description: string;
-  is_recurring: boolean;
-  date?: string;
-  id?: string;
-}
-
-export interface AddHolidayRequest {
-  type: string;
-  month: number;
-  day: number;
-  description: string;
-  is_recurring: boolean;
-}
-
 export const scheduleApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getSchedule: builder.query<ScheduleApiResponse, void>({
-      queryFn: async (arg, api, extraOptions, baseQuery) => {
-        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
-        if (authRes.error) return { error: authRes.error };
-
-        const user = (authRes.data as any)?.data || {};
-        const garageId = user.garages?.[0]?.id;
-        if (!garageId) {
-          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
-        }
-
-        const scheduleRes = await baseQuery({ url: `/api/garages/${garageId}/schedule`, method: "GET" });
-        if (scheduleRes.error) return { error: scheduleRes.error };
-
-        const scheduleData = (scheduleRes.data as any)?.data || {};
-        const intervals = scheduleData.schedule_intervals || [];
-        const daily_hours: Record<string, DailyHourConfig> = {};
-        const restrictions: BreakRestriction[] = [];
-
-        const dayNumMap: Record<string, number> = {
-          sunday: 0,
-          monday: 1,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 4,
-          friday: 5,
-          saturday: 6,
-        };
-
-        intervals.forEach((item: any) => {
-          const dayKey = item.day_of_week.toLowerCase();
-          daily_hours[dayKey] = {
-            is_closed: item.is_closed,
-            slot_duration: item.slot_duration,
-            intervals: [
-              {
-                start_time: item.open_time,
-                end_time: item.close_time,
-              },
-            ],
-          };
-
-          if (Array.isArray(item.break_times)) {
-            item.break_times.forEach((b: any) => {
-              restrictions.push({
-                type: "BREAK",
-                day_of_week: [dayNumMap[dayKey] ?? 1],
-                start_time: b.start_time,
-                end_time: b.end_time,
-                description: b.description || "Break",
-              });
-            });
-          }
-        });
-
-        return {
-          data: {
-            success: true,
-            message: "Schedule fetched successfully",
-            data: {
-              id: scheduleData.id || "",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              garage_id: garageId,
-              start_time: null,
-              end_time: null,
-              slot_duration: intervals[0]?.slot_duration || 60,
-              restrictions,
-              daily_hours,
-              is_active: true,
-            },
-          },
-        };
-      },
+    getSchedule: builder.query<GetScheduleResponse, string>({
+      query: (garageId) => ({
+        url: `/api/garages/${garageId}/schedule`,
+        method: "GET",
+      }),
       providesTags: ["Schedule"],
     }),
 
-    createSchedule: builder.mutation<ScheduleApiResponse, ScheduleRequest>({
-      queryFn: async (body, api, extraOptions, baseQuery) => {
-        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
-        if (authRes.error) return { error: authRes.error };
-
-        const user = (authRes.data as any)?.data || {};
-        const garageId = user.garages?.[0]?.id;
-        if (!garageId) {
-          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
-        }
-
-        const intervals: any[] = [];
-        const daysMap: Record<string, string> = {
-          monday: "MONDAY",
-          tuesday: "TUESDAY",
-          wednesday: "WEDNESDAY",
-          thursday: "THURSDAY",
-          friday: "FRIDAY",
-          saturday: "SATURDAY",
-          sunday: "SUNDAY",
-        };
-        const dayNumMap: Record<string, number> = {
-          sunday: 0,
-          monday: 1,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 4,
-          friday: 5,
-          saturday: 6,
-        };
-
-        for (const [dayKey, dayConfig] of Object.entries(body.daily_hours)) {
-          const dayLower = dayKey.toLowerCase();
-          const dayOfWeek = daysMap[dayLower];
-          if (!dayOfWeek) continue;
-
-          const isClosed = dayConfig.is_closed ?? false;
-          const firstInterval = dayConfig.intervals?.[0];
-          const openTime = firstInterval?.start_time || "09:00";
-          const closeTime = firstInterval?.end_time || "17:00";
-          const slotDuration = dayConfig.slot_duration || 60;
-          const dayNum = dayNumMap[dayLower];
-
-          const dayBreaks = (body.restrictions || [])
-            .filter(
-              (r) =>
-                r.type === "BREAK" &&
-                Array.isArray(r.day_of_week) &&
-                r.day_of_week.includes(dayNum),
-            )
-            .map((r) => ({
-              start_time: r.start_time,
-              end_time: r.end_time,
-              description: r.description,
-            }));
-
-          intervals.push({
-            day_of_week: dayOfWeek,
-            is_closed: isClosed,
-            open_time: openTime,
-            close_time: closeTime,
-            slot_duration: slotDuration,
-            buffer_time: 10,
-            break_times: dayBreaks,
-          });
-        }
-
-        const upsertRes = await baseQuery({
-          url: `/api/garages/${garageId}/schedule`,
-          method: "PUT",
-          body: { schedule_intervals: intervals },
-        });
-        if (upsertRes.error) return { error: upsertRes.error };
-
-        const scheduleData = (upsertRes.data as any)?.data || {};
-        const returnedIntervals = scheduleData.schedule_intervals || [];
-        const daily_hours: Record<string, DailyHourConfig> = {};
-        returnedIntervals.forEach((item: any) => {
-          const dayKey = item.day_of_week.toLowerCase();
-          daily_hours[dayKey] = {
-            is_closed: item.is_closed,
-            slot_duration: item.slot_duration,
-            intervals: [
-              {
-                start_time: item.open_time,
-                end_time: item.close_time,
-              },
-            ],
-          };
-        });
-
-        return {
-          data: {
-            success: true,
-            message: "Schedule updated successfully",
-            data: {
-              id: scheduleData.id || "",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              garage_id: garageId,
-              start_time: null,
-              end_time: null,
-              slot_duration: returnedIntervals[0]?.slot_duration || 60,
-              restrictions: [],
-              daily_hours,
-              is_active: true,
-            },
-          },
-        };
-      },
-      invalidatesTags: ["Schedule"],
-    }),
-
-    getScheduleList: builder.query<ScheduleApiResponse[], void>({
-      queryFn: async (arg, api, extraOptions, baseQuery) => {
-        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
-        if (authRes.error) return { error: authRes.error };
-
-        const user = (authRes.data as any)?.data || {};
-        const garageId = user.garages?.[0]?.id;
-        if (!garageId) {
-          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
-        }
-
-        const scheduleRes = await baseQuery({ url: `/api/garages/${garageId}/schedule`, method: "GET" });
-        if (scheduleRes.error) return { error: scheduleRes.error };
-
-        const scheduleData = (scheduleRes.data as any)?.data || {};
-        const intervals = scheduleData.schedule_intervals || [];
-        const daily_hours: Record<string, DailyHourConfig> = {};
-        intervals.forEach((item: any) => {
-          const dayKey = item.day_of_week.toLowerCase();
-          daily_hours[dayKey] = {
-            is_closed: item.is_closed,
-            slot_duration: item.slot_duration,
-            intervals: [
-              {
-                start_time: item.open_time,
-                end_time: item.close_time,
-              },
-            ],
-          };
-        });
-
-        return {
-          data: [
-            {
-              success: true,
-              message: "Schedule list fetched successfully",
-              data: {
-                id: scheduleData.id || "",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                garage_id: garageId,
-                start_time: null,
-                end_time: null,
-                slot_duration: intervals[0]?.slot_duration || 60,
-                restrictions: [],
-                daily_hours,
-                is_active: true,
-              },
-            },
-          ],
-        };
-      },
-      providesTags: ["Schedule"],
-      keepUnusedDataFor: 0,
-    }),
-
-    getCalendarView: builder.query<
-      ApiResponse<CalendarViewData>,
-      { year: number; month: number; weekNumber?: number }
+    createSchedule: builder.mutation<
+      GetScheduleResponse,
+      { garageId: string; body: UpsertScheduleRequest }
     >({
-      queryFn: async () => {
-        return {
-          data: {
-            success: true,
-            data: {
-              current_week: {
-                week_number: 1,
-                start_date: new Date().toISOString(),
-                end_date: new Date().toISOString(),
-              },
-              week_schedule: {
-                days: [],
-              },
-              month_holidays: [],
-            },
-          },
-        };
-      },
-      providesTags: ["Schedule"],
-      keepUnusedDataFor: 0,
-    }),
-
-    getSlotDetails: builder.query<ApiResponse, string>({
-      queryFn: async (date, api, extraOptions, baseQuery) => {
-        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
-        if (authRes.error) return { error: authRes.error };
-
-        const user = (authRes.data as any)?.data || {};
-        const garageId = user.garages?.[0]?.id;
-        if (!garageId) {
-          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
-        }
-
-        const slotsRes = await baseQuery({ url: `/api/garages/${garageId}/slots?date=${date}`, method: "GET" });
-        if (slotsRes.error) return { error: slotsRes.error };
-
-        return { data: slotsRes.data as any };
-      },
-      providesTags: ["Schedule"],
-      keepUnusedDataFor: 0,
-    }),
-
-    bulkSlotOperation: builder.mutation<ApiResponse, BulkSlotRequest>({
-      queryFn: async (request, api, extraOptions, baseQuery) => {
-        const authRes = await baseQuery({ url: "/api/auth/me", method: "GET" });
-        if (authRes.error) return { error: authRes.error };
-
-        const user = (authRes.data as any)?.data || {};
-        const garageId = user.garages?.[0]?.id;
-        if (!garageId) {
-          return { error: { status: 400, data: { message: "Garage ID not found" } } as any };
-        }
-
-        const actionPath = request.action === "BLOCK" ? "block" : "unblock";
-        const start_time = `${request.start_date}T${request.start_time}:00`;
-        const end_time = `${request.end_date}T${request.end_time}:00`;
-
-        const actionRes = await baseQuery({
-          url: `/api/garages/${garageId}/slots/${actionPath}`,
-          method: "PATCH",
-          body: {
-            start_time: new Date(start_time).toISOString(),
-            end_time: new Date(end_time).toISOString(),
-            description: request.reason || "Blocked slots",
-          },
-        });
-        if (actionRes.error) return { error: actionRes.error };
-
-        return { data: actionRes.data as any };
-      },
+      query: ({ garageId, body }) => ({
+        url: `/api/garages/${garageId}/schedule`,
+        method: "PUT",
+        body,
+      }),
       invalidatesTags: ["Schedule"],
     }),
 
-    addHoliday: builder.mutation<ApiResponse, AddHolidayRequest>({
-      queryFn: async () => {
-        return { data: { success: true, message: "Holiday added successfully (simulation)" } };
-      },
-      invalidatesTags: ["Schedule"],
+    getSlotDetails: builder.query<
+      GetGarageSlotsResponse,
+      { garageId: string; date: string }
+    >({
+      query: ({ garageId, date }) => ({
+        url: `/api/garages/${garageId}/slots?date=${date}`,
+        method: "GET",
+      }),
+      providesTags: ["Slots"],
+      keepUnusedDataFor: 0,
     }),
 
-    getHolidays: builder.query<ApiResponse<Holiday[]>, void>({
-      queryFn: async () => {
-        return { data: { success: true, data: [] } };
-      },
-      providesTags: ["Schedule"],
-      keepUnusedDataFor: 0,
+    blockSlot: builder.mutation<
+      ApiResponse,
+      { garageId: string; body: BlockUnblockSlotsDto }
+    >({
+      query: ({ garageId, body }) => ({
+        url: `/api/garages/${garageId}/slots/block`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Slots"],
+    }),
+
+    unblockSlot: builder.mutation<
+      ApiResponse,
+      { garageId: string; body: BlockUnblockSlotsDto }
+    >({
+      query: ({ garageId, body }) => ({
+        url: `/api/garages/${garageId}/slots/unblock`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Slots"],
+    }),
+
+    addHoliday: builder.mutation<
+      ApiResponse<HolidayItem>,
+      { garageId: string; scheduleId: string; body: AddHolidayRequest }
+    >({
+      query: ({ garageId, scheduleId, body }) => ({
+        url: `/api/garages/${garageId}/schedule/${scheduleId}/holidays`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Holidays"],
+    }),
+
+    getHolidays: builder.query<
+      ApiResponse<HolidayItem[]>,
+      { garageId: string; scheduleId: string; year?: number }
+    >({
+      query: ({ garageId, scheduleId, year }) => ({
+        url: `/api/garages/${garageId}/schedule/${scheduleId}/holidays${
+          year ? `?year=${year}` : ""
+        }`,
+        method: "GET",
+      }),
+      providesTags: ["Holidays"],
     }),
 
     deleteHoliday: builder.mutation<
       ApiResponse,
-      { month: number; day: number }
+      { garageId: string; scheduleId: string; holidayId: string }
     >({
-      queryFn: async () => {
-        return { data: { success: true, message: "Holiday deleted successfully (simulation)" } };
-      },
+      query: ({ garageId, scheduleId, holidayId }) => ({
+        url: `/api/garages/${garageId}/schedule/${scheduleId}/holidays/${holidayId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Holidays"],
+    }),
+
+    createBreakTime: builder.mutation<
+      ApiResponse<BreakTimeItem>,
+      {
+        garageId: string;
+        scheduleIntervalId: string;
+        body: { start_time: string; end_time: string; description?: string };
+      }
+    >({
+      query: ({ garageId, scheduleIntervalId, body }) => ({
+        url: `/api/garages/${garageId}/schedule_interval/${scheduleIntervalId}/break_times`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Schedule"],
+    }),
+
+    deleteBreakTime: builder.mutation<
+      ApiResponse,
+      { garageId: string; breakTimeId: string }
+    >({
+      query: ({ garageId, breakTimeId }) => ({
+        url: `/api/garages/${garageId}/break_times/${breakTimeId}`,
+        method: "DELETE",
+      }),
       invalidatesTags: ["Schedule"],
     }),
   }),
@@ -464,11 +143,12 @@ export const scheduleApi = apiSlice.injectEndpoints({
 export const {
   useGetScheduleQuery,
   useCreateScheduleMutation,
-  useGetScheduleListQuery,
-  useGetCalendarViewQuery,
   useGetSlotDetailsQuery,
-  useBulkSlotOperationMutation,
+  useBlockSlotMutation,
+  useUnblockSlotMutation,
   useAddHolidayMutation,
   useGetHolidaysQuery,
   useDeleteHolidayMutation,
+  useCreateBreakTimeMutation,
+  useDeleteBreakTimeMutation,
 } = scheduleApi;

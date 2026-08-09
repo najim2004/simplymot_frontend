@@ -16,7 +16,7 @@ import {
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/features/contact";
-import { useGetProfileQuery } from "@/features/garage";
+import { useGetGarageProfileQuery } from "@/features/garage";
 import { useAppSelector } from "@/store/hooks";
 
 type ContactFormValues = {
@@ -32,7 +32,7 @@ const inputStyle =
 
 export default function ContactUs() {
   const { user } = useAppSelector((state) => state.auth);
-  const { data: profileResponse } = useGetProfileQuery();
+  const { data: profileResponse } = useGetGarageProfileQuery();
 
   const [createContactMessage, { isLoading }] =
     useCreateContactMessageMutation();

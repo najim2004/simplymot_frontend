@@ -1,76 +1,43 @@
-"use client"
+"use client";
 
-import React from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-
-interface MonthHoliday {
-  date: string
-  description: string
-  type?: string
-  day_of_week?: number
-}
-
-interface CurrentWeek {
-  week_number: number
-  start_date: string
-  end_date: string
-}
-
-interface WeekDay {
-  date: string
-  day_name: string
-  is_today: boolean
-  is_holiday: boolean
-  day_of_week?: number
-  start_time?: string | null
-  end_time?: string | null
-  breaks: Array<{
-    start_time: string
-    end_time: string
-    description: string
-  }>
-  description?: string
-}
-
-interface WeekSchedule {
-  days: WeekDay[]
-}
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+import { HolidayItem } from "../../types";
 
 interface CalendarViewProps {
-  year: number
-  month: number
-  monthHolidays: MonthHoliday[]
-  currentWeek: CurrentWeek | null
-  weekSchedule?: WeekSchedule
-  isLoading?: boolean
-  onMonthChange: (year: number, month: number) => void
-  onDateSelect: (date: string) => void
-  onModalClose?: () => void
+  year: number;
+  month: number;
+  holidays?: HolidayItem[];
+  isLoading?: boolean;
+  onMonthChange: (year: number, month: number) => void;
+  onDateSelect: (date: string) => void;
+  onModalClose?: () => void;
 }
 
 export default function CalendarView({
   year,
   month,
-  monthHolidays,
-  currentWeek,
-  weekSchedule,
+  holidays = [],
   isLoading = false,
   onMonthChange,
   onDateSelect,
-  onModalClose,
 }: CalendarViewProps) {
-  const [selectedDate, setSelectedDate] = React.useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState<number>(year);
 
-  // Month names for display
   const months = [
     "January",
     "February",
@@ -84,134 +51,87 @@ export default function CalendarView({
     "October",
     "November",
     "December",
-  ]
+  ];
+
+  const shortMonths = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   React.useEffect(() => {
-    const handleModalClose = () => {
-      setSelectedDate(null)
-    }
+    setPickerYear(year);
+  }, [year]);
 
-    if (onModalClose) {
-      // Listen for modal close events
-      window.addEventListener("modalClosed", handleModalClose)
-      return () => window.removeEventListener("modalClosed", handleModalClose)
-    }
-  }, [onModalClose])
-
-  /**
-   * Handle month navigation
-   */
   const navigateMonth = (direction: "prev" | "next") => {
     if (direction === "prev") {
       if (month === 1) {
-        onMonthChange(year - 1, 12)
+        onMonthChange(year - 1, 12);
       } else {
-        onMonthChange(year, month - 1)
+        onMonthChange(year, month - 1);
       }
     } else {
       if (month === 12) {
-        onMonthChange(year + 1, 1)
+        onMonthChange(year + 1, 1);
       } else {
-        onMonthChange(year, month + 1)
+        onMonthChange(year, month + 1);
       }
     }
-  }
+  };
 
-  /**
-   * Handle date selection
-   */
+  const handleTodayClick = () => {
+    const today = new Date();
+    onMonthChange(today.getFullYear(), today.getMonth() + 1);
+  };
+
+  const handleSelectMonth = (monthIndex: number) => {
+    onMonthChange(pickerYear, monthIndex + 1);
+    setIsPickerOpen(false);
+  };
+
   const handleDateClick = (dateStr: string, isCurrentMonth: boolean) => {
     if (isCurrentMonth) {
-      setSelectedDate(dateStr)
-      onDateSelect(dateStr)
+      setSelectedDate(dateStr);
+      onDateSelect(dateStr);
     }
-  }
+  };
 
-  /**
-   * Check if date is a special holiday (month_holidays with type: "HOLIDAY")
-   */
-  const isSpecialHoliday = (dateStr: string): MonthHoliday | null => {
-    const holiday = monthHolidays.find((h) => h.date === dateStr)
-    // Only return if type is "HOLIDAY" (not "CLOSED")
-    if (holiday && holiday.type === "HOLIDAY") {
-      return holiday
-    }
-    return null
-  }
-
-  /**
-   * Check if date is an office holiday
-   * Priority: month_holidays with type "CLOSED" > weekSchedule is_holiday
-   */
-  const isOfficeHoliday = (dateStr: string): boolean => {
-    // First check month_holidays for CLOSED type (primary source)
-    const monthHoliday = monthHolidays.find((h) => h.date === dateStr)
-    if (monthHoliday?.type === "CLOSED") {
-      return true
-    }
-    
-    // Fallback: check weekSchedule days for is_holiday
-    if (weekSchedule?.days) {
-      const day = weekSchedule.days.find((d) => d.date === dateStr)
-      if (day?.is_holiday === true) {
-        return true
-      }
-    }
-    
-    return false
-  }
-
-  /**
-   * Check if date is in current week
-   */
-  const isInCurrentWeek = (dateStr: string): boolean => {
-    if (!currentWeek) return false
-    return dateStr >= currentWeek.start_date && dateStr <= currentWeek.end_date
-  }
-
-  /**
-   * Format a Date into local YYYY-MM-DD (no timezone shift)
-   */
   const formatLocalISO = (d: Date): string => {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, "0")
-    const day = String(d.getDate()).padStart(2, "0")
-    return `${y}-${m}-${day}`
-  }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
 
-  /**
-   * Generate calendar days
-   */
   const generateCalendarDays = () => {
-    const firstDay = new Date(year, month - 1, 1)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay())
+    const firstDay = new Date(year, month - 1, 1);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
 
-    const days = []
-    const today = new Date()
-    const todayStr = formatLocalISO(today)
+    const days = [];
+    const todayStr = formatLocalISO(new Date());
 
     for (let i = 0; i < 42; i++) {
-      const currentDate = new Date(startDate)
-      currentDate.setDate(startDate.getDate() + i)
-
-      const dateStr = formatLocalISO(currentDate)
-
-      const isCurrentMonth = currentDate.getMonth() === month - 1
-      
-      // Check if today from weekSchedule or compare with current date
-      let isToday = dateStr === todayStr
-      if (weekSchedule?.days) {
-        const day = weekSchedule.days.find((d) => d.date === dateStr)
-        if (day?.is_today === true) {
-          isToday = true
-        }
-      }
-      
-      const isSelected = selectedDate === dateStr
-      const specialHoliday = isSpecialHoliday(dateStr)
-      const officeHoliday = isOfficeHoliday(dateStr)
-      const inCurrentWeek = isInCurrentWeek(dateStr)
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      const dateStr = formatLocalISO(currentDate);
+      const isCurrentMonth = currentDate.getMonth() === month - 1;
+      const isToday = dateStr === todayStr;
+      const isSelected = selectedDate === dateStr;
+      const holidayItem = holidays.find((h) => {
+        if (!h.date) return false;
+        const hDate = new Date(h.date);
+        return formatLocalISO(hDate) === dateStr;
+      });
 
       days.push({
         date: currentDate.getDate(),
@@ -219,144 +139,208 @@ export default function CalendarView({
         isCurrentMonth,
         isToday,
         isSelected,
-        specialHoliday,
-        officeHoliday,
-        inCurrentWeek,
-        dayOfWeek: currentDate.getDay(),
-      })
+        isHoliday: Boolean(holidayItem),
+        holidayName: holidayItem?.name || holidayItem?.description || null,
+      });
     }
 
-    return days
-  }
+    return days;
+  };
 
-  const calendarDays = generateCalendarDays()
+  const calendarDays = generateCalendarDays();
 
   return (
-    <>
-      <Card className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 pt-4">
-          <CardTitle className="text-xl font-bold text-gray-900 text-center">
-            Daily Availability
-          </CardTitle>
-          <p className="text-sm text-gray-500 text-center mt-1">
-            Select a date to block or unblock MOT slots
-          </p>
-        </CardHeader>
-
-        <CardContent className="">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="cursor-pointer hover:bg-gray-50 border-gray-300  transition-all disabled:opacity-50" 
-              onClick={() => navigateMonth("prev")}
-              disabled={isLoading}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
-            <div className="flex items-center gap-3">
-              <Select
-                value={String(month - 1)}
-                onValueChange={(value) => onMonthChange(year, Number.parseInt(value) + 1)}
-              >
-                <SelectTrigger className="w-[140px] px-4 py-2 text-sm font-semibold bg-white border border-gray-300 rounded-lg  hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300 cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((monthName, index) => (
-                    <SelectItem key={index} value={String(index)}>
-                      {monthName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={String(year)}
-                onValueChange={(value) => onMonthChange(Number.parseInt(value), month)}
-              >
-                <SelectTrigger className="w-[100px] px-4 py-2 text-sm font-semibold bg-white border border-gray-300 rounded-lg  hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-300 cursor-pointer">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 5).map((yearOption) => (
-                    <SelectItem key={yearOption} value={String(yearOption)}>
-                      {yearOption}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="cursor-pointer hover:bg-gray-50 border-gray-300 transition-all disabled:opacity-50" 
-              onClick={() => navigateMonth("next")}
-              disabled={isLoading}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+    <Card className="w-full bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+      <CardHeader className="border-b border-gray-100 p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-bold text-gray-900">
+              Slots & Holiday Calendar
+            </CardTitle>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Click any date to manage or block/unblock MOT slots
+            </p>
           </div>
+        </div>
+      </CardHeader>
 
-          {/* Calendar Grid */}
-          <div className="mb-4">
-            {/* Calendar Header */}
-            <div className="grid grid-cols-7 gap-2 mb-3">
-              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                <div 
-                  key={day} 
-                  className="text-center text-xs font-semibold text-gray-600 py-2 uppercase tracking-wide"
+      <CardContent className="p-4 sm:p-5">
+        {/* Navigation Bar: Far Left Arrow, Center Month/Year/Today, Far Right Arrow */}
+        <div className="flex items-center justify-between mb-5">
+          {/* Far Left Arrow */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50 rounded-lg cursor-pointer flex-shrink-0"
+            onClick={() => navigateMonth("prev")}
+            disabled={isLoading}
+          >
+            <ChevronLeft className="w-4 h-4 text-gray-600" />
+          </Button>
+
+          {/* Center Month/Year & Today */}
+          <div className="flex items-center gap-2">
+            <Popover open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="h-9 px-3 py-1 text-sm font-bold text-gray-900 hover:bg-gray-100/80 rounded-lg border border-gray-200 cursor-pointer flex items-center gap-1.5 transition-colors"
                 >
-                  {day}
-                </div>
-              ))}
-            </div>
+                  <CalendarIcon className="w-3.5 h-3.5 text-[#19CA32]" />
+                  <span>
+                    {months[month - 1]} {year}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                </Button>
+              </PopoverTrigger>
 
-            <div className="grid grid-cols-7 gap-2">
-              {calendarDays.map((day, index) => {
-                // Office holiday (month_holidays type: "CLOSED" or is_holiday: true) - red border circle
-                const isOfficeOff = day.officeHoliday && day.isCurrentMonth
-                // Special holiday (month_holidays type: "HOLIDAY") - blue border circle with dot
-                const isSpecial = day.specialHoliday && day.isCurrentMonth
-                
-                return (
-                  <div
-                    key={`${day.dateStr}-${index}`}
-                    onClick={() => handleDateClick(day.dateStr, day.isCurrentMonth)}
-                    className={`
-                      h-12 w-full flex items-center justify-center text-sm cursor-pointer transition-all relative rounded-lg
-                      ${!day.isCurrentMonth ? "text-gray-300" : "text-gray-700"}
-                      ${day.isCurrentMonth && !day.isToday && !day.isSelected && !isOfficeOff && !isSpecial ? " rounded-lg" : ""}
-                      ${day.inCurrentWeek && day.isCurrentMonth && !day.isToday && !day.isSelected && !isOfficeOff && !isSpecial ? "bg-green-50" : ""}
-                    `}
+              <PopoverContent
+                className="w-64 p-3 bg-white border border-gray-200 shadow-xl rounded-xl"
+                align="center"
+              >
+                {/* Year Header Navigator */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 hover:bg-gray-100 rounded-md cursor-pointer"
+                    onClick={() => setPickerYear((prev) => prev - 1)}
                   >
-                    {/* Date number with circle background */}
-                    <div
-                      className={`
-                        w-9 h-9 flex items-center justify-center rounded-full transition-all relative font-medium
-                        ${day.isToday ? "border-2 border-green-500 text-green-600 bg-green-50 font-bold shadow-sm" : ""}
-                        ${day.isSelected && !day.isToday ? "bg-blue-500 text-white font-semibold shadow-md hover:bg-blue-600" : ""}
-                        ${isOfficeOff && !day.isToday && !day.isSelected ? "border-2 border-red-500 bg-red-50 text-red-600 font-medium" : ""}
-                        ${isSpecial && !day.isToday && !day.isSelected && !isOfficeOff ? "border-2 border-blue-500 bg-transparent text-blue-600 font-medium" : ""}
-                        ${!day.isToday && !day.isSelected && !isOfficeOff && !isSpecial && day.isCurrentMonth ? "hover:bg-gray-200 hover:scale-105" : ""}
-                      `}
-                    >
-                      {day.date}
-                      {/* Special holiday dot indicator - inside circle, top right */}
-                      {isSpecial && day.isCurrentMonth && (
-                        <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full shadow-sm"></div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                    <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
+                  </Button>
+                  <span className="text-sm font-bold text-gray-900">
+                    {pickerYear}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 hover:bg-gray-100 rounded-md cursor-pointer"
+                    onClick={() => setPickerYear((prev) => prev + 1)}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+                  </Button>
+                </div>
+
+                {/* Month 3x4 Grid */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {shortMonths.map((m, idx) => {
+                    const isCurrent =
+                      pickerYear === year && idx === month - 1;
+                    return (
+                      <Button
+                        key={m}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSelectMonth(idx)}
+                        className={`h-8 text-xs font-semibold rounded-lg cursor-pointer transition-colors ${
+                          isCurrent
+                            ? "bg-[#19CA32] text-white hover:bg-[#15b02b] shadow-xs"
+                            : "hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {m}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Today Jump Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTodayClick}
+              className="h-9 px-2.5 text-xs font-semibold border-gray-300 hover:bg-gray-50 rounded-lg text-gray-700 cursor-pointer"
+            >
+              Today
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-    </>
-  )
+
+          {/* Far Right Arrow */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50 rounded-lg cursor-pointer flex-shrink-0"
+            onClick={() => navigateMonth("next")}
+            disabled={isLoading}
+          >
+            <ChevronRight className="w-4 h-4 text-gray-600" />
+          </Button>
+        </div>
+
+        {/* Days Header */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="text-center text-[11px] font-semibold text-gray-500 uppercase py-1"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((day, index) => (
+            <div
+              key={`${day.dateStr}-${index}`}
+              onClick={() => handleDateClick(day.dateStr, day.isCurrentMonth)}
+              title={
+                day.holidayName ? `Holiday: ${day.holidayName}` : undefined
+              }
+              className={`h-10 w-full flex items-center justify-center text-xs cursor-pointer transition-all relative rounded-lg ${
+                !day.isCurrentMonth
+                  ? "text-gray-300 pointer-events-none"
+                  : "text-gray-700"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-all relative font-medium ${
+                  day.isToday
+                    ? "border-2 border-[#19CA32] text-[#19CA32] bg-emerald-50 font-bold"
+                    : ""
+                } ${
+                  day.isSelected && !day.isToday
+                    ? "bg-[#19CA32] text-white font-bold"
+                    : ""
+                } ${
+                  day.isHoliday && !day.isToday && !day.isSelected
+                    ? "border border-rose-300 bg-rose-50 text-rose-600 font-bold"
+                    : ""
+                } ${
+                  !day.isToday &&
+                  !day.isSelected &&
+                  !day.isHoliday &&
+                  day.isCurrentMonth
+                    ? "hover:bg-gray-100"
+                    : ""
+                }`}
+              >
+                {day.date}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border border-[#19CA32] bg-emerald-50" />
+            <span>Today</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#19CA32]" />
+            <span>Selected</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+            <span>Holiday</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

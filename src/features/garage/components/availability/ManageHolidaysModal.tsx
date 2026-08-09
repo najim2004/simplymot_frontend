@@ -1,21 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Calendar as CalendarIcon,
-  Wrench,
   Trash2,
   Plus,
   Loader2,
+  CalendarDays,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -25,102 +20,65 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import {
-  useGetHolidaysQuery,
   useAddHolidayMutation,
   useDeleteHolidayMutation,
-  type Holiday,
+  type HolidayItem,
 } from "@/features/garage";
 import { useToast } from "@/hooks/use-toast";
-import ConfirmationModal from "@/components/reusable/ConfirmationModal";
 
 interface ManageHolidaysModalProps {
   isOpen: boolean;
   onClose: () => void;
+  garageId?: string;
+  scheduleId?: string;
+  holidays?: HolidayItem[];
   onSuccess?: () => void;
 }
 
 export default function ManageHolidaysModal({
   isOpen,
   onClose,
+  garageId,
+  scheduleId,
+  holidays = [],
   onSuccess,
 }: ManageHolidaysModalProps) {
   const { toast } = useToast();
+  const [showAddForm, setShowAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [description, setDescription] = useState<string>("");
-  const [localHolidays, setLocalHolidays] = useState<Holiday[]>([]);
-  const [holidayToDelete, setHolidayToDelete] = useState<Holiday | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingHolidayId, setDeletingHolidayId] = useState<string | null>(
     null
   );
 
-  // Fetch holidays from API
-  const {
-    data: holidaysResponse,
-    isLoading: isLoadingHolidays,
-    refetch: refetchHolidays,
-  } = useGetHolidaysQuery(undefined, {
-    skip: !isOpen,
-  });
-
   const [addHoliday, { isLoading: isAdding }] = useAddHolidayMutation();
   const [deleteHoliday, { isLoading: isDeleting }] = useDeleteHolidayMutation();
 
-  // Update local holidays when API data changes
-  useEffect(() => {
-    if (holidaysResponse?.success && holidaysResponse.data) {
-      // Transform API data to include date string for display and unique key
-      const transformedHolidays = holidaysResponse.data.map(
-        (holiday, index) => {
-          const currentYear = new Date().getFullYear();
-          const date = new Date(currentYear, holiday.month - 1, holiday.day);
-          return {
-            ...holiday,
-            date: format(date, "yyyy-MM-dd"),
-            id: `holiday-${holiday.month}-${holiday.day}-${index}`,
-          };
-        }
-      );
-      setLocalHolidays(transformedHolidays);
-    } else if (holidaysResponse && !holidaysResponse.success) {
-      setLocalHolidays([]);
-    }
-  }, [holidaysResponse]);
-
-  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedDate(undefined);
       setDescription("");
+      setShowAddForm(false);
     }
   }, [isOpen]);
 
-  const formatDate = (month: number, day: number): string => {
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    return `${monthNames[month - 1]} ${day}`;
+  const formatDisplayDate = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return format(d, "dd/MM/yy");
+    } catch {
+      return dateStr;
+    }
   };
 
   const handleAddHoliday = async () => {
-    if (!selectedDate) return;
+    if (!selectedDate || !garageId || !scheduleId) return;
 
-    const month = selectedDate.getMonth() + 1;
-    const day = selectedDate.getDate();
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-    // Check if date already exists
-    if (localHolidays.some((h) => h.month === month && h.day === day)) {
+    if (holidays.some((h) => h.date === dateStr)) {
       toast({
         title: "Error",
         description: "This date is already added as a holiday",
@@ -130,13 +88,13 @@ export default function ManageHolidaysModal({
     }
 
     try {
-      // Save immediately to API
       await addHoliday({
-        type: "HOLIDAY",
-        month,
-        day,
-        description: description.trim(),
-        is_recurring: true,
+        garageId,
+        scheduleId,
+        body: {
+          date: dateStr,
+          name: description.trim() || undefined,
+        },
       }).unwrap();
 
       toast({
@@ -144,108 +102,95 @@ export default function ManageHolidaysModal({
         description: "Holiday added successfully",
       });
 
-      // Reset form
       setSelectedDate(undefined);
       setDescription("");
+      setShowAddForm(false);
+      onSuccess?.();
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "object" && err !== null && "data" in err
+          ? (err as { data?: { message?: string } }).data?.message
+          : "Failed to add holiday";
 
-      // Refetch holidays to update the list
-      await refetchHolidays();
-      // Don't call onSuccess to prevent modal from closing
-    } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.data?.message || "Failed to add holiday",
+        description: errorMsg || "Failed to add holiday",
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteHoliday = (holiday: Holiday) => {
-    if (!holiday) return;
+  const handleDeleteHoliday = async (holiday: HolidayItem) => {
+    if (!holiday || !garageId || !scheduleId) return;
 
-    // Show confirmation modal for all holidays
-    setHolidayToDelete(holiday);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!holidayToDelete) return;
-
-    const holidayId =
-      holidayToDelete.id ||
-      `holiday-${holidayToDelete.month}-${holidayToDelete.day}`;
-    setDeletingHolidayId(holidayId);
+    setDeletingHolidayId(holiday.id);
 
     try {
       await deleteHoliday({
-        month: holidayToDelete.month,
-        day: holidayToDelete.day,
+        garageId,
+        scheduleId,
+        holidayId: holiday.id,
       }).unwrap();
+
       toast({
         title: "Success",
         description: "Holiday deleted successfully",
       });
-      setShowDeleteConfirm(false);
-      setHolidayToDelete(null);
       setDeletingHolidayId(null);
-      await refetchHolidays();
-      // Don't call onSuccess to keep modal open
-    } catch (error: any) {
+      onSuccess?.();
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "object" && err !== null && "data" in err
+          ? (err as { data?: { message?: string } }).data?.message
+          : "Failed to delete holiday";
+
       toast({
         title: "Error",
-        description: error?.data?.message || "Failed to delete holiday",
+        description: errorMsg || "Failed to delete holiday",
         variant: "destructive",
       });
       setDeletingHolidayId(null);
     }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setHolidayToDelete(null);
-    setDeletingHolidayId(null);
   };
 
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        // Only close when explicitly closing, not on outside click during operations
         if (!open && !isAdding && !isDeleting) {
           onClose();
         }
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-900">
-            Manage Holidays
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-sm sm:max-w-md p-0 overflow-hidden rounded-2xl border border-gray-200 shadow-xl bg-white [&>button]:hidden">
+        {/* Brand Green Header Banner */}
+        <div className="bg-[#19CA32] text-white p-4 text-center">
+          <h2 className="text-base sm:text-lg font-bold">
+            Manage Garage Holidays
+          </h2>
+        </div>
 
-        <div className="space-y-4 py-4">
-          {/* Date Selection Section */}
-          <div className="space-y-3">
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Select a MOT holiday date
+        {/* Body Content */}
+        <div className="p-4 sm:p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Add Holiday Toggle / Form */}
+          {showAddForm ? (
+            <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3.5 space-y-3">
+              <div>
+                <Label className="text-xs font-semibold text-gray-700 mb-1 block">
+                  Select Holiday Date
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={`w-full cursor-pointer justify-start text-left font-normal ${
-                        !selectedDate ? "text-gray-500" : "text-gray-900"
+                      className={`w-full h-9 text-xs justify-start text-left font-normal bg-white border-gray-300 rounded-lg cursor-pointer ${
+                        !selectedDate ? "text-gray-400" : "text-gray-900 font-semibold"
                       }`}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5 text-[#19CA32]" />
                       {selectedDate
-                        ? formatDate(
-                            selectedDate.getMonth() + 1,
-                            selectedDate.getDate()
-                          )
-                        : "None Selected"}
+                        ? format(selectedDate, "dd/MM/yy")
+                        : "Pick a date..."}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -258,139 +203,133 @@ export default function ManageHolidaysModal({
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
 
-            <div className="flex-1">
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                Description (optional)
-              </Label>
-              <Input
-                type="text"
-                placeholder="Enter holiday description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && selectedDate && description.trim()) {
-                    e.preventDefault();
-                    handleAddHoliday();
-                  }
-                }}
-                className="w-full"
-              />
-            </div>
+              <div>
+                <Label className="text-xs font-semibold text-gray-700 mb-1 block">
+                  Description (Optional)
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="e.g. Christmas Day, Bank Holiday"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && selectedDate) {
+                      e.preventDefault();
+                      handleAddHoliday();
+                    }
+                  }}
+                  className="h-9 text-xs bg-white border-gray-300 rounded-lg focus-visible:ring-1 focus-visible:ring-[#19CA32]"
+                />
+              </div>
 
+              <div className="flex justify-end gap-2 pt-1 border-t border-emerald-100">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddForm(false)}
+                  className="h-8 text-xs text-gray-600 hover:bg-gray-100 px-3 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddHoliday}
+                  disabled={!selectedDate || isAdding}
+                  className="h-8 text-xs bg-[#19CA32] hover:bg-[#15b02b] text-white font-semibold px-4 rounded-lg cursor-pointer flex items-center gap-1.5"
+                >
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <span>Add</span>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
             <Button
               type="button"
-              onClick={handleAddHoliday}
-              disabled={!selectedDate || isAdding}
-              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer whitespace-nowrap w-full"
+              variant="outline"
+              onClick={() => setShowAddForm(true)}
+              className="w-full border-dashed border-gray-300 text-gray-700 hover:bg-emerald-50 hover:border-[#19CA32] hover:text-[#19CA32] text-xs font-semibold h-9 rounded-xl cursor-pointer flex items-center justify-center gap-1.5 mb-2"
             >
-              {isAdding ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Add Holiday
-                </>
-              )}
+              <Plus className="w-4 h-4" />
+              <span>Add Holiday</span>
             </Button>
-          </div>
+          )}
 
-          {/* Holidays List */}
+          {/* Holidays List - Clean Readonly Cards */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">
-              Holidays List
+            <Label className="text-xs font-bold text-gray-700">
+              Scheduled Holidays
             </Label>
-            <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
-              {isLoadingHolidays ? (
-                <div className="p-8 text-center text-gray-500">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                  <p>Loading holidays...</p>
-                </div>
-              ) : localHolidays.length > 0 ? (
-                <div className="divide-y divide-gray-200">
-                  {localHolidays.map((holiday, index) => (
-                    <div
-                      key={
-                        holiday.id ||
-                        `holiday-${holiday.month}-${holiday.day}-${index}`
-                      }
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Wrench className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                        <span className="text-sm font-medium text-gray-900">
-                          {formatDate(holiday.month, holiday.day)}
-                        </span>
-                        <span className="text-sm text-gray-600">-</span>
-                        <span className="text-sm text-gray-600 flex-1">
-                          {holiday.description}
-                        </span>
+
+            {holidays.length > 0 ? (
+              <div className="space-y-2">
+                {holidays.map((holiday) => (
+                  <div
+                    key={holiday.id}
+                    className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3 hover:border-emerald-200 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center flex-shrink-0 font-bold">
+                        <CalendarDays className="w-4 h-4" />
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteHoliday(holiday)}
-                        disabled={
-                          deletingHolidayId ===
-                          (holiday.id ||
-                            `holiday-${holiday.month}-${holiday.day}`)
-                        }
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                      >
-                        {deletingHolidayId ===
-                        (holiday.id ||
-                          `holiday-${holiday.month}-${holiday.day}`) ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900">
+                          {holiday.name || holiday.description || "Garage Holiday"}
+                        </h4>
+                        <p className="text-[11px] text-gray-500 font-semibold mt-0.5">
+                          {formatDisplayDate(holiday.date)}
+                        </p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-gray-500">
-                  <p>No holidays added yet</p>
-                </div>
-              )}
-            </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteHoliday(holiday)}
+                      disabled={deletingHolidayId === holiday.id}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg flex-shrink-0 cursor-pointer"
+                    >
+                      {deletingHolidayId === holiday.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : !showAddForm ? (
+              <div className="text-center py-6 text-gray-400">
+                <CalendarDays className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-xs font-medium text-gray-500">
+                  No holidays added yet
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        {/* Footer Actions: Single Full-Width Action Button */}
+        <div className="p-4 bg-gray-50 border-t border-gray-100">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="cursor-pointer"
+            className="w-full h-10 text-sm font-semibold border-gray-300 hover:bg-gray-100 text-gray-700 rounded-xl cursor-pointer"
           >
             Close
           </Button>
         </div>
       </DialogContent>
-
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        open={showDeleteConfirm}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        title="Delete Holiday"
-        description={`Are you sure you want to delete the holiday on ${
-          holidayToDelete
-            ? formatDate(holidayToDelete.month, holidayToDelete.day)
-            : ""
-        } (${holidayToDelete?.description})? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        isLoading={isDeleting}
-      />
     </Dialog>
   );
 }

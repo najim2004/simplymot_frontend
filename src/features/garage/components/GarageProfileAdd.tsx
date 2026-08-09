@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import Image from "next/image";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
 
-import { useUpdateProfileMutation } from "@/features/garage";
+import { useUpdateGarageProfileMutation } from "@/features/garage";
 import type { GarageProfile } from "../types";
 
 interface GarageProfileFormData {
@@ -34,7 +34,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
 
-  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateGarageProfileMutation();
 
   const {
     register,

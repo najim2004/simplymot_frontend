@@ -8,14 +8,14 @@ export * from "../types";
 
 export const profileApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getProfile: builder.query<ProfileResponse, void>({
+    getGarageProfile: builder.query<ProfileResponse, void>({
       query: () => ({
         url: "/api/garages",
         method: "GET",
       }),
       providesTags: ["Garage"],
     }),
-    updateProfile: builder.mutation<
+    updateGarageProfile: builder.mutation<
       UpdateProfileResponse,
       { id: string; body: FormData | Record<string, any> } | FormData | Record<string, any>
     >({
@@ -40,4 +40,4 @@ export const profileApi = apiSlice.injectEndpoints({
   overrideExisting: process.env.NODE_ENV !== "production",
 });
 
-export const { useGetProfileQuery, useUpdateProfileMutation } = profileApi;
+export const { useGetGarageProfileQuery, useUpdateGarageProfileMutation } = profileApi;

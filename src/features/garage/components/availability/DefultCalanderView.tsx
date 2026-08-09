@@ -1,18 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Clock, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, Coffee } from "lucide-react";
 import BreaksModal from "./BreaksModal";
 import DefultCalanderViewShimmer from "./DefultCalanderViewShimmer";
 import {
   useGetScheduleQuery,
   useCreateScheduleMutation,
-  type ScheduleRequest,
+  useGetGarageProfileQuery,
+  type UpsertScheduleRequest,
 } from "@/features/garage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,8 +49,6 @@ const DAYS = [
 ];
 
 const getApiDayOfWeek = (componentIndex: number): number => {
-  // componentIndex: 0=Monday, 1=Tuesday, ..., 5=Saturday, 6=Sunday
-  // API: 0=Sunday, 1=Monday, ..., 6=Saturday
   return (componentIndex + 1) % 7;
 };
 
@@ -61,15 +67,13 @@ export default function DefultCalanderView({
   >(null);
   const originalSchedulesRef = useRef<DaySchedule[] | null>(null);
 
-  // Fetch schedule data from API
-  const {
-    data: scheduleResponse,
-    isLoading: isFetching,
-    refetch: refetchSchedule,
-  } = useGetScheduleQuery();
+  const { data: profileResponse } = useGetGarageProfileQuery();
+  const garageId = profileResponse?.data?.id;
+
+  const { data: scheduleResponse, isLoading: isFetching } =
+    useGetScheduleQuery(garageId!, { skip: !garageId });
   const [createSchedule, { isLoading: isSaving }] = useCreateScheduleMutation();
 
-  // Initialize schedules state
   const [schedules, setSchedules] = useState<DaySchedule[]>(() => {
     return DAYS.map((day) => ({
       day,
@@ -81,61 +85,38 @@ export default function DefultCalanderView({
     }));
   });
 
-  // Load data from API when it's available
   useEffect(() => {
     if (scheduleResponse?.success && scheduleResponse.data) {
       const apiData = scheduleResponse.data;
-      const dailyHours = apiData.daily_hours || {};
-      const restrictions = apiData.restrictions || [];
+      const intervals = apiData.schedule_intervals || [];
 
-      // Transform API data to component state
-      const newSchedules: DaySchedule[] = DAYS.map((day, componentIndex) => {
-        const apiDay = getApiDayOfWeek(componentIndex).toString();
-        const dayConfig = dailyHours[apiDay];
+      const newSchedules: DaySchedule[] = DAYS.map((day) => {
+        const intervalItem = intervals.find(
+          (item) => item.day_of_week.toUpperCase() === day.toUpperCase(),
+        );
 
-        if (dayConfig?.is_closed) {
-          return {
-            day,
-            isClosed: true,
-            fromTime: dayConfig.intervals?.[0]?.start_time || "09:00",
-            toTime: dayConfig.intervals?.[0]?.end_time || "17:00",
-            duration: dayConfig.slot_duration || 60,
-            breaks: [],
-          };
-        }
-
-        // Get breaks for this day
-        const dayBreaks = restrictions
-          .filter(
-            (restriction) =>
-              restriction.type === "BREAK" &&
-              Array.isArray(restriction.day_of_week) &&
-              restriction.day_of_week.includes(getApiDayOfWeek(componentIndex)),
-          )
-          .map((restriction, idx) => ({
-            id: `break-${componentIndex}-${idx}`,
-            fromTime: restriction.start_time || "",
-            toTime: restriction.end_time || "",
-            description: restriction.description || "",
-          }));
+        const dayBreaks = (intervalItem?.break_times || []).map((b) => ({
+          id: b.id,
+          fromTime: b.start_time || "",
+          toTime: b.end_time || "",
+          description: b.description || "",
+        }));
 
         return {
           day,
-          isClosed: false,
-          fromTime: dayConfig?.intervals?.[0]?.start_time || "09:00",
-          toTime: dayConfig?.intervals?.[0]?.end_time || "17:00",
-          duration: dayConfig?.slot_duration || 60,
+          isClosed: intervalItem?.is_closed ?? false,
+          fromTime: intervalItem?.open_time || "09:00",
+          toTime: intervalItem?.close_time || "17:00",
+          duration: intervalItem?.slot_duration || 60,
           breaks: dayBreaks,
         };
       });
 
       setSchedules(newSchedules);
-      // Store original data for change detection
       originalSchedulesRef.current = JSON.parse(JSON.stringify(newSchedules));
     }
   }, [scheduleResponse]);
 
-  // Check if there are any changes
   const hasChanges = () => {
     if (!originalSchedulesRef.current) return false;
     return (
@@ -187,53 +168,51 @@ export default function DefultCalanderView({
     setOpenBreaksModalIndex(null);
   };
 
-  // Transform form data to API format
-  const transformToApiFormat = (): ScheduleRequest => {
-    const daily_hours: Record<string, any> = {};
-    const restrictions: any[] = [];
+  const transformToApiFormat = (): UpsertScheduleRequest => {
+    const existingIntervals = scheduleResponse?.data?.schedule_intervals || [];
 
-    schedules.forEach((schedule, componentIndex) => {
-      const apiDay = getApiDayOfWeek(componentIndex).toString();
+    const schedule_intervals = schedules.map((schedule) => {
+      const dayUpper = schedule.day.toUpperCase();
+      const existingItem = existingIntervals.find(
+        (i) => i.day_of_week.toUpperCase() === dayUpper,
+      );
 
-      if (schedule.isClosed) {
-        daily_hours[apiDay] = {
-          is_closed: true,
-        };
-      } else {
-        daily_hours[apiDay] = {
-          intervals: [
-            {
-              start_time: schedule.fromTime,
-              end_time: schedule.toTime,
-            },
-          ],
-          slot_duration: schedule.duration,
-        };
-
-        // Add breaks as restrictions
-        schedule.breaks.forEach((breakItem) => {
-          restrictions.push({
-            type: "BREAK",
-            day_of_week: [getApiDayOfWeek(componentIndex)],
-            start_time: breakItem.fromTime,
-            end_time: breakItem.toTime,
-            description: breakItem.description || "Break",
-          });
-        });
-      }
+      return {
+        ...(existingItem?.id ? { id: existingItem.id } : {}),
+        day_of_week: dayUpper,
+        is_closed: schedule.isClosed,
+        open_time: schedule.isClosed ? null : schedule.fromTime,
+        close_time: schedule.isClosed ? null : schedule.toTime,
+        slot_duration: schedule.duration,
+        buffer_time: 0,
+        break_times: schedule.isClosed
+          ? []
+          : schedule.breaks.map((b) => ({
+              start_time: b.fromTime,
+              end_time: b.toTime,
+              description: b.description || "Break",
+            })),
+      };
     });
 
-    return {
-      daily_hours,
-      restrictions,
-    };
+    return { schedule_intervals };
   };
 
-  // Handle save
   const handleSave = async () => {
     try {
+      if (!garageId) {
+        toast({
+          title: "Error",
+          description: "Garage ID not found",
+          variant: "destructive",
+        });
+        return;
+      }
       const requestData = transformToApiFormat();
-      const result = await createSchedule(requestData).unwrap();
+      const result = await createSchedule({
+        garageId,
+        body: requestData,
+      }).unwrap();
 
       if (result.success) {
         toast({
@@ -241,7 +220,6 @@ export default function DefultCalanderView({
           description: result.message || "Schedule updated successfully",
         });
         originalSchedulesRef.current = JSON.parse(JSON.stringify(schedules));
-        await refetchSchedule();
         onScheduleUpdate?.();
       } else {
         toast({
@@ -260,189 +238,194 @@ export default function DefultCalanderView({
     }
   };
 
-  // Show shimmer when loading
   if (isLoading || isFetching) {
     return <DefultCalanderViewShimmer />;
   }
 
   return (
     <>
-      {/* Save Button - Only show when there are changes */}
-      {hasChanges() && (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="cursor-pointer"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      )}
-      <Card className="w-full">
-        <CardContent className="p-4 sm:p-5">
-          <div className="space-y-2">
-            {schedules.map((schedule, index) => (
-              <div
-                key={schedule.day}
-                className={`pb-3 ${
-                  index !== schedules.length - 1
-                    ? "border-b border-gray-200"
-                    : ""
-                }`}
-              >
-                {/* Day Name and Closed Switch */}
-                <div className="mb-3 flex justify-between items-center">
-                  {/* Day Name */}
-                  <h3 className="text-base font-medium text-gray-900">
-                    {schedule.day}
-                  </h3>
+      <Card className="w-full bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+        <CardHeader className="border-b border-gray-100 p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-bold text-gray-900">
+                Weekly Operating Hours
+              </CardTitle>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Set opening times, closing times, and slot durations
+              </p>
+            </div>
 
-                  {/* Closed Switch */}
-                  <div className="flex items-center gap-3">
-                    <Label
-                      htmlFor={`closed-${index}`}
-                      className="text-sm font-medium text-gray-700 cursor-pointer whitespace-nowrap"
-                    >
+            {hasChanges() && (
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="bg-[#19CA32] hover:bg-[#15b02b] text-white rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-4 sm:p-5 divide-y divide-gray-100">
+          {schedules.map((schedule, index) => (
+            <div key={schedule.day} className="py-3.5 first:pt-1 last:pb-1">
+              {/* Day Header */}
+              <div className="mb-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {schedule.day}
+                  </span>
+                  {schedule.isClosed ? (
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">
                       Closed
-                    </Label>
-                    <Switch
-                      id={`closed-${index}`}
-                      checked={schedule.isClosed}
-                      onCheckedChange={(checked) =>
-                        handleClosedToggle(index, checked)
-                      }
-                    />
-                  </div>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-[#19CA32]">
+                      Open
+                    </span>
+                  )}
                 </div>
 
-                {/* Main Row - From/To Times, Duration, Add Break Button */}
-                <div className="flex flex-col 2xl:flex-row 2xl:items-start gap-3">
-                  {/* From Time */}
-                  <div className="flex-1 min-w-0">
-                    <Label
-                      htmlFor={`from-${index}`}
-                      className="text-xs text-gray-600 mb-1 block"
-                    >
-                      From
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id={`from-${index}`}
-                        type="time"
-                        value={schedule.fromTime}
-                        onChange={(e) =>
-                          handleTimeChange(index, "fromTime", e.target.value)
-                        }
-                        onClick={(e) => {
-                          if (!schedule.isClosed) {
-                            e.currentTarget.showPicker?.();
-                          }
-                        }}
-                        disabled={schedule.isClosed}
-                        className={`w-full pr-10 cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none ${
-                          schedule.isClosed
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : ""
-                        }`}
-                      />
-                      <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* To Time */}
-                  <div className="flex-1 min-w-0">
-                    <Label
-                      htmlFor={`to-${index}`}
-                      className="text-xs text-gray-600 mb-1 block"
-                    >
-                      To
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id={`to-${index}`}
-                        type="time"
-                        value={schedule.toTime}
-                        onChange={(e) =>
-                          handleTimeChange(index, "toTime", e.target.value)
-                        }
-                        onClick={(e) => {
-                          if (!schedule.isClosed) {
-                            e.currentTarget.showPicker?.();
-                          }
-                        }}
-                        disabled={schedule.isClosed}
-                        className={`w-full pr-10 cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:pointer-events-none ${
-                          schedule.isClosed
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : ""
-                        }`}
-                      />
-                      <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="flex sm:flex-row flex-col justify-between gap-3">
-                    {/* Duration Input */}
-                    <div className="flex-shrink-0 w-full sm:w-6/12">
-                      <Label
-                        htmlFor={`duration-${index}`}
-                        className="text-xs text-gray-600 mb-1 block"
-                      >
-                        Slot Duration (min)
-                      </Label>
-                      <Input
-                        id={`duration-${index}`}
-                        type="number"
-                        min="15"
-                        max="480"
-                        step="15"
-                        value={schedule.duration}
-                        onChange={(e) =>
-                          handleDurationChange(
-                            index,
-                            parseInt(e.target.value) || 60,
-                          )
-                        }
-                        disabled={schedule.isClosed}
-                        className={`w-full ${
-                          schedule.isClosed
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : ""
-                        }`}
-                      />
-                    </div>
-
-                    {/* Manage Breaks Button */}
-                    <div className="flex-shrink-0 w-full sm:w-6/12 pr-3">
-                      <Label className="text-xs text-gray-600 mb-1 block opacity-0 pointer-events-none h-4">
-                        Action
-                      </Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenBreaksModal(index)}
-                        disabled={schedule.isClosed}
-                        className={`w-full cursor-pointer whitespace-nowrap h-9 text-xs ${
-                          schedule.isClosed
-                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "border-gray-300 hover:bg-gray-50 "
-                        }`}
-                      >
-                        <Clock className="w-4 h-4 " />
-                        {schedule.breaks.length > 0
-                          ? `Breaks (${schedule.breaks.length})`
-                          : "Add Break"}
-                      </Button>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor={`closed-${index}`}
+                    className="text-xs text-gray-600 cursor-pointer"
+                  >
+                    Closed
+                  </Label>
+                  <Switch
+                    id={`closed-${index}`}
+                    checked={schedule.isClosed}
+                    onCheckedChange={(checked) =>
+                      handleClosedToggle(index, checked)
+                    }
+                    className="data-[state=checked]:bg-gray-300 data-[state=unchecked]:bg-[#19CA32]"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Time Inputs & Slot Controls Row - 1 row on big screens (xl:grid-cols-4), 2 rows on smaller screens (grid-cols-2) */}
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-2.5 items-end">
+                <div>
+                  <Label
+                    htmlFor={`from-${index}`}
+                    className="text-[11px] font-semibold text-gray-600 mb-1 block"
+                  >
+                    From
+                  </Label>
+                  <Input
+                    id={`from-${index}`}
+                    type="time"
+                    value={schedule.fromTime}
+                    onChange={(e) =>
+                      handleTimeChange(index, "fromTime", e.target.value)
+                    }
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    disabled={schedule.isClosed}
+                    className={`h-9 text-xs rounded-lg border-gray-300 px-2 cursor-pointer focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] ${
+                      schedule.isClosed
+                        ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                        : "bg-white font-medium text-gray-900"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor={`to-${index}`}
+                    className="text-[11px] font-semibold text-gray-600 mb-1 block"
+                  >
+                    To
+                  </Label>
+                  <Input
+                    id={`to-${index}`}
+                    type="time"
+                    value={schedule.toTime}
+                    onChange={(e) =>
+                      handleTimeChange(index, "toTime", e.target.value)
+                    }
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    disabled={schedule.isClosed}
+                    className={`h-9 text-xs rounded-lg border-gray-300 px-2 cursor-pointer focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32] ${
+                      schedule.isClosed
+                        ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                        : "bg-white font-medium text-gray-900"
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor={`duration-${index}`}
+                    className="text-[11px] font-semibold text-gray-600 mb-1 block"
+                  >
+                    Slot Duration
+                  </Label>
+                  <Select
+                    value={String(schedule.duration)}
+                    onValueChange={(val) =>
+                      handleDurationChange(index, parseInt(val) || 60)
+                    }
+                    disabled={schedule.isClosed}
+                  >
+                    <SelectTrigger className="h-9 w-full text-xs font-semibold border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-[#19CA32] whitespace-nowrap overflow-hidden text-ellipsis px-2">
+                      <SelectValue placeholder="Select Duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15" className="text-xs">
+                        15 mins
+                      </SelectItem>
+                      <SelectItem value="30" className="text-xs">
+                        30 mins
+                      </SelectItem>
+                      <SelectItem value="45" className="text-xs">
+                        45 mins
+                      </SelectItem>
+                      <SelectItem value="60" className="text-xs">
+                        60 mins (1 hr)
+                      </SelectItem>
+                      <SelectItem value="90" className="text-xs">
+                        90 mins (1.5 hr)
+                      </SelectItem>
+                      <SelectItem value="120" className="text-xs">
+                        120 mins (2 hrs)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-[11px] font-semibold text-gray-600 mb-1 block opacity-0 hidden xl:block">
+                    Breaks
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenBreaksModal(index)}
+                    disabled={schedule.isClosed}
+                    className={`w-full h-9 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 border-gray-300 cursor-pointer whitespace-nowrap px-2 ${
+                      schedule.isClosed
+                        ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                        : schedule.breaks.length > 0
+                        ? "bg-emerald-50 text-[#19CA32] border-emerald-200 hover:bg-emerald-100"
+                        : "hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <Coffee className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate">
+                      {schedule.breaks.length > 0
+                        ? `Breaks (${schedule.breaks.length})`
+                        : "Add Break"}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -453,12 +436,18 @@ export default function DefultCalanderView({
           onClose={handleCloseBreaksModal}
           dayName={schedules[openBreaksModalIndex]?.day || ""}
           dayIndex={getApiDayOfWeek(openBreaksModalIndex)}
+          scheduleIntervalId={
+            scheduleResponse?.data?.schedule_intervals?.find(
+              (item) =>
+                item.day_of_week.toUpperCase() ===
+                (schedules[openBreaksModalIndex]?.day || "").toUpperCase(),
+            )?.id
+          }
           breaks={schedules[openBreaksModalIndex]?.breaks || []}
           onBreaksChange={(breaks) =>
             handleBreaksChange(openBreaksModalIndex, breaks)
           }
-          onSaveSuccess={async () => {
-            await refetchSchedule();
+          onSaveSuccess={() => {
             onScheduleUpdate?.();
           }}
         />

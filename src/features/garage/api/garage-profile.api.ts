@@ -17,17 +17,17 @@ export const profileApi = apiSlice.injectEndpoints({
     }),
     updateGarageProfile: builder.mutation<
       UpdateProfileResponse,
-      { id: string; body: FormData | Record<string, any> } | FormData | Record<string, any>
+      { id: string; body: FormData | Record<string, unknown> } | FormData | Record<string, unknown>
     >({
       query: (arg) => {
         if (arg && typeof arg === "object" && "id" in arg && "body" in arg) {
           return {
-            url: `/api/garages/${arg.id}`,
+            url: `/api/garages/${(arg as { id: string; body: unknown }).id}`,
             method: "PATCH",
-            body: arg.body,
+            body: (arg as { id: string; body: unknown }).body,
           };
         }
-        const id = arg instanceof FormData ? arg.get("id") : (arg as any)?.id;
+        const id = arg instanceof FormData ? arg.get("id") : (arg as Record<string, unknown>)?.id;
         return {
           url: id ? `/api/garages/${id}` : "/api/garages",
           method: "PATCH",

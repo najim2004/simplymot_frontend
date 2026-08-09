@@ -3,15 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Layers, Wrench } from "lucide-react";
 import { toast } from "react-toastify";
 import { ServiceItem } from "../types";
 import { useDeleteServiceMutation } from "../api/garage-pricing.api";
@@ -38,12 +30,12 @@ export default function AdditionalServicesAdd({
 
   useEffect(() => {
     if (otherServices) {
-      setItems(
-        otherServices.map((s) => ({
-          id: s.id,
-          title: s.title || "",
-        }))
-      );
+      const mapped = otherServices.map((s) => ({
+        id: s.id,
+        title: s.title || "",
+      }));
+      setItems(mapped);
+      emitChanges(mapped);
     }
   }, [otherServices]);
 
@@ -91,83 +83,85 @@ export default function AdditionalServicesAdd({
       .map((item) => ({
         ...(item.id ? { id: item.id } : {}),
         title: item.title.trim(),
-        price: 0, // No price required for others
+        price: 0,
         type: "OTHERS",
       }));
     onChange(payload);
   };
 
   return (
-    <div className="mb-6">
-      <Card className="border border-[#19CA32] py-5">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle>Additional Services</CardTitle>
-            <CardDescription>
-              Add any extra services you offer so they can be displayed on your profile.
-            </CardDescription>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addService}
-            className="border-[#19CA32] text-[#19CA32] hover:bg-green-50"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Service
-          </Button>
-        </CardHeader>
+    <div className="w-full bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-6">
+      {/* Brand Green Header matching BreaksModal */}
+      <div className="bg-[#19CA32] text-white p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Layers className="w-5 h-5" />
+          <h2 className="text-base sm:text-lg font-bold">Additional Services</h2>
+        </div>
+      </div>
 
-        <CardContent className="p-6">
-          {items.length === 0 ? (
-            <div className="rounded-md border border-dashed border-[#19CA32] p-6 text-center">
-              <p className="text-sm text-gray-500">No additional services added yet.</p>
-              <p className="text-sm text-gray-500">
-                Click &quot;Add Service&quot; above to create one.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {items.map((item, index) => {
-                const isCurrentDeleting = deletingId === item.id;
-                return (
-                  <div
-                    key={item.id || index}
-                    className="rounded-md border border-[#19CA32] p-4 space-y-2"
-                  >
-                    <Label className="text-sm font-medium text-gray-700">
-                      Service Name {index + 1}
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        value={item.title}
-                        onChange={(e) => updateTitle(index, e.target.value)}
-                        placeholder="e.g. Brake Check"
-                        className="h-11 pr-10 border border-[#19CA32]"
-                        disabled={isCurrentDeleting}
-                      />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => removeService(index)}
-                        disabled={isCurrentDeleting || isDeleting}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-red-50"
-                      >
-                        {isCurrentDeleting ? (
-                          <Loader2 className="h-4 w-4 text-red-500 animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                      </Button>
+      {/* Content Body */}
+      <div className="p-4 sm:p-6 space-y-3">
+        {/* Add Service Button (Matching BreaksModal Add Break button) */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={addService}
+          className="w-full border-dashed border-gray-300 text-gray-700 hover:bg-emerald-50 hover:border-[#19CA32] hover:text-[#19CA32] text-xs font-semibold h-9 rounded-md cursor-pointer flex items-center justify-center gap-1.5 mb-2"
+        >
+          <Plus className="w-4 h-4 text-[#19CA32]" />
+          <span>Add Service</span>
+        </Button>
+
+        {/* List of Services - 3 columns on xl devices, 2 columns on lg devices, 1 column on smaller devices */}
+        {items.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            {items.map((item, index) => {
+              const isCurrentDeleting = deletingId === item.id;
+              return (
+                <div
+                  key={item.id || index}
+                  className="bg-white border border-gray-200 rounded-md p-3.5 shadow-xs flex items-center justify-between gap-3 hover:border-emerald-200 transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-9 h-9 rounded-md bg-emerald-50 text-[#19CA32] border border-emerald-100 flex items-center justify-center shrink-0">
+                      <Wrench className="w-4 h-4" />
                     </div>
+                    <Input
+                      type="text"
+                      placeholder="Service Description"
+                      value={item.title}
+                      onChange={(e) => updateTitle(index, e.target.value)}
+                      disabled={isCurrentDeleting}
+                      className="h-9 text-xs font-semibold bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-[#19CA32] rounded-md flex-1 min-w-0"
+                    />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeService(index)}
+                    disabled={isCurrentDeleting || isDeleting}
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md shrink-0 cursor-pointer"
+                    title="Delete Service"
+                  >
+                    {isCurrentDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            <Wrench className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+            <p className="text-xs font-medium">No additional services added yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

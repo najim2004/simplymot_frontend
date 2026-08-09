@@ -10,7 +10,7 @@ import {
   ServiceItem,
 } from "@/features/garage";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-toastify";
 
@@ -66,20 +66,17 @@ export default function PricingPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg border border-[#19CA32] p-6 animate-pulse space-y-4">
-          <Skeleton className="h-6 w-32" />
+      <div className="w-full space-y-6">
+        <div className="w-full bg-white rounded-md border border-gray-200 p-6 animate-pulse space-y-4">
+          <Skeleton className="h-6 w-40" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Skeleton className="h-11 w-full rounded-md" />
-            <Skeleton className="h-11 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-[#19CA32] p-6 animate-pulse space-y-4">
+        <div className="w-full bg-white rounded-md border border-gray-200 p-6 animate-pulse space-y-4">
           <Skeleton className="h-6 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Skeleton className="h-11 w-full rounded-md" />
-            <Skeleton className="h-11 w-full rounded-md" />
-          </div>
+          <Skeleton className="h-10 w-full rounded-md" />
         </div>
         <Skeleton className="h-10 w-full rounded-md" />
       </div>
@@ -88,38 +85,45 @@ export default function PricingPage() {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 space-y-3">
-        <p className="text-red-500 text-sm">Unable to load pricing data.</p>
-        <Button onClick={() => refetch()} className="bg-[#19CA32] hover:bg-[#16b82e]">
-          Retry
+      <div className="w-full flex flex-col items-center justify-center py-16 space-y-3 bg-white rounded-md border border-gray-200 shadow-xs">
+        <p className="text-red-500 font-semibold text-sm">Unable to load pricing data.</p>
+        <Button onClick={() => refetch()} className="bg-[#19CA32] hover:bg-[#15b02b] text-white text-xs font-semibold px-4 h-9 rounded-md">
+          Retry Loading
         </Button>
       </div>
     );
   }
 
   return (
-    <div>
-      <MotFeeAdd motServices={motServices} onChange={setMotPayload} />
+    <div className="w-full space-y-6 pb-10">
+      {/* MOT Section */}
+      <MotFeeAdd garageId={garageId || ""} motServices={motServices} onChange={setMotPayload} />
+
+      {/* Additional Services Section */}
       <AdditionalServicesAdd
         garageId={garageId || ""}
         otherServices={otherServices}
         onChange={setOthersPayload}
       />
 
-      <div className="mb-10">
+      {/* Full Width Save Action Button matching BreaksModal style */}
+      <div className="w-full">
         <Button
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full h-10 bg-[#19CA32] cursor-pointer hover:bg-[#16b82e] text-white font-medium text-base disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full h-11 bg-[#19CA32] hover:bg-[#15b02b] text-white font-bold text-sm sm:text-base rounded-md shadow-md cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {isSaving ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
-              Saving...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
             </>
           ) : (
-            "Save"
+            <>
+              <Save className="w-4 h-4" />
+              <span>Save Services & Pricing</span>
+            </>
           )}
         </Button>
       </div>

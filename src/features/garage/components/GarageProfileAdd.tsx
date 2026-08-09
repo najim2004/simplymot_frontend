@@ -150,7 +150,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
         {/* Card Top Header (Logo + Price + Edit / Cancel Button) */}
         <div className="p-5 border-b border-gray-200 bg-gray-50/50 relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           {/* Absolutely Positioned Edit / Cancel Button at Top Right Corner */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+          <div className="absolute bottom-4 md:top-4 right-4 sm:top-6 sm:right-6 z-10">
             {!isEditing ? (
               <Button
                 type="button"
@@ -174,9 +174,9 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
           </div>
 
           {/* Top Left: Enlarged Garage Logo Image */}
-          <div className="flex items-center gap-5 pt-4 sm:pt-0">
-            <div className="relative group shrink-0">
-              <div className="w-32 h-32 sm:w-56 sm:h-56 rounded-xl border bg-white p-2.5 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center gap-5 pt-4 sm:pt-0 w-full">
+            <div className="relative group shrink-0 mx-auto sm:mx-0">
+              <div className="w-56 h-56 rounded-xl border bg-white p-2.5 flex items-center justify-center overflow-hidden">
                 <Image
                   width={160}
                   height={160}
@@ -210,7 +210,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
           </div>
 
           {/* Right Header Area: Price Display below the Edit button */}
-          <div className="mt-8 sm:mt-10 self-end sm:self-auto pr-2">
+          <div className="mt-8 sm:mt-10 self-end sm:self-auto pr-2 mr-auto md:mr-0">
             <div className="flex items-center gap-1.5 text-2xl sm:text-3xl font-extrabold text-[#19CA32]">
               <Tag className="w-6 h-6 text-[#19CA32]" />
               <span>£{motPrice}</span>
@@ -402,7 +402,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
 
             {/* Submit & Cancel Buttons (Only visible in Edit mode) */}
             {isEditing && (
-              <div className="flex items-center justify-end gap-4 pt-4">
+              <div className="grid grid-cols-2 gap-4 pt-4">
                 <Button
                   type="button"
                   variant="outline"

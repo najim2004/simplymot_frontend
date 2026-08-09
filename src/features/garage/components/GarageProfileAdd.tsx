@@ -34,7 +34,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = useId();
 
-  const [updateProfile, { isLoading: isUpdating }] = useUpdateGarageProfileMutation();
+  const [updateProfile, { isLoading: isUpdating }] =
+    useUpdateGarageProfileMutation();
 
   const {
     register,
@@ -83,7 +84,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
       if (data.garageName) formData.append("garage_name", data.garageName);
       if (data.vtsNumber) formData.append("vts_number", data.vtsNumber);
       if (data.email) formData.append("contact_email", data.email);
-      if (data.contactNumber) formData.append("phone_number", data.contactNumber);
+      if (data.contactNumber)
+        formData.append("phone_number", data.contactNumber);
       if (data.postcode) formData.append("post_code", data.postcode);
       if (data.address) formData.append("address", data.address);
       if (selectedFile) {
@@ -134,7 +136,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
 
   return (
     <div className="w-full">
-      <div className="w-full bg-white rounded-xl border border-[#19CA32] shadow-lg overflow-hidden">
+      <div className="w-full bg-white rounded-xl overflow-hidden">
         {/* Hidden File Input */}
         <input
           id={fileInputId}
@@ -146,7 +148,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
         />
 
         {/* Card Top Header (Logo + Price + Edit / Cancel Button) */}
-        <div className="p-6 sm:p-8 border-b border-gray-200 bg-gray-50/50 relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="p-5 border-b border-gray-200 bg-gray-50/50 relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           {/* Absolutely Positioned Edit / Cancel Button at Top Right Corner */}
           <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
             {!isEditing ? (
@@ -174,7 +176,7 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
           {/* Top Left: Enlarged Garage Logo Image */}
           <div className="flex items-center gap-5 pt-4 sm:pt-0">
             <div className="relative group shrink-0">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl border-2 border-gray-200 bg-white p-2.5 shadow-md flex items-center justify-center overflow-hidden">
+              <div className="w-32 h-32 sm:w-56 sm:h-56 rounded-xl border bg-white p-2.5 flex items-center justify-center overflow-hidden">
                 <Image
                   width={160}
                   height={160}
@@ -222,7 +224,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
             {/* Name of Garage - Full Width */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700 block">
-                Name of Garage {isEditing && <span className="text-red-500">*</span>}
+                Name of Garage{" "}
+                {isEditing && <span className="text-red-500">*</span>}
               </Label>
 
               {isEditing ? (
@@ -244,7 +247,9 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
               )}
 
               {errors.garageName && isEditing && (
-                <p className="text-sm text-red-500">{errors.garageName.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.garageName.message}
+                </p>
               )}
             </div>
 
@@ -252,7 +257,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 block">
-                  VTS Number {isEditing && <span className="text-red-500">*</span>}
+                  VTS Number{" "}
+                  {isEditing && <span className="text-red-500">*</span>}
                 </Label>
 
                 {isEditing ? (
@@ -270,13 +276,16 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
                 )}
 
                 {errors.vtsNumber && isEditing && (
-                  <p className="text-sm text-red-500">{errors.vtsNumber.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.vtsNumber.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 block">
-                  Postcode {isEditing && <span className="text-red-500">*</span>}
+                  Postcode{" "}
+                  {isEditing && <span className="text-red-500">*</span>}
                 </Label>
 
                 {isEditing ? (
@@ -294,7 +303,9 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
                 )}
 
                 {errors.postcode && isEditing && (
-                  <p className="text-sm text-red-500">{errors.postcode.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.postcode.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -303,7 +314,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 block">
-                  Garage Contact Email {isEditing && <span className="text-red-500">*</span>}
+                  Garage Contact Email{" "}
+                  {isEditing && <span className="text-red-500">*</span>}
                 </Label>
 
                 {isEditing ? (
@@ -332,7 +344,8 @@ export default function GarageProfileAdd({ profile }: GarageProfileAddProps) {
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 block">
-                  Garage Phone Number {isEditing && <span className="text-red-500">*</span>}
+                  Garage Phone Number{" "}
+                  {isEditing && <span className="text-red-500">*</span>}
                 </Label>
 
                 {isEditing ? (

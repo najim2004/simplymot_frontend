@@ -1,138 +1,165 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/store";
-import type { PricingResponsePayload } from "../api/garage-pricing.api";
+import type { RawMotGroup, RawService, PricingService } from "../api/garage-pricing.api";
 
+// ─── State Shape ──────────────────────────────────────────────────────────────
 export interface PricingServiceState {
   id?: string | null;
   name: string;
-  price: string;
+  price: string; // always string for form inputs
+  vehicle_class?: string | null;
 }
 
 export interface AdditionalServiceState {
   id?: string | null;
   name: string;
-  price?: string | null;
+  price: string;
 }
 
 interface PricingState {
-  mot: PricingServiceState;
-  retest: PricingServiceState;
+  class4: {
+    mot: PricingServiceState;
+    mot_retest: PricingServiceState;
+  };
   class7: {
     enabled: boolean;
     mot: PricingServiceState;
-    retest: PricingServiceState;
+    mot_retest: PricingServiceState;
   };
-  additionals: AdditionalServiceState[];
+  other_services: AdditionalServiceState[];
   formVersion: number;
 }
 
-const initialServiceState: PricingServiceState = {
-  name: "",
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const emptyService = (name: string, vehicle_class?: string | null): PricingServiceState => ({
+  id: null,
+  name,
   price: "",
+  vehicle_class: vehicle_class ?? null,
+});
+
+const rawToState = (svc: RawService | null | undefined, fallbackName: string): PricingServiceState => {
+  if (!svc) return emptyService(fallbackName);
+  return {
+    id: svc.id ?? null,
+    name: svc.title || fallbackName,
+    price: svc.price !== null && svc.price !== undefined ? String(svc.price) : "",
+    vehicle_class: svc.vehicle_class ?? null,
+  };
 };
 
+// ─── Initial State ────────────────────────────────────────────────────────────
 const initialState: PricingState = {
-  mot: { ...initialServiceState, name: "MOT Test" },
-  retest: { ...initialServiceState, name: "MOT Retest" },
+  class4: {
+    mot: emptyService("MOT Test", "Class 4"),
+    mot_retest: emptyService("MOT Retest", "Class 4"),
+  },
   class7: {
     enabled: false,
-    mot: { ...initialServiceState, name: "Class 7 MOT Test" },
-    retest: { ...initialServiceState, name: "Class 7 MOT Retest" },
+    mot: emptyService("Class 7 MOT Test", "Class 7"),
+    mot_retest: emptyService("Class 7 MOT Retest", "Class 7"),
   },
-  additionals: [],
+  other_services: [],
   formVersion: 0,
 };
 
+// ─── Slice ────────────────────────────────────────────────────────────────────
 const pricingSlice = createSlice({
   name: "pricing",
   initialState,
   reducers: {
-    setMot(state, action: PayloadAction<Partial<PricingServiceState>>) {
-      state.mot = { ...state.mot, ...action.payload };
+    setClass4Mot(state, action: PayloadAction<Partial<PricingServiceState>>) {
+      state.class4.mot = { ...state.class4.mot, ...action.payload };
     },
-    setRetest(state, action: PayloadAction<Partial<PricingServiceState>>) {
-      state.retest = { ...state.retest, ...action.payload };
+    setClass4Retest(state, action: PayloadAction<Partial<PricingServiceState>>) {
+      state.class4.mot_retest = { ...state.class4.mot_retest, ...action.payload };
     },
     setClass7Enabled(state, action: PayloadAction<boolean>) {
       state.class7.enabled = action.payload;
       if (!action.payload) {
         state.class7.mot.price = "";
-        state.class7.retest.price = "";
+        state.class7.mot_retest.price = "";
       }
     },
     setClass7Mot(state, action: PayloadAction<Partial<PricingServiceState>>) {
       state.class7.mot = { ...state.class7.mot, ...action.payload };
     },
     setClass7Retest(state, action: PayloadAction<Partial<PricingServiceState>>) {
-      state.class7.retest = { ...state.class7.retest, ...action.payload };
+      state.class7.mot_retest = { ...state.class7.mot_retest, ...action.payload };
     },
-    setAdditionals(state, action: PayloadAction<AdditionalServiceState[]>) {
-      state.additionals = action.payload;
+    setOtherServices(state, action: PayloadAction<AdditionalServiceState[]>) {
+      state.other_services = action.payload;
     },
     resetPricing() {
       return initialState;
     },
-    setPricingFromResponse(state, action: PayloadAction<PricingResponsePayload>) {
-      const { mot, retest, additionals } = action.payload;
-      const class4Mot = action.payload.class4?.mot || mot;
-      const class4Retest = action.payload.class4?.retest || retest;
-      const class7Mot = action.payload.class7?.mot;
-      const class7Retest = action.payload.class7?.retest;
-      
-      if (class4Mot) {
-        state.mot = {
-          id: class4Mot.id ?? null,
-          name: class4Mot.name || "MOT Test",
-          price: class4Mot.price ? String(class4Mot.price) : "",
+
+    /**
+     * Load raw backend response into Redux state.
+     * Backend shape: { mot_services: RawMotGroup[], other_services: RawService[] }
+     * No /100 division — prices are stored as-is from backend.
+     */
+    loadFromBackend(
+      state,
+      action: PayloadAction<{
+        mot_services: RawMotGroup[];
+        other_services: RawService[];
+      }>
+    ) {
+      const { mot_services, other_services } = action.payload;
+
+      // Find Class 4 group (vehicle_class is "Class 4" or null = default)
+      const class4Group =
+        mot_services.find(
+          (g) =>
+            g.vehicle_class === "Class 4" ||
+            g.vehicle_class === null ||
+            g.vehicle_class === undefined
+        ) ?? null;
+
+      // Find Class 7 group
+      const class7Group =
+        mot_services.find((g) => g.vehicle_class === "Class 7") ?? null;
+
+      state.class4 = {
+        mot: rawToState(class4Group?.mot, "MOT Test"),
+        mot_retest: rawToState(class4Group?.mot_retest, "MOT Retest"),
+      };
+
+      if (class7Group) {
+        state.class7 = {
+          enabled: true,
+          mot: rawToState(class7Group.mot, "Class 7 MOT Test"),
+          mot_retest: rawToState(class7Group.mot_retest, "Class 7 MOT Retest"),
         };
-      }
-      
-      if (class4Retest) {
-        state.retest = {
-          id: class4Retest.id ?? null,
-          name: class4Retest.name || "MOT Retest",
-          price: class4Retest.price || class4Retest.price === 0 ? String(class4Retest.price) : "",
+      } else {
+        state.class7 = {
+          enabled: false,
+          mot: emptyService("Class 7 MOT Test", "Class 7"),
+          mot_retest: emptyService("Class 7 MOT Retest", "Class 7"),
         };
       }
 
-      state.class7 = {
-        enabled: Boolean(action.payload.class7?.enabled || class7Mot || class7Retest),
-        mot: {
-          id: class7Mot?.id ?? null,
-          name: class7Mot?.name || "Class 7 MOT Test",
-          price: class7Mot?.price ? String(class7Mot.price) : "",
-        },
-        retest: {
-          id: class7Retest?.id ?? null,
-          name: class7Retest?.name || "Class 7 MOT Retest",
-          price: class7Retest?.price || class7Retest?.price === 0 ? String(class7Retest.price) : "",
-        },
-      };
-      
-      if (additionals && Array.isArray(additionals)) {
-        state.additionals = additionals.map((service) => ({
-          id: service?.id ?? null,
-          name: service?.name || "",
-          price: service?.price ? String(service.price) : "",
-        }));
-      } else {
-        state.additionals = [];
-      }
-      
+      state.other_services = (other_services || []).map((svc) => ({
+        id: svc.id ?? null,
+        name: svc.title || "",
+        price: svc.price !== null && svc.price !== undefined ? String(svc.price) : "",
+      }));
+
       state.formVersion += 1;
     },
   },
 });
 
 export const {
-  setMot,
-  setRetest,
+  setClass4Mot,
+  setClass4Retest,
   setClass7Enabled,
   setClass7Mot,
   setClass7Retest,
-  setAdditionals,
+  setOtherServices,
   resetPricing,
-  setPricingFromResponse,
+  loadFromBackend,
 } = pricingSlice.actions;
 
 export const selectPricing = (state: RootState) => state.pricing;

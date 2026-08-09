@@ -14,7 +14,7 @@ export { default as garageBookingReducer } from "./store/garage-booking.slice";
 export { default as GarageProfileComponent } from "./components/Profile";
 export { default as GarageProfileCard } from "./components/GarageProfileCard";
 export { default as GarageProfileAdd } from "./components/GarageProfileAdd";
-export { default as MotFeeAdd, getPricingLoadingState } from "./components/MotFeeAdd";
+export { default as MotFeeAdd } from "./components/MotFeeAdd";
 export { default as AdditionalServicesAdd } from "./components/AdditionalServicesAdd";
 export { default as SubscriptionDetails } from "./components/Subscription/SubscriptionDetails";
 export { default as CancelSubscription } from "./components/Subscription/CancelSubscription";

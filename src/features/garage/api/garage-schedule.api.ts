@@ -127,6 +127,18 @@ export const scheduleApi = apiSlice.injectEndpoints({
         const scheduleData = (scheduleRes.data as any)?.data || {};
         const intervals = scheduleData.schedule_intervals || [];
         const daily_hours: Record<string, DailyHourConfig> = {};
+        const restrictions: BreakRestriction[] = [];
+
+        const dayNumMap: Record<string, number> = {
+          sunday: 0,
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+        };
+
         intervals.forEach((item: any) => {
           const dayKey = item.day_of_week.toLowerCase();
           daily_hours[dayKey] = {
@@ -139,6 +151,18 @@ export const scheduleApi = apiSlice.injectEndpoints({
               },
             ],
           };
+
+          if (Array.isArray(item.break_times)) {
+            item.break_times.forEach((b: any) => {
+              restrictions.push({
+                type: "BREAK",
+                day_of_week: [dayNumMap[dayKey] ?? 1],
+                start_time: b.start_time,
+                end_time: b.end_time,
+                description: b.description || "Break",
+              });
+            });
+          }
         });
 
         return {
@@ -153,7 +177,7 @@ export const scheduleApi = apiSlice.injectEndpoints({
               start_time: null,
               end_time: null,
               slot_duration: intervals[0]?.slot_duration || 60,
-              restrictions: [],
+              restrictions,
               daily_hours,
               is_active: true,
             },
@@ -184,9 +208,19 @@ export const scheduleApi = apiSlice.injectEndpoints({
           saturday: "SATURDAY",
           sunday: "SUNDAY",
         };
+        const dayNumMap: Record<string, number> = {
+          sunday: 0,
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+        };
 
         for (const [dayKey, dayConfig] of Object.entries(body.daily_hours)) {
-          const dayOfWeek = daysMap[dayKey.toLowerCase()];
+          const dayLower = dayKey.toLowerCase();
+          const dayOfWeek = daysMap[dayLower];
           if (!dayOfWeek) continue;
 
           const isClosed = dayConfig.is_closed ?? false;
@@ -194,6 +228,20 @@ export const scheduleApi = apiSlice.injectEndpoints({
           const openTime = firstInterval?.start_time || "09:00";
           const closeTime = firstInterval?.end_time || "17:00";
           const slotDuration = dayConfig.slot_duration || 60;
+          const dayNum = dayNumMap[dayLower];
+
+          const dayBreaks = (body.restrictions || [])
+            .filter(
+              (r) =>
+                r.type === "BREAK" &&
+                Array.isArray(r.day_of_week) &&
+                r.day_of_week.includes(dayNum),
+            )
+            .map((r) => ({
+              start_time: r.start_time,
+              end_time: r.end_time,
+              description: r.description,
+            }));
 
           intervals.push({
             day_of_week: dayOfWeek,
@@ -202,6 +250,7 @@ export const scheduleApi = apiSlice.injectEndpoints({
             close_time: closeTime,
             slot_duration: slotDuration,
             buffer_time: 10,
+            break_times: dayBreaks,
           });
         }
 

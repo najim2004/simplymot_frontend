@@ -16,8 +16,8 @@ import {
 import { toast } from "react-toastify";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/features/contact";
+import { useGetProfileQuery } from "@/features/garage";
 import { useAppSelector } from "@/store/hooks";
-import { useGetMeQuery } from "@/features/auth";
 
 type ContactFormValues = {
   garage_name: string;
@@ -31,12 +31,11 @@ const inputStyle =
   "py-6 px-4 border border-gray-300 text-base rounded-lg focus-visible:border-[#19CA32] focus-visible:ring-1 focus-visible:ring-[#19CA32]";
 
 export default function ContactUs() {
+  const { user } = useAppSelector((state) => state.auth);
+  const { data: profileResponse } = useGetProfileQuery();
+
   const [createContactMessage, { isLoading }] =
     useCreateContactMessageMutation();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const { data: authMeData } = useGetMeQuery(undefined, {
-    skip: !isAuthenticated,
-  });
 
   const form = useForm<ContactFormValues>({
     defaultValues: {
@@ -48,27 +47,38 @@ export default function ContactUs() {
     },
   });
 
+  // Pre-fill default values from Redux user state & cached garage profile
   useEffect(() => {
-    if (isAuthenticated && authMeData?.success && authMeData?.data) {
-      const responseData = authMeData.data;
-      form.reset({
-        garage_name: responseData.garage_name || "",
-        primary_contact_person_name: responseData.primary_contact || "",
-        email: responseData.email || "",
-        phone_number: responseData.phone_number || "",
-        message: "",
-      });
-    }
-  }, [isAuthenticated, authMeData, form]);
+    const garageProfile = profileResponse?.data;
+
+    const garageName =
+      garageProfile?.garage_name ||
+      user?.garages?.[0]?.garage_name ||
+      user?.garage_name ||
+      "";
+
+    const primaryContact = user?.name || user?.primary_contact || "";
+
+    const userEmail = user?.email || "";
+    const userPhone = user?.phone_number || "";
+
+    form.reset({
+      garage_name: garageName,
+      primary_contact_person_name: primaryContact,
+      email: userEmail,
+      phone_number: userPhone,
+      message: "",
+    });
+  }, [user, profileResponse, form]);
 
   const onSubmit = async (data: ContactFormValues) => {
     try {
       const apiData = {
-        name: data.garage_name,
+        garage_name: data.garage_name,
+        primary_contact: data.primary_contact_person_name,
         email: data.email,
         phone_number: data.phone_number,
         message: data.message,
-        primary_contact: data.primary_contact_person_name,
         source: "Garage",
       };
 
@@ -76,7 +86,9 @@ export default function ContactUs() {
       toast.success(response.message || "Form submitted successfully");
       form.reset({
         garage_name: form.getValues("garage_name"),
-        primary_contact_person_name: form.getValues("primary_contact_person_name"),
+        primary_contact_person_name: form.getValues(
+          "primary_contact_person_name",
+        ),
         email: form.getValues("email"),
         phone_number: form.getValues("phone_number"),
         message: "",
@@ -94,10 +106,12 @@ export default function ContactUs() {
   return (
     <div className="flex justify-center items-center min-h-[80vh] py-8">
       <div className="w-full max-w-lg rounded-xl border border-[#19CA32] shadow-lg overflow-hidden">
+        {/* Form Header */}
         <div className="bg-[#19CA32] text-white p-4">
           <h1 className="text-xl font-semibold">Contact Us</h1>
         </div>
 
+        {/* Form Body using Shadcn UI Form */}
         <div className="p-6 bg-white">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -129,7 +143,7 @@ export default function ContactUs() {
                 )}
               />
 
-              {/* Primary Contact Person */}
+              {/* Primary Contact Person Name */}
               <FormField
                 control={form.control}
                 name="primary_contact_person_name"
@@ -143,7 +157,8 @@ export default function ContactUs() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium text-gray-700 block">
-                      Primary Contact Person Name <span className="text-red-500">*</span>
+                      Primary Contact Person Name{" "}
+                      <span className="text-red-500">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input

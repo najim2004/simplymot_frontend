@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Eye, EyeOff, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,8 @@ export default function ForgotPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams?.get("redirect");
 
   const emailForm = useForm<EmailFormData>();
   const tokenPasswordForm = useForm<TokenPasswordFormData>();
@@ -93,7 +95,9 @@ export default function ForgotPassword() {
       toast.success(response.message || "Reset link sent to your email");
     } catch (err: unknown) {
       const error = err as { data?: { message?: string }; message?: string };
-      toast.error(error?.data?.message || error?.message || "Failed to send reset email");
+      toast.error(
+        error?.data?.message || error?.message || "Failed to send reset email",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -122,10 +126,15 @@ export default function ForgotPassword() {
       }).unwrap();
       toast.success(response.message || "Password reset successfully");
       resetTimer();
-      router.push("/login");
+      const loginPath = redirectParam
+        ? `/login/driver?redirect=${encodeURIComponent(redirectParam)}`
+        : "/login/driver";
+      router.push(loginPath);
     } catch (err: unknown) {
       const error = err as { data?: { message?: string }; message?: string };
-      toast.error(error?.data?.message || error?.message || "Failed to reset password");
+      toast.error(
+        error?.data?.message || error?.message || "Failed to reset password",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -135,12 +144,16 @@ export default function ForgotPassword() {
     if (!userEmail) return;
     setIsLoading(true);
     try {
-      const response = await resendVerificationEmail({ email: userEmail }).unwrap();
+      const response = await resendVerificationEmail({
+        email: userEmail,
+      }).unwrap();
       startTimer();
       toast.success(response.message || "Reset code resent to your email");
     } catch (err: unknown) {
       const error = err as { data?: { message?: string }; message?: string };
-      toast.error(error?.data?.message || error?.message || "Failed to resend code");
+      toast.error(
+        error?.data?.message || error?.message || "Failed to resend code",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -163,13 +176,17 @@ export default function ForgotPassword() {
         }}
       >
         <div className="relative z-10 p-6 lg:p-12 flex flex-col h-full">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <button
-              onClick={() => (currentStep === "tokenPassword" ? handleBackStep() : router.back())}
+              onClick={() =>
+                currentStep === "tokenPassword"
+                  ? handleBackStep()
+                  : router.back()
+              }
               className="flex justify-start cursor-pointer border border-white rounded-full p-2 w-fit group mb-4"
             >
               <div className="text-white font-bold text-4xl md:text-5xl xl:text-6xl font-arial-rounded text-center group-hover:scale-150 transition-all duration-300">
-                <ArrowLeft className="w-4 h-4 text-white flex-shrink-0" />
+                <ArrowLeft className="w-4 h-4 text-white shrink-0" />
               </div>
             </button>
 
@@ -182,7 +199,7 @@ export default function ForgotPassword() {
             <Image
               src={carImage}
               alt="Car Illustration"
-              className="w-full max-w-[500px] h-auto object-contain"
+              className="w-full max-w-125 h-auto object-contain"
               priority
             />
           </div>
@@ -203,9 +220,15 @@ export default function ForgotPassword() {
           </div>
 
           {currentStep === "email" ? (
-            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+            <form
+              onSubmit={emailForm.handleSubmit(onEmailSubmit)}
+              className="space-y-4"
+            >
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
                   Email
                 </Label>
                 <Input
@@ -219,7 +242,9 @@ export default function ForgotPassword() {
                       message: "Invalid email address",
                     },
                   })}
-                  className={emailForm.formState.errors.email ? "border-red-500" : ""}
+                  className={
+                    emailForm.formState.errors.email ? "border-red-500" : ""
+                  }
                 />
                 {emailForm.formState.errors.email && (
                   <p className="text-red-500 text-xs mt-1">
@@ -244,12 +269,17 @@ export default function ForgotPassword() {
               </Button>
             </form>
           ) : (
-            <form onSubmit={tokenPasswordForm.handleSubmit(onTokenPasswordSubmit)} className="space-y-4">
+            <form
+              onSubmit={tokenPasswordForm.handleSubmit(onTokenPasswordSubmit)}
+              className="space-y-4"
+            >
               {isTimerRunning && (
                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4 text-green-600" />
-                    <span className="text-sm text-green-700 font-medium">Code expires in:</span>
+                    <span className="text-sm text-green-700 font-medium">
+                      Code expires in:
+                    </span>
                   </div>
                   <span className="text-sm font-bold text-green-700 font-mono">
                     {formatTime(timeLeft)}
@@ -258,7 +288,10 @@ export default function ForgotPassword() {
               )}
 
               <div>
-                <Label htmlFor="token" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label
+                  htmlFor="token"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
                   Reset Code
                 </Label>
                 <Input
@@ -268,7 +301,11 @@ export default function ForgotPassword() {
                   {...tokenPasswordForm.register("token", {
                     required: "Reset code is required",
                   })}
-                  className={tokenPasswordForm.formState.errors.token ? "border-red-500" : ""}
+                  className={
+                    tokenPasswordForm.formState.errors.token
+                      ? "border-red-500"
+                      : ""
+                  }
                 />
                 {tokenPasswordForm.formState.errors.token && (
                   <p className="text-red-500 text-xs mt-1">
@@ -278,7 +315,10 @@ export default function ForgotPassword() {
               </div>
 
               <div>
-                <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label
+                  htmlFor="newPassword"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
                   New Password
                 </Label>
                 <div className="relative">
@@ -293,14 +333,22 @@ export default function ForgotPassword() {
                         message: "Password must be at least 6 characters",
                       },
                     })}
-                    className={tokenPasswordForm.formState.errors.newPassword ? "border-red-500 pr-10" : "pr-10"}
+                    className={
+                      tokenPasswordForm.formState.errors.newPassword
+                        ? "border-red-500 pr-10"
+                        : "pr-10"
+                    }
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showNewPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {tokenPasswordForm.formState.errors.newPassword && (
@@ -311,7 +359,10 @@ export default function ForgotPassword() {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 block mb-1">
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
                   Confirm Password
                 </Label>
                 <div className="relative">
@@ -322,14 +373,22 @@ export default function ForgotPassword() {
                     {...tokenPasswordForm.register("confirmPassword", {
                       required: "Please confirm your password",
                     })}
-                    className={tokenPasswordForm.formState.errors.confirmPassword ? "border-red-500 pr-10" : "pr-10"}
+                    className={
+                      tokenPasswordForm.formState.errors.confirmPassword
+                        ? "border-red-500 pr-10"
+                        : "pr-10"
+                    }
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {tokenPasswordForm.formState.errors.confirmPassword && (
@@ -370,7 +429,14 @@ export default function ForgotPassword() {
 
           <div className="text-center text-sm text-gray-600 pt-2">
             Remembered your password?{" "}
-            <Link href="/login" className="font-semibold text-[#006644] hover:underline">
+            <Link
+              href={
+                redirectParam
+                  ? `/login/driver?redirect=${encodeURIComponent(redirectParam)}`
+                  : "/login/driver"
+              }
+              className="font-semibold text-[#006644] hover:underline"
+            >
               Back to Sign In
             </Link>
           </div>

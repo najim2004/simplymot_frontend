@@ -153,7 +153,13 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                           Password <span className="text-red-500">*</span>
                         </FormLabel>
                         <Link
-                          href="/forgot-password"
+                          href={`/forgot-password${
+                            searchParams?.get("redirect")
+                              ? `?redirect=${encodeURIComponent(
+                                  searchParams.get("redirect")!,
+                                )}`
+                              : ""
+                          }`}
                           className="text-xs font-semibold text-[#19CA32] hover:underline"
                         >
                           Forgot Password?
@@ -188,12 +194,18 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
 
                 <div className="text-xs text-right pt-1">
                   Need to verify your email?{" "}
-                  <button
-                    type="button"
-                    className="font-semibold text-[#19CA32] hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                  <Link
+                    href={`/verify-email?userKind=${userKind}${
+                      searchParams?.get("redirect")
+                        ? `&redirect=${encodeURIComponent(
+                            searchParams.get("redirect")!,
+                          )}`
+                        : ""
+                    }`}
+                    className="font-semibold text-[#19CA32] hover:underline cursor-pointer"
                   >
                     Enter verification code
-                  </button>
+                  </Link>
                 </div>
 
                 <Button
@@ -217,7 +229,13 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
                     <Link
                       href={
                         userKind === "DRIVER"
-                          ? "/create-account/driver"
+                          ? `/create-account/driver${
+                              searchParams?.get("redirect")
+                                ? `?redirect=${encodeURIComponent(
+                                    searchParams.get("redirect")!,
+                                  )}`
+                                : ""
+                            }`
                           : "/create-account/garage"
                       }
                       className="text-[#19CA32] hover:underline font-medium"

@@ -10,3 +10,4 @@ export { default as BookingModal } from "./components/BookingModal";
 export { default as BookingSuccessModal } from "./components/BookingModal/BookingSuccessModal";
 export * from "./components/motReport";
 export * from "./components/myVehicles";
+export * from "./components/bookMyMot";

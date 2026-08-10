@@ -6,7 +6,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
-import { useGetGarageServicesQuery, BookingModal } from "@/features/driver";
+import {
+  useGetGarageServicesQuery,
+  BookingModal,
+  BookMyMotAutoBooking,
+} from "@/features/driver";
 
 function DetailsSkeleton() {
   return (
@@ -65,6 +69,8 @@ function DetailsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const garageId = searchParams.get("id");
+  const registration =
+    searchParams?.get("registration") || searchParams?.get("bk_reg") || "";
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const {
@@ -92,6 +98,9 @@ function DetailsContent() {
 
   return (
     <div className="w-full mx-auto">
+      {/* Auto-booking handler for guest users returning after login */}
+      <BookMyMotAutoBooking />
+
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {/* Left Column - Garage Details */}
@@ -223,7 +232,7 @@ function DetailsContent() {
                           <div className="absolute top-0 left-0 right-0 border-t border-gray-200"></div>
                         )}
                         <div className="flex items-center text-gray-700 text-sm sm:text-base py-2 sm:py-3">
-                          <div className="w-5 h-5 mr-3 flex items-center justify-center flex-shrink-0">
+                          <div className="w-5 h-5 mr-3 flex items-center justify-center shrink-0">
                             <svg
                               className="w-5 h-5 text-green-500"
                               fill="currentColor"
@@ -324,7 +333,7 @@ function DetailsContent() {
               <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <Button
                   onClick={() => setIsBookingModalOpen(true)}
-                  className="w-full bg-[#19CA32] text-[#fff] shadow-none font-semibold py-4 sm:py-6 text-sm xl:text-base rounded-lg transition-all duration-150 ease-out touch-manipulation select-none hover:bg-[#16b82e] hover:shadow-sm active:scale-[0.97] active:duration-75 active:bg-[#128f24] active:shadow-inner cursor-pointer"
+                  className="w-full bg-[#19CA32] text-white shadow-none font-semibold py-4 sm:py-6 text-sm xl:text-base rounded-lg transition-all duration-150 ease-out touch-manipulation select-none hover:bg-[#16b82e] hover:shadow-sm active:scale-[0.97] active:duration-75 active:bg-[#128f24] active:shadow-inner cursor-pointer"
                 >
                   Book My MOT
                 </Button>

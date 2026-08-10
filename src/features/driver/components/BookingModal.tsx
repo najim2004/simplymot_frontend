@@ -159,10 +159,10 @@ export default function BookingModal({
       const res = await bookSlot({
         garage_id: garage.id,
         additional_services: additionalServices || undefined,
-        ...(effectiveVehicleId
-          ? { vehicle_id: effectiveVehicleId }
-          : effectiveRegistrationNumber
-            ? { vehicle_registration_number: effectiveRegistrationNumber }
+        ...(effectiveRegistrationNumber
+          ? { vehicle_registration_number: effectiveRegistrationNumber }
+          : effectiveVehicleId
+            ? { vehicle_id: effectiveVehicleId }
             : {}),
         ...(selectedSlot.id
           ? { slot_id: selectedSlot.id }

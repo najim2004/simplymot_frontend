@@ -103,7 +103,7 @@ function BookMyMOTContent() {
   // Handle search errors
   useEffect(() => {
     if (error) {
-      toast.error(parseApiErrorMessage(error), { toastId: "search-api-error" });
+      toast.error(parseApiErrorMessage(error), { id: "search-api-error" });
     }
   }, [error]);
 

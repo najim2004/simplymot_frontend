@@ -33,7 +33,10 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
   const [selectedGarage, setSelectedGarage] = useState<GarageData | null>(null);
 
   const handleMoreDetails = (garageId: string) => {
-    router.push(`/driver/book-my-mot/details?id=${garageId}`);
+    const params = new URLSearchParams({ id: garageId });
+    const reg = vehicle?.registration_number;
+    if (reg) params.set("registration", reg);
+    router.push(`/driver/book-my-mot/details?${params.toString()}`);
   };
 
   const handleBookNow = (garage: GarageData) => {

@@ -4,12 +4,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import {
   useBookSlotMutation,
   BookingSuccessModal,
   type BookSlotResponse,
 } from "@/features/driver";
-import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 import { trackBookingConversionFromApiData } from "@/lib/tracking";
 
 /**
@@ -58,9 +58,10 @@ export const BookMyMotAutoBooking: React.FC = () => {
   // Single mutation — backend handles vehicle find-or-create via vehicle_registration_number
   const [bookSlot, { isLoading: isBooking }] = useBookSlotMutation();
 
-  // Clean booking params from URL (keep regular search params like registration, postcode)
+  // Clean booking params from URL silently without triggering Next.js page re-navigation
   const cleanupBookingParams = () => {
-    const params = new URLSearchParams(searchParams?.toString());
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
     const bookingKeys = [
       "is_logged_in",
       "bk_garage_id",
@@ -75,10 +76,9 @@ export const BookMyMotAutoBooking: React.FC = () => {
       "bk_garage_phone",
     ];
     bookingKeys.forEach((k) => params.delete(k));
-    router.replace(
-      `${pathname}${params.toString() ? `?${params.toString()}` : ""}`,
-      { scroll: false },
-    );
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ""}`;
+    window.history.replaceState(null, "", newUrl);
   };
 
   useEffect(() => {
@@ -92,16 +92,17 @@ export const BookMyMotAutoBooking: React.FC = () => {
         return;
       }
 
+      // Deduplication guard using sessionStorage to prevent duplicate API executions
+      const bookingKey = `auto_booked_${bkGarageId}_${bkSlotId || bkStartsAt}_${bkReg}`;
+      if (sessionStorage.getItem(bookingKey)) {
+        cleanupBookingParams();
+        return;
+      }
+
       isBookingInitiated.current = true;
+      sessionStorage.setItem(bookingKey, "true");
 
       try {
-        /**
-         * Send vehicle_registration_number directly to booking API.
-         * The backend will:
-         *  - find the vehicle in DB (and claim it if unowned), OR
-         *  - create a new vehicle entry and fetch DVLA data
-         * then proceed with the booking — all in one request.
-         */
         const result = await bookSlot({
           garage_id: bkGarageId,
           vehicle_registration_number: bkReg || undefined,
@@ -114,9 +115,9 @@ export const BookMyMotAutoBooking: React.FC = () => {
               }),
         }).unwrap();
 
-        if (result.success) {
+        if (result.success !== false) {
           trackBookingConversionFromApiData(result.data);
-          toast.success(result.message || "Slot booked successfully!");
+          toast.success(result.message || "MOT Slot booked successfully!");
 
           // Enrich response with garage info from URL params (API may not return it)
           const enrichedResponse: BookSlotResponse = {
@@ -135,15 +136,21 @@ export const BookMyMotAutoBooking: React.FC = () => {
           setBookingResponse(enrichedResponse);
           setIsSuccessModalOpen(true);
         } else {
+          sessionStorage.removeItem(bookingKey);
           toast.error(result.message || "Failed to book slot");
         }
       } catch (error: unknown) {
-        const err = error as { data?: { message?: string }; message?: string };
-        toast.error(
+        sessionStorage.removeItem(bookingKey);
+        const err = error as {
+          data?: { message?: string; error?: string };
+          message?: string;
+        };
+        const errorMessage =
           err?.data?.message ||
-            err?.message ||
-            "Failed to book slot. Please try again.",
-        );
+          err?.data?.error ||
+          err?.message ||
+          "Failed to book slot. Please try again.";
+        toast.error(errorMessage);
       } finally {
         cleanupBookingParams();
       }
@@ -167,18 +174,23 @@ export const BookMyMotAutoBooking: React.FC = () => {
         }}
       />
 
-      {/* Loading Overlay while auto-booking */}
-      {hasPendingBooking && isBooking && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex flex-col items-center justify-center">
-          <div className="bg-white p-10 rounded-3xl shadow-2xl scale-110">
-            <LoadingSpinner
-              size="lg"
-              text="Finalizing Your Booking..."
-              fullScreen={false}
-            />
+      {/* Full screen blurred loading overlay while auto-booking */}
+      {hasPendingBooking &&
+        (isBooking || isBookingInitiated.current) &&
+        !isSuccessModalOpen && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-99999 flex flex-col items-center justify-center text-center p-6 select-none">
+            <div className="w-16 h-16 rounded-full bg-[#19CA32]/20 flex items-center justify-center mb-5 ring-8 ring-[#19CA32]/10">
+              <Loader2 className="w-10 h-10 text-[#19CA32] animate-spin" />
+            </div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">
+              Finalizing Your MOT Booking...
+            </h3>
+            <p className="text-sm text-gray-300 mt-2 max-w-md leading-relaxed">
+              Please wait a moment while we confirm your appointment and vehicle
+              details with the garage.
+            </p>
           </div>
-        </div>
-      )}
+        )}
     </>
   );
 };

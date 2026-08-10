@@ -55,7 +55,7 @@ export const bookMyMotApi = apiSlice.injectEndpoints({
         url: `/api/garages/${id}/slots?date=${date}`,
         method: "GET",
       }),
-      providesTags: ["Booking"],
+      providesTags: ["GarageSlot"],
       keepUnusedDataFor: 0,
     }),
 

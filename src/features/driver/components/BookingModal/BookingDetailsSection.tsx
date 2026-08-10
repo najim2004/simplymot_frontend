@@ -7,7 +7,6 @@ import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Slot } from "@/features/driver";
-import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -110,12 +109,16 @@ export default function BookingDetailsSection({
             Available Time Slots <span className="text-red-500">*</span>
           </Label>
           {slotsLoading ? (
-            <div className="text-center py-6 text-gray-500 bg-white rounded-xl border border-dashed border-gray-200">
-              <LoadingSpinner
-                size="md"
-                text="Loading available slots..."
-                fullScreen={false}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-2 sm:p-3 bg-white rounded-xl border border-gray-200 min-w-0 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="w-full px-3 sm:px-4 py-3 sm:py-4 rounded-lg border-2 border-gray-200 bg-gray-50 animate-pulse flex flex-col items-center justify-center gap-2 min-h-22 sm:min-h-25"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-gray-200 shrink-0" />
+                  <div className="h-3.5 bg-gray-200 rounded-xs w-28" />
+                </div>
+              ))}
             </div>
           ) : slots && Array.isArray(slots) && slots.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-2 sm:p-3 bg-white rounded-xl border border-gray-200 min-w-0 overflow-hidden">
@@ -129,9 +132,7 @@ export default function BookingDetailsSection({
                 const isHoliday = statuses.includes("HOLIDAY");
                 const isUnavailable = statuses.includes("UNAVAILABLE");
 
-                const [hours, minutes] = slot.start_time
-                  .split(":")
-                  .map(Number);
+                const [hours, minutes] = slot.start_time.split(":").map(Number);
                 const slotDateTime = new Date(slot.date);
                 slotDateTime.setHours(hours, minutes, 0, 0);
                 const isPast = slotDateTime < new Date();
@@ -169,7 +170,7 @@ export default function BookingDetailsSection({
                     }}
                     disabled={isBooking || isDisabled}
                     className={cn(
-                      "group relative w-full min-w-0 px-3 sm:px-4 py-3 sm:py-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium flex flex-col items-center justify-center gap-2 sm:gap-2.5 min-h-[88px] sm:min-h-[100px]",
+                      "group relative w-full min-w-0 px-3 sm:px-4 py-3 sm:py-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium flex flex-col items-center justify-center gap-2 sm:gap-2.5 min-h-22 sm:min-h-25",
                       isDisabled
                         ? "border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed opacity-60"
                         : "cursor-pointer hover:border-[#19CA32] hover:bg-[#19CA32]/10 hover:shadow-md sm:hover:scale-105 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#19CA32] focus:ring-offset-2",

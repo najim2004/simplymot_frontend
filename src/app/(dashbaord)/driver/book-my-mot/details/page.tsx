@@ -345,7 +345,14 @@ function DetailsContent() {
       <BookingModal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        garage={{ id: garageDetails.id }}
+        garage={{
+          id: garageDetails.id,
+          garage_name: garageDetails.garage_name,
+          address: garageDetails.address,
+          email: garageDetails.contact_email,
+          phone_number: garageDetails.phone_number,
+        }}
+        vehicleRegistrationNumber={registration}
       />
     </div>
   );

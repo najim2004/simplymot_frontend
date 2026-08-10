@@ -70,7 +70,7 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
                   className="object-cover w-full h-full"
                 />
               </div>
-              <div className="flex-1 min-w-0 flex flex-col justify-between min-h-[80px]">
+              <div className="flex-1 min-w-0 flex flex-col justify-between min-h-20">
                 <h3 className="text-[15px] font-semibold text-gray-900 truncate leading-tight mb-1">
                   {garage.garage_name}
                 </h3>
@@ -233,8 +233,18 @@ export default function GarageCard({ foundGarages, vehicle }: GarageCardProps) {
       <BookingModal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
-        garage={selectedGarage}
-        vehicleId={vehicle?.vehicle_id}
+        garage={
+          selectedGarage
+            ? {
+                id: selectedGarage.id,
+                garage_name: selectedGarage.garage_name,
+                address: selectedGarage.address,
+                email: selectedGarage.email,
+                phone_number: selectedGarage.phone_number,
+              }
+            : null
+        }
+        vehicleId={vehicle?.id || vehicle?.vehicle_id}
         vehicleRegistrationNumber={vehicle?.registration_number}
       />
     </div>

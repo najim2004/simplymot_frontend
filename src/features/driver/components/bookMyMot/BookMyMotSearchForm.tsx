@@ -171,7 +171,7 @@ export const BookMyMotSearchForm: React.FC<BookMyMotSearchFormProps> = ({
           {vehicle && (
             <div
               className={cx(
-                "mx-auto w-full max-w-[620px] rounded-md transition-all duration-200",
+                "mx-auto w-full max-w-155 rounded-md transition-all duration-200",
                 isVehicleDetailsExpanded
                   ? "bg-[#f4f8f5] border border-[#dce9df]"
                   : "bg-transparent border border-transparent hover:bg-[#f4f8f5] hover:border-[#dce9df]",
@@ -217,7 +217,7 @@ export const BookMyMotSearchForm: React.FC<BookMyMotSearchFormProps> = ({
                 className={cx(
                   "overflow-hidden transition-all duration-300 ease-in-out",
                   isVehicleDetailsExpanded
-                    ? "max-h-[280px] opacity-100 border-t border-[#e7ece8] px-3 py-2.5"
+                    ? "max-h-70 opacity-100 border-t border-[#e7ece8] px-3 py-2.5"
                     : "max-h-0 opacity-0 px-3 py-0",
                 )}
               >

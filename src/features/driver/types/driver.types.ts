@@ -152,6 +152,8 @@ export interface BookSlotRequest {
   additional_services?: string;
   service_type?: string;
   vehicle_id?: string;
+  /** Pass registration number directly — backend will find-or-create the vehicle */
+  vehicle_registration_number?: string;
   date?: string;
   start_time?: string;
   end_time?: string;
@@ -244,13 +246,8 @@ export interface GarageServicesApiResponse {
   data?: GarageDetailsData;
 }
 
-export interface BookSlotRequest {
-  garage_id: string;
-  slot_id?: string;
-  starts_at?: string;
-  ends_at?: string;
-  additional_services?: string;
-}
+
+
 
 export interface BookSlotResponse {
   success?: boolean;
@@ -260,6 +257,31 @@ export interface BookSlotResponse {
     order_id?: string;
     total_amount?: number | string;
     status?: string;
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    additional_services?: string;
+    garage?: {
+      id?: string;
+      garage_name?: string;
+      address?: string;
+      phone_number?: string;
+      email?: string;
+      avatar?: string;
+    };
+    vehicle?: {
+      id?: string;
+      registration_number?: string;
+      make?: string;
+      model?: string;
+    };
+    slot?: {
+      starts_at?: string;
+      ends_at?: string;
+      start_time?: string;
+      end_time?: string;
+      date?: string;
+    };
     [key: string]: unknown;
   };
 }

@@ -195,7 +195,7 @@ export default function AuthRegisterForm({ userKind }: AuthRegisterFormProps) {
 
       {/* Right Side - Form */}
       <div className="flex-1 lg:flex-1 flex items-center justify-center rounded-2xl">
-        <div className="lg:h-[calc(100vh-32px)] lg:overflow-y-auto w-full flex justify-center">
+        <div className="lg:h-[calc(100vh-32px)] lg:overflow-y-auto w-full flex justify-center items-center">
           <div className="w-full max-w-full lg:max-w-lg xl:max-w-xl">
             <div className="bg-white rounded-xl border border-[#19CA32] p-8 sm:p-10 lg:p-12">
               <h2 className="text-xl text-center sm:text-2xl lg:text-3xl font-semibold text-gray-900 mb-8 sm:mb-10">

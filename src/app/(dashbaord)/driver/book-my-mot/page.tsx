@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   useSearchVehiclesAndGaragesQuery,
   GarageSortBy,
@@ -14,6 +14,7 @@ import { normalizeRegistration } from "@/lib/helper/vehicle.helper";
 import {
   BookMyMotSearchForm,
   BookMyMotResultsSection,
+  BookMyMotAutoBooking,
 } from "@/features/driver/components/bookMyMot";
 
 // --- Helper Utilities ---
@@ -134,6 +135,9 @@ function BookMyMOTContent() {
 
   return (
     <div className="w-full mx-auto">
+      {/* Auto-booking handler for guest users returning after login */}
+      <BookMyMotAutoBooking />
+
       <BookMyMotSearchForm
         defaultRegistration={registration}
         defaultPostcode={postcode}

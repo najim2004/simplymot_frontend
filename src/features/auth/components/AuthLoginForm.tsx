@@ -36,6 +36,7 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 
   const [login] = useLoginMutation();
@@ -58,8 +59,18 @@ export default function AuthLoginForm({ userKind }: AuthLoginFormProps) {
       }).unwrap();
       toast.success("Login successful");
       const kind = response.user?.kind || userKind;
+
       if (kind === "DRIVER") {
-        router.push("/driver/book-my-mot");
+        // Check for redirect param (used in guest booking flow)
+        const redirectParam = searchParams?.get("redirect");
+        if (redirectParam) {
+          // Append is_logged_in=true so auto-booking triggers
+          const redirectUrl = new URL(redirectParam, window.location.origin);
+          redirectUrl.searchParams.set("is_logged_in", "true");
+          router.push(redirectUrl.pathname + redirectUrl.search);
+        } else {
+          router.push("/driver/book-my-mot");
+        }
       } else if (kind === "GARAGE") {
         router.push("/garage/garage-profile");
       } else {

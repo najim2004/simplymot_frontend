@@ -169,7 +169,9 @@ export default function MyVehiclesDetailsModal({
           {/* Month of First Registration */}
           {selectedVehicle.month_of_first_reg && (
             <div className="flex justify-between items-center py-1.5 border-b border-gray-100 text-sm">
-              <span className="text-gray-500 font-medium">First Registered</span>
+              <span className="text-gray-500 font-medium">
+                First Registered
+              </span>
               <span className="font-medium text-gray-800">
                 {selectedVehicle.month_of_first_reg}
               </span>
@@ -216,17 +218,18 @@ export default function MyVehiclesDetailsModal({
             >
               Close
             </Button>
-            <Button
-              onClick={onBookMyMOT}
-              className={`w-full cursor-pointer bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-2.5 text-sm rounded-lg transition-all duration-200`}
-            >
-              Book My MOT
-            </Button>
+
             <Button
               onClick={onMotReports}
               className={`w-full cursor-pointer bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-2.5 text-sm rounded-lg transition-all duration-200`}
             >
               MOT Reports
+            </Button>
+            <Button
+              onClick={onBookMyMOT}
+              className={`w-full cursor-pointer bg-[${brandColor}] hover:bg-[${brandColorHover}] text-white font-medium py-2.5 text-sm rounded-lg transition-all duration-200`}
+            >
+              Book My MOT
             </Button>
           </div>
         </div>

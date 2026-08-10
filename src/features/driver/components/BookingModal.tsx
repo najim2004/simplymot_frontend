@@ -3,7 +3,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Clock } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,18 +15,27 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import {
   useGetGarageSlotsQuery,
   useBookSlotMutation,
   type SlotItem,
+  type BookSlotResponse,
 } from "@/features/driver";
+import { useAppSelector } from "@/store/hooks";
+import BookingSuccessModal from "./BookingModal/BookingSuccessModal";
+import { saveBookMyMotResultsContext } from "@/lib/book-my-mot-navigation";
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  garage: { id: string } | null;
+  garage: {
+    id: string;
+    garage_name?: string;
+    address?: string | null;
+    email?: string | null;
+    phone_number?: string | null;
+  } | null;
   vehicleId?: string;
   vehicleRegistrationNumber?: string;
 }
@@ -43,11 +53,28 @@ export default function BookingModal({
   onClose,
   garage,
   vehicleId,
+  vehicleRegistrationNumber,
 }: BookingModalProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAppSelector((state) => state.auth);
+
+  const effectiveRegistrationNumber =
+    vehicleRegistrationNumber ||
+    searchParams?.get("registration") ||
+    searchParams?.get("bk_reg") ||
+    "";
+  const effectiveVehicleId = vehicleId;
+
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
   const [additionalServices, setAdditionalServices] = useState("");
   const [openCalendar, setOpenCalendar] = useState(false);
+
+  // Success modal state
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [bookingResponse, setBookingResponse] =
+    useState<BookSlotResponse | null>(null);
 
   const formattedDateString = useMemo(() => {
     const yyyy = selectedDate.getFullYear();
@@ -82,10 +109,61 @@ export default function BookingModal({
       return;
     }
 
+    // ── Guest user: encode booking params in URL and redirect to register ──
+    if (!user?.id) {
+      saveBookMyMotResultsContext();
+
+      const bookingParams = new URLSearchParams();
+      bookingParams.set("bk_garage_id", garage.id);
+      if (selectedSlot.id) {
+        bookingParams.set("bk_slot_id", selectedSlot.id);
+      } else {
+        if (selectedSlot.starts_at)
+          bookingParams.set("bk_starts_at", selectedSlot.starts_at);
+        if (selectedSlot.ends_at)
+          bookingParams.set("bk_ends_at", selectedSlot.ends_at);
+      }
+      if (effectiveRegistrationNumber) {
+        bookingParams.set("bk_reg", effectiveRegistrationNumber);
+      }
+      if (additionalServices) {
+        bookingParams.set("bk_services", additionalServices);
+      }
+      if (garage.garage_name)
+        bookingParams.set("bk_garage_name", garage.garage_name);
+      if (garage.address)
+        bookingParams.set("bk_garage_address", garage.address);
+      if (garage.email) bookingParams.set("bk_garage_email", garage.email);
+      if (garage.phone_number)
+        bookingParams.set("bk_garage_phone", garage.phone_number);
+      // Mark is_logged_in so auto-booking triggers after login
+      bookingParams.set("is_logged_in", "true");
+
+      // The return URL will be the current book-my-mot page with all booking params
+      const currentUrl =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/driver/book-my-mot";
+
+      // Build return URL: original search params + booking params
+      const returnUrl = `${currentUrl}${currentUrl.includes("?") ? "&" : "?"}${bookingParams.toString()}`;
+
+      router.push(
+        `/create-account/driver?redirect=${encodeURIComponent(returnUrl)}`,
+      );
+      return;
+    }
+
+    // ── Logged-in user: normal booking ──
     try {
       const res = await bookSlot({
         garage_id: garage.id,
         additional_services: additionalServices || undefined,
+        ...(effectiveVehicleId
+          ? { vehicle_id: effectiveVehicleId }
+          : effectiveRegistrationNumber
+            ? { vehicle_registration_number: effectiveRegistrationNumber }
+            : {}),
         ...(selectedSlot.id
           ? { slot_id: selectedSlot.id }
           : {
@@ -95,8 +173,10 @@ export default function BookingModal({
       }).unwrap();
 
       if (res?.success !== false) {
-        toast.success(res?.message || "MOT Booked successfully!");
+        // Close booking modal, open success modal
+        setBookingResponse(res);
         onClose();
+        setIsSuccessOpen(true);
       } else {
         toast.error(res?.message || "Failed to book slot");
       }
@@ -115,168 +195,191 @@ export default function BookingModal({
   }, []);
 
   return (
-    <CustomReusableModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Book Your MOT"
-      showHeader={false}
-      hideClose={true}
-      className="max-w-xl flex flex-col"
-      contentClassName="p-0 flex flex-col min-h-0 overflow-hidden"
-    >
-      <div className="bg-white rounded-lg overflow-hidden flex flex-col min-h-0 max-h-[90vh]">
-        <div className="bg-gradient-to-r from-[#19CA32] to-[#16b82e] text-white px-5 py-4 shadow-md shrink-0 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Book Your MOT</h2>
-          <CalendarIcon className="h-5 w-5 opacity-90" />
-        </div>
+    <>
+      <CustomReusableModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Book Your MOT"
+        showHeader={false}
+        hideClose={true}
+        className="max-w-xl flex flex-col"
+        contentClassName="p-0 flex flex-col min-h-0 overflow-hidden"
+      >
+        <div className="bg-white rounded-lg overflow-hidden flex flex-col min-h-0 max-h-[90vh]">
+          <div className="bg-linear-to-r from-[#19CA32] to-[#16b82e] text-white px-5 py-4 shadow-md shrink-0 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Book Your MOT</h2>
+            <CalendarIcon className="h-5 w-5 opacity-90" />
+          </div>
 
-        <form
-          onSubmit={handleBookingSubmit}
-          className="p-5 overflow-y-auto space-y-5"
-        >
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-gray-700">
-              Select Date <span className="text-red-500">*</span>
-            </Label>
-            <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="w-full h-11 justify-between text-left bg-white border-gray-300 hover:border-[#19CA32] rounded-md cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-[#19CA32]" />
-                    <span className="text-sm font-medium text-gray-900">
-                      {format(selectedDate, "EEEE, dd MMMM yyyy")}
+          <form
+            onSubmit={handleBookingSubmit}
+            className="p-5 overflow-y-auto space-y-5"
+          >
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">
+                Select Date <span className="text-red-500">*</span>
+              </Label>
+              <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="w-full h-11 justify-between text-left bg-white border-gray-300 hover:border-[#19CA32] rounded-md cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-[#19CA32]" />
+                      <span className="text-sm font-medium text-gray-900">
+                        {format(selectedDate, "EEEE, dd MMMM yyyy")}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-[#19CA32]">
+                      Change
                     </span>
-                  </div>
-                  <span className="text-xs font-semibold text-[#19CA32]">
-                    Change
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(d) => {
-                    if (d) {
-                      setSelectedDate(d);
-                      setSelectedSlot(null);
-                      setOpenCalendar(false);
-                    }
-                  }}
-                  disabled={(d) => d < todayStart}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(d) => {
+                      if (d) {
+                        setSelectedDate(d);
+                        setSelectedSlot(null);
+                        setOpenCalendar(false);
+                      }
+                    }}
+                    disabled={(d) => d < todayStart}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">
-              Available Time Slots <span className="text-red-500">*</span>
-            </Label>
-            {slotsLoading ? (
-              <div className="py-6 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                <LoadingSpinner
-                  size="md"
-                  text="Loading slots..."
-                  fullScreen={false}
-                />
-              </div>
-            ) : slotsList.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1">
-                {slotsList.map((slot) => {
-                  const slotTime = slot.starts_at
-                    ? new Date(slot.starts_at).getTime()
-                    : 0;
-                  const isPast = slotTime > 0 && slotTime < Date.now();
-                  const isDisabled = !slot.bookable || isPast || isBooking;
-                  const isSelected = selectedSlot?.starts_at === slot.starts_at;
-
-                  return (
-                    <button
-                      key={slot.starts_at}
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={() => setSelectedSlot(slot)}
-                      className={cn(
-                        "relative py-3 px-2 rounded-md min-h-16 border text-xs font-semibold flex flex-col items-center justify-center gap-1 transition-all duration-200 cursor-pointer select-none",
-                        isDisabled &&
-                          "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed opacity-50 shadow-none",
-                        !isDisabled &&
-                          isSelected &&
-                          "bg-gradient-to-r from-[#19CA32] to-[#16b82e] border-[#19CA32] text-white shadow-md scale-[1.02] ring-2 ring-[#19CA32]/30",
-                        !isDisabled &&
-                          !isSelected &&
-                          "bg-white border-gray-200 text-gray-800 hover:border-[#19CA32] hover:bg-[#19CA32]/5 hover:shadow-xs",
-                      )}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">
+                Available Time Slots <span className="text-red-500">*</span>
+              </Label>
+              {slotsLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="py-3 px-2 rounded-md min-h-16 border border-gray-200 bg-gray-100/70 animate-pulse flex flex-col items-center justify-center gap-2 select-none"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Clock
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isSelected
-                              ? "text-white"
-                              : isDisabled
-                                ? "text-gray-300"
-                                : "text-[#19CA32]",
-                          )}
-                        />
-                        <span className={cn(isDisabled && "line-through")}>
-                          {formatTime(slot.starts_at)} -{" "}
-                          {formatTime(slot.ends_at)}
-                        </span>
+                      <div className="flex items-center gap-1.5 w-full justify-center">
+                        <div className="w-3.5 h-3.5 rounded-full bg-gray-300/80 shrink-0" />
+                        <div className="h-3 bg-gray-300/80 rounded-xs w-24" />
                       </div>
-                      {isPast && (
-                        <span className="text-[10px] font-medium text-gray-400 no-underline">
-                          Expired
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                No slots available for this date.
-              </div>
-            )}
-          </div>
+                    </div>
+                  ))}
+                </div>
+              ) : slotsList.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1">
+                  {slotsList.map((slot) => {
+                    const slotTime = slot.starts_at
+                      ? new Date(slot.starts_at).getTime()
+                      : 0;
+                    const isPast = slotTime > 0 && slotTime < Date.now();
+                    const isDisabled = !slot.bookable || isPast || isBooking;
+                    const isSelected =
+                      selectedSlot?.starts_at === slot.starts_at;
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-gray-700">
-              Additional Services / Notes (Optional)
-            </Label>
-            <Textarea
-              value={additionalServices}
-              onChange={(e) => setAdditionalServices(e.target.value)}
-              placeholder="Any special requirements or extra services..."
-              className="resize-none h-20 text-sm"
-            />
-          </div>
+                    return (
+                      <button
+                        key={slot.starts_at}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={cn(
+                          "relative py-3 px-2 rounded-md min-h-16 border text-xs font-semibold flex flex-col items-center justify-center gap-1 transition-all duration-200 cursor-pointer select-none",
+                          isDisabled &&
+                            "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed opacity-50 shadow-none",
+                          !isDisabled &&
+                            isSelected &&
+                            "bg-linear-to-r from-[#19CA32] to-[#16b82e] border-[#19CA32] text-white shadow-md scale-[1.02] ring-2 ring-[#19CA32]/30",
+                          !isDisabled &&
+                            !isSelected &&
+                            "bg-white border-gray-200 text-gray-800 hover:border-[#19CA32] hover:bg-[#19CA32]/5 hover:shadow-xs",
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Clock
+                            className={cn(
+                              "w-3.5 h-3.5 shrink-0",
+                              isSelected
+                                ? "text-white"
+                                : isDisabled
+                                  ? "text-gray-300"
+                                  : "text-[#19CA32]",
+                            )}
+                          />
+                          <span className={cn(isDisabled && "line-through")}>
+                            {formatTime(slot.starts_at)} -{" "}
+                            {formatTime(slot.ends_at)}
+                          </span>
+                        </div>
+                        {isPast && (
+                          <span className="text-[10px] font-medium text-gray-400 no-underline">
+                            Expired
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  No slots available for this date.
+                </div>
+              )}
+            </div>
 
-          <div className="pt-3 border-t border-gray-200 grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="h-11 font-semibold rounded-lg cursor-pointer"
-            >
-              Close
-            </Button>
-            <Button
-              type="submit"
-              disabled={!selectedSlot || isBooking}
-              className="h-11 bg-gradient-to-r from-[#19CA32] to-[#16b82e] text-white font-semibold rounded-lg shadow-md disabled:bg-gray-400 cursor-pointer"
-            >
-              {isBooking ? "Booking..." : "Book My MOT"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </CustomReusableModal>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">
+                Additional Services / Notes (Optional)
+              </Label>
+              <Textarea
+                value={additionalServices}
+                onChange={(e) => setAdditionalServices(e.target.value)}
+                placeholder="Any special requirements or extra services..."
+                className="resize-none h-20 text-sm"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-gray-200 grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="h-11 font-semibold rounded-lg cursor-pointer"
+              >
+                Close
+              </Button>
+              <Button
+                type="submit"
+                disabled={!selectedSlot || isBooking}
+                className="h-11 bg-linear-to-r from-[#19CA32] to-[#16b82e] text-white font-semibold rounded-lg shadow-md disabled:bg-gray-400 cursor-pointer"
+              >
+                {isBooking
+                  ? "Booking..."
+                  : !user?.id
+                    ? "Continue to Book"
+                    : "Book My MOT"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </CustomReusableModal>
+
+      {/* Booking Success Modal */}
+      <BookingSuccessModal
+        isOpen={isSuccessOpen}
+        onClose={() => setIsSuccessOpen(false)}
+        bookingResponse={bookingResponse}
+        garageInfo={garage}
+        selectedDate={selectedDate}
+        additionalServices={additionalServices}
+      />
+    </>
   );
 }

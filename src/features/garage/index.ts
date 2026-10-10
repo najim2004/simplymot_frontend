@@ -19,3 +19,4 @@ export { default as AdditionalServicesAdd } from "./components/AdditionalService
 export { default as SubscriptionDetails } from "./components/Subscription/SubscriptionDetails";
 export { default as CancelSubscription } from "./components/Subscription/CancelSubscription";
 export { default as GarageAvailability } from "./components/availability";
+export * from "./components/bookings";

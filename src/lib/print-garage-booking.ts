@@ -1,13 +1,18 @@
 import type { Booking } from "@/features/garage";
 import { jsPDF } from "jspdf";
 
-function formatBookingDate(orderDate: string) {
+function formatBookingDate(orderDate?: string) {
+  if (!orderDate) return "N/A";
   const d = new Date(orderDate);
+  if (isNaN(d.getTime())) return "N/A";
   return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-function formatBookingTime(orderDate: string) {
-  return new Date(orderDate).toLocaleTimeString("en-US", {
+function formatBookingTime(orderDate?: string) {
+  if (!orderDate) return "--:--";
+  const d = new Date(orderDate);
+  if (isNaN(d.getTime())) return "--:--";
+  return d.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -16,16 +21,22 @@ function formatBookingTime(orderDate: string) {
 
 /** Generates a PDF and opens it in a new tab. */
 export function printGarageBookingDetails(booking: Booking): boolean {
-  const amount = `£${parseFloat(booking.total_amount || "0").toFixed(2)}`;
+  const rawAmount =
+    booking.service_price != null ? booking.service_price : booking.total_amount;
+  const amount =
+    rawAmount != null && !isNaN(Number(rawAmount))
+      ? `£${Number(rawAmount).toFixed(2)}`
+      : "£0.00";
   const services = booking.additional_services?.trim() || "None";
+  const bookingDate = booking.starts_at || booking.order_date || "";
 
   const rows: [string, string][] = [
-    ["Customer", booking.driver?.name || "N/A"],
-    ["Email", booking.driver?.email || "N/A"],
-    ["Contact", booking.driver?.phone_number || "N/A"],
+    ["Customer", booking.customer?.name || booking.driver?.name || "N/A"],
+    ["Email", booking.customer?.email || booking.driver?.email || "N/A"],
+    ["Contact", booking.customer?.phone_number || booking.driver?.phone_number || "N/A"],
     ["Vehicle", booking.vehicle?.registration_number || "N/A"],
-    ["Date", formatBookingDate(booking.order_date)],
-    ["Time", formatBookingTime(booking.order_date)],
+    ["Date", formatBookingDate(bookingDate)],
+    ["Time", formatBookingTime(bookingDate)],
     ["Amount", amount],
   ];
 

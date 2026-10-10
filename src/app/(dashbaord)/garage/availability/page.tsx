@@ -34,11 +34,10 @@ export default function AvailabilityPage() {
   });
   const scheduleId = scheduleResponse?.data?.id;
 
-  const { data: holidaysResponse, refetch: refetchHolidays } =
-    useGetHolidaysQuery(
-      { garageId: garageId!, scheduleId: scheduleId!, year: currentYear },
-      { skip: !garageId || !scheduleId },
-    );
+  const { data: holidaysResponse } = useGetHolidaysQuery(
+    { garageId: garageId!, scheduleId: scheduleId!, year: currentYear },
+    { skip: !garageId || !scheduleId },
+  );
 
   const holidays = holidaysResponse?.data || [];
 

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, ShieldCheck, Clock, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { MotGroup, ServiceItem } from "../types";
-import { useDeleteServiceMutation } from "../api/garage-pricing.api";
+import { useDeleteServiceMutation } from "../api/garage.api";
 
 interface MotFeeAddProps {
   garageId: string;

@@ -37,7 +37,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout as logoutAction } from "@/features/auth/store/auth.slice";
 import { resetReduxStore } from "@/lib/resetReduxStore";
-import { useGetCurrentSubscriptionQuery } from "@/features/garage";
+import { useGetCurrentSubscriptionQuery } from "@/features/subscriptions";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -218,8 +218,6 @@ export default function Sidebar({ onClose }: SidebarProps) {
     },
   ];
 
-
-
   const handleLogin = () => {
     router.push("/login/driver");
   };
@@ -243,7 +241,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
   };
 
   return (
-    <div className="w-72 h-[100dvh] bg-white flex flex-col">
+    <div className="w-72 h-dvh bg-white flex flex-col">
       {/* Header */}
       <div className="py-5 px-3 flex justify-between items-center mt-2">
         <div>
@@ -292,7 +290,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 return (
                   <li key={item.href}>
                     {isLocked ? (
-                      <div className="flex items-center justify-between px-4 py-2 text-gray-400 cursor-not-allowed rounded-[8px] bg-gray-50">
+                      <div className="flex items-center justify-between px-4 py-2 text-gray-400 cursor-not-allowed rounded-xl bg-gray-50">
                         <div className="flex items-center">
                           <item.icon className="h-5 w-5 mr-3" />
                           {item.label}
@@ -315,8 +313,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
                           className={`flex items-center px-4 py-2 transition-colors duration-200
                                               ${
                                                 isActive
-                                                  ? "bg-[#DDF7E0] text-[#19CA32] font-[400] rounded-[8px]"
-                                                  : "text-gray-800 hover:bg-gray-100 hover:text-gray-700 rounded-[8px]"
+                                                  ? "bg-[#DDF7E0] text-[#19CA32] font-normal rounded-xl"
+                                                  : "text-gray-800 hover:bg-gray-100 hover:text-gray-700 rounded-xl"
                                               }`}
                         >
                           <item.icon

@@ -1,21 +1,7 @@
 import { apiSlice } from "@/lib/api/api-slice";
+import type { ContactMessageRequest, ContactMessageResponse } from "../types";
 
-export interface ContactMessageRequest {
-  garage_name?: string;
-  primary_contact_person_name?: string;
-  primary_contact?: string;
-  name?: string;
-  email: string;
-  phone_number: string;
-  message: string;
-  source?: string;
-}
-
-export interface ContactMessageResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-}
+export type { ContactMessageRequest, ContactMessageResponse };
 
 export const contactApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({

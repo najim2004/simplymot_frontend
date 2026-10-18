@@ -48,7 +48,6 @@ export const garageDriverApis = apiSlice.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
   }),
-  overrideExisting: false,
 });
 
 export const {

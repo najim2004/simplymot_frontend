@@ -13,8 +13,8 @@ import {
   AddVehicleCardButton,
   AddVehicleModal,
   MyVehiclesDetailsModal,
-  ApiVehicle,
-} from "@/features/driver";
+  type ApiVehicle,
+} from "@/features/vehicle";
 
 export default function MyVehicles() {
   const router = useRouter();

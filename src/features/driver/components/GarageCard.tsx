@@ -4,8 +4,9 @@ import Image from "next/image";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import BookingModal from "./BookingModal";
-import type { GarageData, VehicleData } from "@/features/driver";
+import { BookingModal } from "@/features/booking";
+import type { GarageData } from "@/features/driver";
+import type { VehicleData } from "@/features/vehicle";
 import {
   MapPin,
   Navigation,

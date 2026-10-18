@@ -1,13 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  description?: string;
-  features?: string[];
-  [key: string]: any;
-}
+import type { SubscriptionPlan } from "../types";
 
 interface SubscriptionState {
   selectedPlan: SubscriptionPlan | null;

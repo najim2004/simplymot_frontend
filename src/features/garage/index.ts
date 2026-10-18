@@ -1,22 +1,5 @@
 export * from "./types";
-export * from "./api/garage-bookings.api";
-export * from "./api/garage-contact.api";
-export * from "./api/garage-invoice.api";
-export * from "./api/garage-pricing.api";
-export * from "./api/garage-profile.api";
-export * from "./api/garage-schedule.api";
-export * from "./api/garage-subscriptions.api";
+export * from "./api";
 export * from "./store/garage-pricing.slice";
-export * from "./store/garage-booking.slice";
 export { default as pricingReducer } from "./store/garage-pricing.slice";
-export { default as garageBookingReducer } from "./store/garage-booking.slice";
-
-export { default as GarageProfileComponent } from "./components/Profile";
-export { default as GarageProfileCard } from "./components/GarageProfileCard";
-export { default as GarageProfileAdd } from "./components/GarageProfileAdd";
-export { default as MotFeeAdd } from "./components/MotFeeAdd";
-export { default as AdditionalServicesAdd } from "./components/AdditionalServicesAdd";
-export { default as SubscriptionDetails } from "./components/Subscription/SubscriptionDetails";
-export { default as CancelSubscription } from "./components/Subscription/CancelSubscription";
-export { default as GarageAvailability } from "./components/availability";
-export * from "./components/bookings";
+export * from "./components";

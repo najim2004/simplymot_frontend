@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Loader2, Layers, Wrench } from "lucide-react";
 import { toast } from "react-toastify";
 import { ServiceItem } from "../types";
-import { useDeleteServiceMutation } from "../api/garage-pricing.api";
+import { useDeleteServiceMutation } from "../api/garage.api";
 
 interface AdditionalServicesAddProps {
   garageId: string;

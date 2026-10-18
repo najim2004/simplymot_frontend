@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import VehiclesCardReusble from "@/components/reusable/Dashboard/Driver/VehiclesCardReusble";
 import {
   useGetVehiclesQuery,
   useLazyGetVehicleMotReportsQuery,
@@ -10,9 +9,10 @@ import {
   SelectedVehicleHeaderCard,
   MotReportsHeaderSection,
   MotReportsContentSection,
-  MotHistoryItem,
-  ApiVehicle,
-} from "@/features/driver";
+  VehiclesCardReusble,
+  type MotHistoryItem,
+  type ApiVehicle,
+} from "@/features/vehicle";
 
 export default function MotReportsPage() {
   const router = useRouter();

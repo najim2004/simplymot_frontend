@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/store";
-import type { RawMotGroup, RawService, PricingService } from "../api/garage-pricing.api";
+import type { MotGroup as RawMotGroup, ServiceItem as RawService } from "../types";
 
 // ─── State Shape ──────────────────────────────────────────────────────────────
 export interface PricingServiceState {

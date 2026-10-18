@@ -31,3 +31,51 @@ export interface UpdateProfileResponse {
   message: string;
   data: GarageProfile;
 }
+
+export enum GarageSortBy {
+  DISTANCE = "DISTANCE",
+  PRICE_LOW_TO_HIGH = "PRICE_LOW_TO_HIGH",
+  PRICE_HIGH_TO_LOW = "PRICE_HIGH_TO_LOW",
+}
+
+export interface SearchRequest {
+  registration_number: string;
+  postcode: string;
+  page?: number;
+  limit?: number;
+  sort_by?: GarageSortBy;
+}
+
+export interface SearchResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    vehicle: any;
+    garages: any[];
+  };
+  meta_data: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    total_count?: number;
+    vehicle_registration_number?: string;
+    post_code?: string;
+    search_postcode?: string;
+    filters?: {
+      sort?: string;
+      sort_order?: string;
+    };
+  };
+}
+
+export interface GarageServicesApiResponse {
+  success: boolean;
+  message?: string;
+  data: any;
+}
+
+export interface GarageSlotsApiResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}

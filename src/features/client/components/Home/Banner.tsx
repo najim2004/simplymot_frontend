@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useAppSelector } from "@/store/hooks";
 import Link from "next/link";
-import { normalizeRegistration } from "@/lib/helper/vehicle.helper";
+import { normalizeRegistration } from "@/features/vehicle";
 
 interface FormData {
   registration: string;
@@ -99,7 +99,7 @@ export default function HomeBanner() {
   return (
     <div
       style={{ backgroundImage: `url(${bgImg.src})` }}
-      className="w-full min-h-[calc(100vh-80px)] md:h-[calc(100vh-88px)] bg-cover bg-center bg-no-repeat flex items-center justify-center mt-[65px] md:mt-0 py-8 md:py-0"
+      className="w-full min-h-[calc(100vh-80px)] md:h-[calc(100vh-88px)] bg-cover bg-center bg-no-repeat flex items-center justify-center mt-16.25 md:mt-0 py-8 md:py-0"
     >
       <div className="container px-5 2xl:px-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">

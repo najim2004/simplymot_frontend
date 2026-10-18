@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { useVerifySubscriptionSuccessQuery } from "@/features/garage";
+import { useVerifySubscriptionSuccessQuery } from "@/features/subscriptions";
 
 function SubscriptionSuccessContent() {
   const searchParams = useSearchParams();
@@ -146,7 +146,7 @@ function SubscriptionSuccessContent() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="mx-auto mb-6 flex items-center justify-center">
-              <div className="h-[200px] w-[200px] rounded-2xl bg-linear-to-br from-black/0 via-black/0 to-black/5 p-3 ring-1 ring-black/5">
+              <div className="h-50 w-50 rounded-2xl bg-linear-to-br from-black/0 via-black/0 to-black/5 p-3 ring-1 ring-black/5">
                 <DotLottieReact src={lottieSrc} loop autoplay />
               </div>
             </div>

@@ -1,4 +1,4 @@
-import type { Booking } from "@/features/garage";
+import type { Booking } from "@/features/booking";
 import { jsPDF } from "jspdf";
 
 function formatBookingDate(orderDate?: string) {

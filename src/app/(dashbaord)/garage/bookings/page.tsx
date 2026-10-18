@@ -11,7 +11,7 @@ import {
   RescheduleBookingModal,
   ViewBookingModal,
   type Booking,
-} from "@/features/garage";
+} from "@/features/booking";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 

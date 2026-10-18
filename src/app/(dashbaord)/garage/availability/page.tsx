@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import ManageSlotsModal from "@/features/garage/components/availability/modals/manage-slots-modal";
-import CalendarView from "@/features/garage/components/availability/calendar-view";
 import {
+  ManageSlotsModal,
+  CalendarView,
+  DefultCalanderView,
+  ManageHolidaysModal,
   useGetScheduleQuery,
   useGetGarageProfileQuery,
   useGetHolidaysQuery,
 } from "@/features/garage";
-import DefultCalanderView from "@/features/garage/components/availability/DefultCalanderView";
-import ManageHolidaysModal from "@/features/garage/components/availability/ManageHolidaysModal";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 

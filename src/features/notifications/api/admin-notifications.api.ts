@@ -48,7 +48,6 @@ export const adminNotificationApis = apiSlice.injectEndpoints({
       invalidatesTags: ["Notification"],
     }),
   }),
-  overrideExisting: false,
 });
 
 export const {

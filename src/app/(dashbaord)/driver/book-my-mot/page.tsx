@@ -6,16 +6,16 @@ import { toast } from "sonner";
 import {
   useSearchVehiclesAndGaragesQuery,
   GarageSortBy,
-} from "@/features/driver";
-import { useAppSelector } from "@/store/hooks";
-import LoadingSpinner from "@/components/reusable/LoadingSpinner";
-import { consumeBookMyMotScrollPosition } from "@/lib/book-my-mot-navigation";
-import { normalizeRegistration } from "@/lib/helper/vehicle.helper";
+} from "@/features/garage";
 import {
   BookMyMotSearchForm,
   BookMyMotResultsSection,
-  BookMyMotAutoBooking,
-} from "@/features/driver/components/bookMyMot";
+} from "@/features/driver";
+import { BookMyMotAutoBooking } from "@/features/booking";
+import { useAppSelector } from "@/store/hooks";
+import LoadingSpinner from "@/components/reusable/LoadingSpinner";
+import { consumeBookMyMotScrollPosition } from "@/lib/book-my-mot-navigation";
+import { normalizeRegistration } from "@/features/vehicle";
 
 // --- Helper Utilities ---
 function formatMotExpiryDate(date: string) {

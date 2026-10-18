@@ -14,7 +14,7 @@ import {
   useCheckoutSubscriptionMutation,
   useGetCurrentSubscriptionQuery,
   CancelSubscription,
-} from "@/features/garage";
+} from "@/features/subscriptions";
 import { PAGINATION_CONFIG } from "@/config/pagination.config";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";

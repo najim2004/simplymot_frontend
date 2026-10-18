@@ -6,11 +6,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, ShieldCheck } from "lucide-react";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
-import {
-  useGetGarageServicesQuery,
-  BookingModal,
-  BookMyMotAutoBooking,
-} from "@/features/driver";
+import { useGetGarageServicesQuery } from "@/features/garage";
+import { BookingModal, BookMyMotAutoBooking } from "@/features/booking";
 
 function DetailsSkeleton() {
   return (

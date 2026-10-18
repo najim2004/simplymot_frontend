@@ -33,21 +33,27 @@ export const NotificationBell: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.type === "ADMIN";
 
-  const { data: adminNotifData, isLoading: loadingAdminNotifs } = useGetAdminNotificationsQuery(
-    { page: 1, limit: 10 },
-    { skip: !user || !isAdmin }
-  );
-  const { data: adminUnreadData } = useGetAdminUnreadCountQuery(undefined, { skip: !user || !isAdmin });
+  const { data: adminNotifData, isLoading: loadingAdminNotifs } =
+    useGetAdminNotificationsQuery(
+      { page: 1, limit: 10 },
+      { skip: !user || !isAdmin },
+    );
+  const { data: adminUnreadData } = useGetAdminUnreadCountQuery(undefined, {
+    skip: !user || !isAdmin,
+  });
   const [adminReadAll] = useAdminReadAllNotificationsMutation();
   const [adminReadOne] = useAdminReadNotificationMutation();
   const [adminDeleteAll] = useAdminDeleteAllNotificationsMutation();
   const [adminDeleteOne] = useAdminDeleteNotificationMutation();
 
-  const { data: gdNotifData, isLoading: loadingGdNotifs } = useGetNotificationsQuery(
-    { page: 1, limit: 10 },
-    { skip: !user || isAdmin }
-  );
-  const { data: gdUnreadData } = useGetUnreadCountQuery(undefined, { skip: !user || isAdmin });
+  const { data: gdNotifData, isLoading: loadingGdNotifs } =
+    useGetNotificationsQuery(
+      { page: 1, limit: 10 },
+      { skip: !user || isAdmin },
+    );
+  const { data: gdUnreadData } = useGetUnreadCountQuery(undefined, {
+    skip: !user || isAdmin,
+  });
   const [gdReadAll] = useReadAllNotificationsMutation();
   const [gdReadOne] = useReadNotificationMutation();
   const [gdDeleteAll] = useDeleteAllNotificationsMutation();
@@ -60,12 +66,16 @@ export const NotificationBell: React.FC = () => {
   if (!user) return null;
 
   const rawNotifications = isAdmin
-    ? adminNotifData?.data?.notifications || adminNotifData?.data?.notificaitons || []
-    : gdNotifData?.data?.notifications || gdNotifData?.data?.notificaitons || [];
+    ? adminNotifData?.data?.notifications ||
+      adminNotifData?.data?.notificaitons ||
+      []
+    : gdNotifData?.data?.notifications ||
+      gdNotifData?.data?.notificaitons ||
+      [];
 
   const unreadCount = isAdmin
-    ? adminUnreadData?.data?.unread_count ?? 0
-    : gdUnreadData?.data?.unread_count ?? 0;
+    ? (adminUnreadData?.data?.unread_count ?? 0)
+    : (gdUnreadData?.data?.unread_count ?? 0);
 
   const isLoading = isAdmin ? loadingAdminNotifs : loadingGdNotifs;
 
@@ -126,7 +136,11 @@ export const NotificationBell: React.FC = () => {
   };
 
   const getNotificationText = (notification: any) => {
-    return notification?.notification_event?.text || notification?.message || "New notification";
+    return (
+      notification?.notification_event?.text ||
+      notification?.message ||
+      "New notification"
+    );
   };
 
   return (
@@ -145,7 +159,10 @@ export const NotificationBell: React.FC = () => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 sm:w-96 max-h-[500px] overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        className="w-80 sm:w-96 max-h-125 overflow-y-auto"
+      >
         <DropdownMenuLabel className="flex items-center justify-between py-3">
           <span className="font-semibold text-base">Notifications</span>
           <div className="flex items-center gap-2">
@@ -176,11 +193,17 @@ export const NotificationBell: React.FC = () => {
         <DropdownMenuSeparator />
 
         {isLoading ? (
-          <div className="py-8 text-center text-sm text-gray-500">Loading notifications...</div>
+          <div className="py-8 text-center text-sm text-gray-500">
+            Loading notifications...
+          </div>
         ) : rawNotifications.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-500">No notifications</div>
+          <div className="py-8 text-center text-sm text-gray-500">
+            No notifications
+          </div>
         ) : (
-          <div className={`space-y-1 ${isDeleting ? "opacity-30 transition-opacity duration-300" : ""}`}>
+          <div
+            className={`space-y-1 ${isDeleting ? "opacity-30 transition-opacity duration-300" : ""}`}
+          >
             {rawNotifications.map((notification: any) => {
               const isUnread = !notification.is_read;
               const isItemDeleting = deletingId === notification.id;
@@ -198,7 +221,9 @@ export const NotificationBell: React.FC = () => {
                   <div className="flex items-start justify-between w-full gap-2">
                     <p
                       className={`text-sm font-medium leading-snug flex-1 ${
-                        isUnread ? "text-gray-900 font-semibold" : "text-gray-700"
+                        isUnread
+                          ? "text-gray-900 font-semibold"
+                          : "text-gray-700"
                       }`}
                     >
                       {getNotificationText(notification)}
@@ -217,7 +242,9 @@ export const NotificationBell: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between w-full mt-2 text-xs text-gray-500">
-                    <span>{formatNotificationDate(notification.created_at)}</span>
+                    <span>
+                      {formatNotificationDate(notification.created_at)}
+                    </span>
                     {isUnread && (
                       <span className="inline-block w-2 h-2 rounded-full bg-[#14A228]"></span>
                     )}

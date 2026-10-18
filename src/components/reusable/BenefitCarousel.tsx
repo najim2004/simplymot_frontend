@@ -73,7 +73,7 @@ const BenefitCarousel: React.FC<BenefitCarouselProps> = ({
               <div
                 className="
       p-8 rounded-[20px] bg-white h-full 
-      flex items-center justify-center min-h-[180px]
+      flex items-center justify-center min-h-45
       border border-[#00b050] 
       shadow-[0_0_10px_rgba(66,133,244,0.9)] 
       transition-all duration-300

@@ -3,7 +3,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { useGetCurrentSubscriptionQuery } from "@/features/garage";
+import { useGetCurrentSubscriptionQuery } from "@/features/subscriptions";
 import LoadingSpinner from "@/components/reusable/LoadingSpinner";
 
 interface SubscriptionProtectionProps {

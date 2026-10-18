@@ -1,1 +1,2 @@
-export * from "./api/contact.api";
+export * from "./types";
+export * from "./api";

@@ -7,6 +7,9 @@ import roleManagementReducer from "@/features/admin/store/role-management.slice"
 import bookingManagementReducer from "@/features/admin/store/booking-management.slice";
 import pricingReducer from "@/features/garage/store/garage-pricing.slice";
 import bookMyMotReducer from "@/features/driver/store/driver-book-mot.slice";
+import { bookingReducer } from "@/features/booking";
+import { vehicleReducer } from "@/features/vehicle";
+import { invoiceReducer } from "@/features/invoice";
 
 const appReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
@@ -17,6 +20,9 @@ const appReducer = combineReducers({
   bookingManagement: bookingManagementReducer,
   pricing: pricingReducer,
   bookMyMot: bookMyMotReducer,
+  booking: bookingReducer,
+  vehicle: vehicleReducer,
+  invoice: invoiceReducer,
 });
 
 export const rootReducer = (

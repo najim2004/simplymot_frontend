@@ -96,7 +96,7 @@ export default function RescheduleBookingModal({
       setReason("");
       setOpenCalendar(false);
     }
-  }, [isOpen, booking?.id, booking?.starts_at]);
+  }, [isOpen, booking.id, booking.starts_at, booking]);
 
   const slotsList: SlotItem[] = slotsResponse?.data?.slots || [];
 
@@ -167,10 +167,7 @@ export default function RescheduleBookingModal({
         </div>
 
         {/* Content */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-5 overflow-y-auto space-y-5"
-        >
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-5">
           {/* Select Date */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-gray-700">
@@ -243,8 +240,7 @@ export default function RescheduleBookingModal({
                     slot.status !== "AVAILABLE" ||
                     isPast ||
                     isRescheduling;
-                  const isSelected =
-                    selectedSlot?.starts_at === slot.starts_at;
+                  const isSelected = selectedSlot?.starts_at === slot.starts_at;
 
                   return (
                     <button

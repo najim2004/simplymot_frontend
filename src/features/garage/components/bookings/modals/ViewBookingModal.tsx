@@ -142,15 +142,28 @@ export default function ViewBookingModal({
               </div>
             </div>
 
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                isCancelled
-                  ? "bg-red-100 text-red-800"
-                  : "bg-green-100 text-green-800"
-              }`}
-            >
-              {isCancelled ? "Cancelled" : "Booked"}
-            </span>
+            {(() => {
+              const status = booking.status?.toUpperCase();
+              if (status === "CANCELLED") {
+                return (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                    Cancelled
+                  </span>
+                );
+              }
+              if (status === "RESCHEDULED") {
+                return (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    Rescheduled
+                  </span>
+                );
+              }
+              return (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                  Booked
+                </span>
+              );
+            })()}
           </div>
 
           {/* Details list */}

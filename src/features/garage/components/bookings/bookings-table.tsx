@@ -277,17 +277,30 @@ export function BookingsTable({
                     </div>
                   </TableCell>
 
-                  {/* 5. Status: booked and cancelled (only 2 statuses) */}
+                  {/* 5. Status: Booked, Rescheduled, and Cancelled */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    {row?.status?.toUpperCase() === "CANCELLED" ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Cancelled
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Booked
-                      </span>
-                    )}
+                    {(() => {
+                      const status = row?.status?.toUpperCase();
+                      if (status === "CANCELLED") {
+                        return (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Cancelled
+                          </span>
+                        );
+                      }
+                      if (status === "RESCHEDULED") {
+                        return (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Rescheduled
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Booked
+                        </span>
+                      );
+                    })()}
                   </TableCell>
 
                   {/* 6. Action buttons: 3 dot click -> popup dropdown */}

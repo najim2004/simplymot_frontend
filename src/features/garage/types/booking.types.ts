@@ -1,9 +1,11 @@
 export type BookingStatus =
+  | "BOOKED"
+  | "RESCHEDULED"
+  | "CANCELLED"
   | "PENDING"
   | "ACCEPTED"
   | "CONFIRMED"
   | "COMPLETED"
-  | "CANCELLED"
   | "REJECTED";
 
 export interface BookingCustomer {

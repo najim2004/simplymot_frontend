@@ -96,10 +96,13 @@ export function GarageBookingsTable({
         <TableHeader className="bg-gray-50">
           <TableRow>
             <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Booking #
+            </TableHead>
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Customer
             </TableHead>
             <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Customer Contact
+              Contact
             </TableHead>
             <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Vehicle
@@ -118,7 +121,10 @@ export function GarageBookingsTable({
         <TableBody className="divide-y divide-gray-200">
           {isLoading
             ? Array.from({ length: skeletonRows }).map((_, index) => (
-                <TableRow key={`skeleton-row-${index}`}>
+                              <TableRow key={`skeleton-row-${index}`}>
+                  <TableCell className="px-6 py-4">
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
                   <TableCell className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-9 w-9 rounded-full" />
@@ -146,7 +152,7 @@ export function GarageBookingsTable({
                 </TableRow>
               ))
             : bookings?.map((row) => (
-                <TableRow
+                              <TableRow
                   key={row?.id}
                   className={
                     row?.status?.toUpperCase() === "CANCELLED"
@@ -154,6 +160,13 @@ export function GarageBookingsTable({
                       : ""
                   }
                 >
+                  {/* 0. Booking Number */}
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <span className="font-mono text-xs font-semibold text-[#19CA32] bg-[#19CA32]/10 px-2 py-1 rounded">
+                      {row?.booking_number ?? "—"}
+                    </span>
+                  </TableCell>
+
                   {/* 1. Customer: Name & Avatar */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">

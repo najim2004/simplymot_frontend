@@ -9,7 +9,6 @@ import {
   BookingsTable,
   CancelBookingModal,
   RescheduleBookingModal,
-  ViewBookingModal,
   type Booking,
 } from "@/features/booking";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -44,7 +43,6 @@ function BookingsContent() {
   );
 
   // Modals state
-  const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(
     null,
   );
@@ -192,7 +190,7 @@ function BookingsContent() {
         isError={isError}
         skeletonRows={itemsPerPage}
         onRetry={refetch}
-        onView={setViewBooking}
+        onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
         onReschedule={setRescheduleBooking}
         onCancel={setCancelBooking}
       />
@@ -210,16 +208,6 @@ function BookingsContent() {
           totalItems={bookingsData?.meta_data?.total ?? 0}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
-        />
-      )}
-
-      {/* 4. View Detail Modal */}
-      {viewBooking && (
-        <ViewBookingModal
-          key={viewBooking.id}
-          isOpen={Boolean(viewBooking)}
-          booking={viewBooking}
-          onClose={() => setViewBooking(null)}
         />
       )}
 

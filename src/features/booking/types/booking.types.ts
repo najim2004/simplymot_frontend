@@ -9,10 +9,18 @@ export type BookingStatus =
   | "REJECTED";
 
 export interface BookingCustomer {
+  id?: string;
   name: string | null;
   email: string | null;
   phone_number: string | null;
   avatar: string | null;
+  country?: string | null;
+  state?: string | null;
+  city?: string | null;
+  address?: string | null;
+  post_code?: string | null;
+  total_booked?: number;
+  total_cancelled?: number;
 }
 
 export interface BookingGarage {
@@ -25,13 +33,56 @@ export interface BookingGarage {
 }
 
 export interface BookingVehicle {
+  id?: string;
   registration_number: string;
   make: string | null;
   model: string | null;
+  color?: string | null;
+  fuel_type?: string | null;
+  engine_capacity?: number | null;
+  co2_emissions?: number | null;
+  mot_status?: string | null;
+  is_expired?: boolean;
+  mot_expiry_date?: string | null;
+  year_of_manufacture?: number | null;
+  last_mot_test_date?: string | null;
+  last_mot_expiry_date?: string | null;
+  last_mot_status?: string | null;
+}
+
+export interface BookingLogItem {
+  id: string;
+  action: string;
+  actor_type?: string | null;
+  created_at: string;
+  details?: {
+    status?: string | null;
+    slot_starts_at?: string | null;
+    slot_ends_at?: string | null;
+    previous_slot_starts_at?: string | null;
+    previous_slot_ends_at?: string | null;
+    cancel_reason?: string | null;
+    cancelled_by?: string | null;
+  };
+}
+
+export interface BookingItem {
+  id: string;
+  quantity: number;
+  unit_price: number | string;
+  service?: {
+    id: string;
+    title: string;
+    type?: string;
+    price?: number | string;
+  };
 }
 
 export interface Booking {
   id: string;
+  booking_number?: string | null;
+  created_at?: string;
+  updated_at?: string;
   garage_id?: string | null;
   status: BookingStatus | string;
   starts_at: string;
@@ -43,6 +94,17 @@ export interface Booking {
   order_date?: string;
   total_amount?: string | number | null;
   additional_services?: string | null;
+  cancel_reason?: string | null;
+  cancelled_by?: string | null;
+  slot?: {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    status: string;
+    description?: string | null;
+  } | null;
+  items?: BookingItem[];
+  logs?: BookingLogItem[];
   driver?: {
     id?: string;
     name?: string | null;

@@ -27,11 +27,11 @@ export function DriverViewBookingModal({
 
   const isCancelled = booking.status?.toUpperCase() === "CANCELLED";
 
-  const garageName = booking.garage?.name || "N/A";
-  const garageEmail = booking.garage?.email || "N/A";
+  const garageName = booking.garage?.name || booking.garage?.garage_name || "N/A";
+  const garageEmail = booking.garage?.email || booking.garage?.contact_email || "N/A";
   const garagePhone = booking.garage?.phone_number || "N/A";
   const garageAddress = booking.garage?.address || "N/A";
-  const garageImage = booking.garage?.image;
+  const garageImage = booking.garage?.garage_image || booking.garage?.image;
 
   const details: [string, string][] = [
     ["Garage Name", garageName],

@@ -201,8 +201,8 @@ export default function DriverBookingDetailsPage() {
   const isCompleted = rawStatus === "COMPLETED";
   const canModify = !isCancelled && !isCompleted;
 
-  const startsAtDate = booking.slot?.starts_at || booking.starts_at;
-  const endsAtDate = booking.slot?.ends_at || booking.ends_at;
+  const startsAtDate = booking.starts_at || booking.slot?.starts_at;
+  const endsAtDate = booking.ends_at || booking.slot?.ends_at;
   const createdDate = booking.created_at || booking.order_date;
   const bookingLabel = booking.booking_number
     ? `Booking ${booking.booking_number}`

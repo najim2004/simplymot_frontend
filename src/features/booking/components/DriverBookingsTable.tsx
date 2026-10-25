@@ -157,11 +157,11 @@ export function DriverBookingsTable({
                   {/* 1. Garage: Name & Image */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      {row?.garage?.image ? (
+                      {row?.garage?.garage_image || row?.garage?.image ? (
                         <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gray-200">
                           <Image
-                            src={row.garage.image}
-                            alt={row?.garage?.name || "Garage"}
+                            src={(row.garage.garage_image || row.garage.image)!}
+                            alt={row?.garage?.name || row?.garage?.garage_name || "Garage"}
                             fill
                             sizes="36px"
                             className="object-cover"
@@ -170,7 +170,7 @@ export function DriverBookingsTable({
                         </div>
                       ) : (
                         <div className="h-9 w-9 shrink-0 rounded-full bg-gray-100 text-gray-700 font-semibold text-xs flex items-center justify-center border border-gray-200">
-                          {getBookingInitials(row?.garage?.name, "G")}
+                          {getBookingInitials(row?.garage?.name || row?.garage?.garage_name, "G")}
                         </div>
                       )}
                       <div className="flex flex-col">
@@ -181,7 +181,7 @@ export function DriverBookingsTable({
                               : "text-gray-900"
                           }`}
                         >
-                          {row?.garage?.name ?? "N/A"}
+                          {row?.garage?.name || row?.garage?.garage_name || "N/A"}
                         </span>
                         {row?.garage?.address && (
                           <span className="text-xs text-gray-500 truncate max-w-50">

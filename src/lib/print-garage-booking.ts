@@ -41,16 +41,16 @@ export function printGarageBookingDetails(
     // 1. Resolve appointment start date/time with complete fallbacks:
     // Check slot.starts_at, slot.start_time, booking.starts_at, booking.start_time
     let apptStart =
+      toValidDate(booking.starts_at) ||
       toValidDate(booking.slot?.starts_at) ||
       toValidDate((booking.slot as any)?.start_time) ||
-      toValidDate(booking.starts_at) ||
       toValidDate((booking as any).start_time);
 
     // 2. Resolve appointment end date/time:
     let apptEnd =
+      toValidDate(booking.ends_at) ||
       toValidDate(booking.slot?.ends_at) ||
       toValidDate((booking.slot as any)?.end_time) ||
-      toValidDate(booking.ends_at) ||
       toValidDate((booking as any).end_time);
 
     // If either is missing, check booking audit logs (especially for RESCHEDULED bookings)
@@ -132,7 +132,7 @@ export function printGarageBookingDetails(
     const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
     const contentWidth = 160; // Wide receipt width
     const margin = (pageWidth - contentWidth) / 2; // 25mm left & right margins (centered)
-    let y = 16;
+    let y = 14;
 
     // Set font to Courier to measure exact character width for dividers
     doc.setFont("courier", "normal");
@@ -157,20 +157,51 @@ export function printGarageBookingDetails(
 
     // --- RECEIPT HEADER ---
     doc.setFont("courier", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(20, 20, 20);
     const titleText = garageName ? `*** ${garageName} ***` : "*** SIMPLY MOT ***";
     doc.text(titleText, pageWidth / 2, y, { align: "center" });
-    y += 5.5;
-
-    doc.setFont("courier", "bold");
-    doc.setFontSize(10.5);
-    doc.setTextColor(50, 50, 50);
-    const subTitle = booking.garage?.vts_number
-      ? `GARAGE SERVICE SLIP (VTS: ${booking.garage.vts_number})`
-      : "GARAGE SERVICE SLIP";
-    doc.text(subTitle, pageWidth / 2, y, { align: "center" });
     y += 5;
+
+    // Garage Address (if available)
+    const addressParts = [
+      booking.garage?.address,
+      booking.garage?.post_code,
+    ].filter(Boolean);
+    const garageAddress = addressParts.join(", ");
+
+    if (garageAddress) {
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(60, 60, 60);
+      const wrappedAddr = doc.splitTextToSize(garageAddress, contentWidth);
+      doc.text(wrappedAddr, pageWidth / 2, y, { align: "center" });
+      y += wrappedAddr.length * 4 + 1;
+    }
+
+    // Garage Contact (Phone / Email if available)
+    const contactParts = [
+      booking.garage?.phone_number ? `Tel: ${booking.garage.phone_number}` : null,
+      booking.garage?.contact_email || booking.garage?.email
+        ? `Email: ${booking.garage.contact_email || booking.garage.email}`
+        : null,
+    ].filter(Boolean);
+    const garageContact = contactParts.join(" | ");
+
+    if (garageContact) {
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(70, 70, 70);
+      doc.text(garageContact, pageWidth / 2, y, { align: "center" });
+      y += 4.5;
+    }
+
+    // Subtitle (clean without VTS number)
+    doc.setFont("courier", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    doc.text("GARAGE SERVICE SLIP", pageWidth / 2, y, { align: "center" });
+    y += 4.5;
 
     doc.setFont("courier", "normal");
     doc.setFontSize(8.5);

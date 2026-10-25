@@ -94,12 +94,12 @@ export interface Booking {
   updated_at?: string;
   garage_id?: string | null;
   status: BookingStatus | string;
-  starts_at?: string;
+  starts_at?: string | null;
   ends_at?: string | null;
-  service_price: number | null;
-  customer: BookingCustomer | null;
-  garage: BookingGarage | null;
-  vehicle: BookingVehicle | null;
+  service_price?: number | null;
+  customer?: BookingCustomer | null;
+  garage?: BookingGarage | null;
+  vehicle?: BookingVehicle | null;
   order_date?: string;
   total_amount?: string | number | null;
   additional_services?: string | null;

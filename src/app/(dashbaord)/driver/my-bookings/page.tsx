@@ -7,6 +7,7 @@ import {
   useGetBookingsQuery,
   BookingsHeader,
   DriverBookingsTable,
+  DriverBookingsCards,
   DriverViewBookingModal,
   RescheduleBookingModal,
   CancelBookingModal,
@@ -187,17 +188,30 @@ function DriverBookingsContent() {
         onSearchChange={handleSearchChange}
       />
 
-      {/* 2. Driver-specific data table */}
-      <DriverBookingsTable
-        bookings={bookingsData?.data}
-        isLoading={isLoading}
-        isError={isError}
-        skeletonRows={itemsPerPage}
-        onRetry={refetch}
-        onView={(booking) => router.push(`/driver/my-bookings/${booking.id}`)}
-        onReschedule={setRescheduleBooking}
-        onCancel={setCancelBooking}
-      />
+      {/* 2. Driver-specific data cards and table */}
+      <div className="space-y-4">
+        {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
+        <DriverBookingsCards
+          bookings={bookingsData?.data}
+          isLoading={isLoading}
+          skeletonCount={itemsPerPage}
+          onView={(booking) => router.push(`/driver/my-bookings/${booking.id}`)}
+          onReschedule={setRescheduleBooking}
+          onCancel={setCancelBooking}
+        />
+
+        {/* Desktop Table View (lg and above) */}
+        <DriverBookingsTable
+          bookings={bookingsData?.data}
+          isLoading={isLoading}
+          isError={isError}
+          skeletonRows={itemsPerPage}
+          onRetry={refetch}
+          onView={(booking) => router.push(`/driver/my-bookings/${booking.id}`)}
+          onReschedule={setRescheduleBooking}
+          onCancel={setCancelBooking}
+        />
+      </div>
 
       {/* 3. Pagination with Shadcn Select component */}
       {!isLoading && !isError && (bookingsData?.meta_data?.total ?? 0) > 0 && (

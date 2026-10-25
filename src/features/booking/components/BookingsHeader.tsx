@@ -100,7 +100,7 @@ export function BookingsHeader({
 
       {/* Date Filter and Search on the right */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-row sm:w-auto">
           <DatePickerInput
             placeholder="Start Date"
             date={startDate}

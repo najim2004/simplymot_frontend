@@ -91,7 +91,7 @@ export function DriverBookingsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-t-lg border border-gray-300 bg-white">
+    <div className="hidden lg:block overflow-x-auto rounded-t-lg border border-gray-300 bg-white">
       <Table>
         <TableHeader className="bg-gray-50">
           <TableRow>

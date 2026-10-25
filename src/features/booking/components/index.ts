@@ -1,6 +1,8 @@
 export * from "./BookingsHeader";
 export * from "./GarageBookingsTable";
+export * from "./GarageBookingCard";
 export * from "./DriverBookingsTable";
+export * from "./DriverBookingCard";
 export * from "./DriverViewBookingModal";
 export * from "./RescheduleBookingModal";
 export * from "./CancelBookingModal";
@@ -10,3 +12,4 @@ export { default as BookingDetailsSection } from "./BookingDetailsSection";
 export { default as PersonalInformationSection } from "./PersonalInformationSection";
 export { default as AdditionalServicesSection } from "./AdditionalServicesSection";
 export { BookMyMotAutoBooking } from "./BookMyMotAutoBooking";
+export * from "./details";

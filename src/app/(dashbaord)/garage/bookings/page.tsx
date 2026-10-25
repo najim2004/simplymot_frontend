@@ -8,6 +8,7 @@ import {
   useLazyGetBookingByIdQuery,
   BookingsHeader,
   BookingsTable,
+  GarageBookingsCards,
   CancelBookingModal,
   RescheduleBookingModal,
   printBooking,
@@ -228,17 +229,31 @@ function BookingsContent() {
       />
 
       {/* 2. Direct data rendering with optional chaining */}
-      <BookingsTable
-        bookings={bookingsData?.data}
-        isLoading={isLoading}
-        isError={isError}
-        skeletonRows={itemsPerPage}
-        onRetry={refetch}
-        onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
-        onPrint={handlePrint}
-        onReschedule={setRescheduleBooking}
-        onCancel={setCancelBooking}
-      />
+      <div className="space-y-4">
+        {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
+        <GarageBookingsCards
+          bookings={bookingsData?.data}
+          isLoading={isLoading}
+          skeletonCount={itemsPerPage}
+          onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
+          onPrint={handlePrint}
+          onReschedule={setRescheduleBooking}
+          onCancel={setCancelBooking}
+        />
+
+        {/* Desktop Table View (lg and above) */}
+        <BookingsTable
+          bookings={bookingsData?.data}
+          isLoading={isLoading}
+          isError={isError}
+          skeletonRows={itemsPerPage}
+          onRetry={refetch}
+          onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
+          onPrint={handlePrint}
+          onReschedule={setRescheduleBooking}
+          onCancel={setCancelBooking}
+        />
+      </div>
 
       {/* 3. Pagination with shadcn Select component */}
       {!isLoading && !isError && (bookingsData?.meta_data?.total ?? 0) > 0 && (

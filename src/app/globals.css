@@ -178,3 +178,104 @@
 .animate-bounce-subtle {
   animation: bounce-subtle 2s infinite;
 }
+
+/* ========================================================
+   TOAST & SONNER THEME MATCHING
+   Forces light, clean theme styling to match SimplyMOT design
+   ======================================================== */
+[data-sonner-toaster],
+.toaster {
+  --normal-bg: #ffffff !important;
+  --normal-text: #111827 !important;
+  --normal-border: #e5e7eb !important;
+  --success-bg: #f0fdf4 !important;
+  --success-text: #14532d !important;
+  --success-border: #bbf7d0 !important;
+  --error-bg: #fef2f2 !important;
+  --error-text: #7f1d1d !important;
+  --error-border: #fecaca !important;
+  --warning-bg: #fffbeb !important;
+  --warning-text: #78350f !important;
+  --warning-border: #fde68a !important;
+  --info-bg: #f0f9ff !important;
+  --info-text: #0c4a6e !important;
+  --info-border: #bae6fd !important;
+}
+
+[data-sonner-toast] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 0.75rem !important;
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background: #f0fdf4 !important;
+  background-color: #f0fdf4 !important;
+  color: #14532d !important;
+  border-color: #bbf7d0 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: #fef2f2 !important;
+  background-color: #fef2f2 !important;
+  color: #7f1d1d !important;
+  border-color: #fecaca !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background: #fffbeb !important;
+  background-color: #fffbeb !important;
+  color: #78350f !important;
+  border-color: #fde68a !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background: #f0f9ff !important;
+  background-color: #f0f9ff !important;
+  color: #0c4a6e !important;
+  border-color: #bae6fd !important;
+}
+
+/* React Toastify overrides if triggered */
+.Toastify__toast {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 0.75rem !important;
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+}
+
+.Toastify__toast--success {
+  background: #f0fdf4 !important;
+  background-color: #f0fdf4 !important;
+  color: #14532d !important;
+  border-color: #bbf7d0 !important;
+}
+
+.Toastify__toast--error {
+  background: #fef2f2 !important;
+  background-color: #fef2f2 !important;
+  color: #7f1d1d !important;
+  border-color: #fecaca !important;
+}
+
+.Toastify__toast--warning {
+  background: #fffbeb !important;
+  background-color: #fffbeb !important;
+  color: #78350f !important;
+  border-color: #fde68a !important;
+}
+
+.Toastify__toast--info {
+  background: #f0f9ff !important;
+  background-color: #f0f9ff !important;
+  color: #0c4a6e !important;
+  border-color: #bae6fd !important;
+}
+

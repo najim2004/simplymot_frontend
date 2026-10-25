@@ -55,6 +55,9 @@ export function getBookingInitials(name?: string | null, fallback = "B"): string
   return name.slice(0, 2).toUpperCase() || fallback;
 }
 
-export function printBooking(booking: Booking): boolean {
-  return printGarageBookingDetails(booking);
+export function printBooking(
+  booking: Booking,
+  targetWindow?: Window | null,
+): boolean {
+  return printGarageBookingDetails(booking, targetWindow);
 }

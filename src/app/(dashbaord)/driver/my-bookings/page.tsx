@@ -12,6 +12,7 @@ import {
   CancelBookingModal,
   type Booking,
 } from "@/features/booking";
+import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 
@@ -193,7 +194,7 @@ function DriverBookingsContent() {
         isError={isError}
         skeletonRows={itemsPerPage}
         onRetry={refetch}
-        onView={setViewBooking}
+        onView={(booking) => router.push(`/driver/my-bookings/${booking.id}`)}
         onReschedule={setRescheduleBooking}
         onCancel={setCancelBooking}
       />

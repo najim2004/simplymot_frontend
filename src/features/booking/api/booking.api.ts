@@ -16,6 +16,8 @@ import {
   CancelMyBookingRequest,
   RescheduleMyBookingRequest,
   BookingMutationResponse,
+  UpdateBookingNoteRequest,
+  UpdateBookingNoteResponse,
 } from "../types";
 
 export const bookingApi = apiSlice.injectEndpoints({
@@ -114,12 +116,25 @@ export const bookingApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Booking"],
     }),
+
+    updateBookingNote: builder.mutation<
+      UpdateBookingNoteResponse,
+      UpdateBookingNoteRequest
+    >({
+      query: ({ booking_id, note }) => ({
+        url: `/api/bookings/${booking_id}/note`,
+        method: "PATCH",
+        body: { note },
+      }),
+      invalidatesTags: ["Booking"],
+    }),
   }),
 });
 
 export const {
   useGetBookingsQuery,
   useGetBookingByIdQuery,
+  useLazyGetBookingByIdQuery,
   useCreateBookingMutation,
   useBookSlotMutation,
   useGetMyBookingsQuery,
@@ -127,4 +142,6 @@ export const {
   useRescheduleMyBookingMutation,
   useCancelBookingMutation,
   useCancelMyBookingMutation,
+  useUpdateBookingNoteMutation,
 } = bookingApi;
+

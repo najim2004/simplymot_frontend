@@ -2,8 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { X, Printer } from "lucide-react";
-import { toast } from "react-toastify";
+import { X } from "lucide-react";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import type { Booking } from "../types";
@@ -11,7 +10,6 @@ import {
   formatSlotDate,
   formatSlotTimeRange,
   getBookingInitials,
-  printBooking,
 } from "../utils";
 
 export interface DriverViewBookingModalProps {
@@ -28,12 +26,6 @@ export function DriverViewBookingModal({
   if (!booking) return null;
 
   const isCancelled = booking.status?.toUpperCase() === "CANCELLED";
-
-  const handlePrint = () => {
-    if (!printBooking(booking)) {
-      toast.warn("Unable to open print dialog. Please try again.");
-    }
-  };
 
   const garageName = booking.garage?.name || "N/A";
   const garageEmail = booking.garage?.email || "N/A";
@@ -173,15 +165,6 @@ export function DriverViewBookingModal({
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrint}
-              className="gap-2 cursor-pointer border-gray-300"
-            >
-              <Printer className="w-4 h-4 text-gray-600" />
-              <span>Print Details</span>
-            </Button>
             <Button
               type="button"
               onClick={onClose}

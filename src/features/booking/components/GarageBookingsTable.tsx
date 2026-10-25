@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import { MoreVertical, Calendar, AlertTriangle, Eye } from "lucide-react";
+import { MoreVertical, Calendar, AlertTriangle, Eye, Printer } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -24,6 +24,7 @@ import {
   formatSlotDate,
   formatSlotTimeRange,
   getBookingInitials,
+  printBooking,
 } from "../utils";
 
 export interface GarageBookingsTableProps {
@@ -33,6 +34,7 @@ export interface GarageBookingsTableProps {
   skeletonRows?: number;
   onRetry: () => void;
   onView: (booking: Booking) => void;
+  onPrint?: (booking: Booking) => void;
   onReschedule: (booking: Booking) => void;
   onCancel: (booking: Booking) => void;
 }
@@ -44,6 +46,7 @@ export function GarageBookingsTable({
   skeletonRows = 10,
   onRetry,
   onView,
+  onPrint,
   onReschedule,
   onCancel,
 }: GarageBookingsTableProps) {
@@ -302,6 +305,17 @@ export function GarageBookingsTable({
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View
+                        </DropdownMenuItem>
+
+                        {/* Print Slip Action Button */}
+                        <DropdownMenuItem
+                          onClick={() =>
+                            onPrint ? onPrint(row) : printBooking(row)
+                          }
+                          className="cursor-pointer hover:bg-transparent focus:bg-transparent hover:font-bold focus:font-bold transition-none"
+                        >
+                          <Printer className="mr-2 h-4 w-4" />
+                          Print Slip
                         </DropdownMenuItem>
 
                         {row?.status?.toUpperCase() !== "CANCELLED" && (

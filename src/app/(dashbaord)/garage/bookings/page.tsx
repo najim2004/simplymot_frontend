@@ -5,12 +5,15 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import {
   useGetBookingsQuery,
+  useLazyGetBookingByIdQuery,
   BookingsHeader,
   BookingsTable,
   CancelBookingModal,
   RescheduleBookingModal,
+  printBooking,
   type Booking,
 } from "@/features/booking";
+import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 
@@ -47,6 +50,47 @@ function BookingsContent() {
     null,
   );
   const [cancelBooking, setCancelBooking] = useState<Booking | null>(null);
+
+  // Lazy query to fetch complete booking data on-demand when printing
+  const [fetchBookingDetail] = useLazyGetBookingByIdQuery();
+
+  const handlePrint = async (booking: Booking) => {
+    // 1. If full details already present, print immediately
+    if (booking.vehicle?.fuel_type || booking.additional_services !== undefined) {
+      if (!printBooking(booking)) {
+        toast.warning("Unable to open print dialog. Please check pop-up permissions.");
+      }
+      return;
+    }
+
+    // 2. Open tab synchronously on click to bypass browser popup blockers
+    const printWindow = typeof window !== "undefined" ? window.open("", "_blank") : null;
+    if (printWindow) {
+      try {
+        printWindow.document.write(
+          "<!DOCTYPE html><html><head><title>Generating Slip...</title></head><body style='font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:90vh;margin:0;color:#555;'><div style='text-align:center;'><p style='font-size:16px;font-weight:600;'>Preparing Service Receipt Slip...</p><p style='font-size:13px;color:#888;'>Please wait a moment while details are loaded.</p></div></body></html>",
+        );
+      } catch {
+        // Safe check
+      }
+    }
+
+    // 3. Fetch full details on-demand via cached RTK Query for complete A4 receipt
+    try {
+      const res = await fetchBookingDetail(booking.id, true).unwrap();
+      const fullBooking = res?.data || booking;
+      if (!printBooking(fullBooking, printWindow)) {
+        printWindow?.close();
+        toast.warning("Unable to open print dialog. Please check pop-up permissions.");
+      }
+    } catch {
+      // Graceful fallback to printing available data
+      if (!printBooking(booking, printWindow)) {
+        printWindow?.close();
+        toast.warning("Unable to open print dialog. Please check pop-up permissions.");
+      }
+    }
+  };
 
   // Debounce search input by 400ms
   const debouncedSearch = useDebounce(searchTerm, 400);
@@ -191,6 +235,7 @@ function BookingsContent() {
         skeletonRows={itemsPerPage}
         onRetry={refetch}
         onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
+        onPrint={handlePrint}
         onReschedule={setRescheduleBooking}
         onCancel={setCancelBooking}
       />

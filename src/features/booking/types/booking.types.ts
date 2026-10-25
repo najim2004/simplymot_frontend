@@ -21,15 +21,24 @@ export interface BookingCustomer {
   post_code?: string | null;
   total_booked?: number;
   total_cancelled?: number;
+  merit_score?: number | null;
 }
 
 export interface BookingGarage {
   id?: string;
-  name: string | null;
-  email: string | null;
+  name?: string | null;
+  garage_name?: string | null;
+  email?: string | null;
+  contact_email?: string | null;
   phone_number: string | null;
+  vts_number?: string | null;
+  country?: string | null;
+  state?: string | null;
+  city?: string | null;
   address?: string | null;
-  image: string | null;
+  post_code?: string | null;
+  image?: string | null;
+  garage_image?: string | null;
 }
 
 export interface BookingVehicle {
@@ -85,8 +94,8 @@ export interface Booking {
   updated_at?: string;
   garage_id?: string | null;
   status: BookingStatus | string;
-  starts_at: string;
-  ends_at: string | null;
+  starts_at?: string;
+  ends_at?: string | null;
   service_price: number | null;
   customer: BookingCustomer | null;
   garage: BookingGarage | null;
@@ -94,6 +103,7 @@ export interface Booking {
   order_date?: string;
   total_amount?: string | number | null;
   additional_services?: string | null;
+  garage_note?: string | null;
   cancel_reason?: string | null;
   cancelled_by?: string | null;
   slot?: {
@@ -358,3 +368,19 @@ export interface BookingMutationResponse {
   message?: string;
   data?: Record<string, unknown>;
 }
+
+export interface UpdateBookingNoteRequest {
+  booking_id: string;
+  note: string;
+}
+
+export interface UpdateBookingNoteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    garage_note: string;
+    updated_at: string;
+  };
+}
+

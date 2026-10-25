@@ -1,7 +1,6 @@
 export * from "./BookingsHeader";
 export * from "./GarageBookingsTable";
 export * from "./DriverBookingsTable";
-export * from "./GarageViewBookingModal";
 export * from "./DriverViewBookingModal";
 export * from "./RescheduleBookingModal";
 export * from "./CancelBookingModal";

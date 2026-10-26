@@ -7,6 +7,7 @@ import {
   useLazyGetInvoiceByIdQuery,
   InvoicesHeader,
   GarageInvoicesTable,
+  GarageInvoicesCards,
   type Invoice,
 } from "@/features/invoice";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -168,17 +169,29 @@ export default function InvoicesPage() {
         onSearchChange={setSearchTerm}
       />
 
-      {/* 2. Direct data rendering with dedicated table (like BookingsTable) */}
-      <GarageInvoicesTable
-        invoices={invoices}
-        isLoading={isLoading}
-        isError={isError}
-        skeletonRows={itemsPerPage}
-        onRetry={refetch}
-        onViewPdf={handleOpenPdf}
-        loadingInvoiceId={loadingInvoiceId}
-        searchTerm={debouncedSearch}
-      />
+      {/* 2. Direct data rendering with card view on tablet/phone and table on desktop (like Bookings) */}
+      <div className="space-y-4">
+        {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
+        <GarageInvoicesCards
+          invoices={invoices}
+          isLoading={isLoading}
+          skeletonCount={itemsPerPage}
+          onViewPdf={handleOpenPdf}
+          loadingInvoiceId={loadingInvoiceId}
+        />
+
+        {/* Desktop Table View (lg and above) */}
+        <GarageInvoicesTable
+          invoices={invoices}
+          isLoading={isLoading}
+          isError={isError}
+          skeletonRows={itemsPerPage}
+          onRetry={refetch}
+          onViewPdf={handleOpenPdf}
+          loadingInvoiceId={loadingInvoiceId}
+          searchTerm={debouncedSearch}
+        />
+      </div>
 
       {/* 3. Pagination with shadcn Select component (like Bookings page) */}
       {!isLoading && !isError && totalItems > 0 && (

@@ -42,11 +42,11 @@ function DatePickerInput({
           <Button
             variant="outline"
             className={cn(
-              "h-11 w-full justify-start pr-10 text-left font-normal sm:min-w-47.5 border-gray-300",
-              !date && "text-muted-foreground",
+              "h-11 w-full justify-start px-2.5 sm:px-4 text-xs sm:text-sm font-normal sm:min-w-47.5 border-gray-300",
+              !date ? "text-muted-foreground" : "pr-8 sm:pr-10",
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+            <CalendarIcon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
             <span className="truncate">
               {date ? format(date, "dd/MM/yyyy") : placeholder}
             </span>
@@ -72,7 +72,7 @@ function DatePickerInput({
             e.stopPropagation();
             onDateChange(undefined);
           }}
-          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
+          className="absolute right-1.5 sm:right-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
           aria-label={`Clear ${placeholder}`}
           title={`Clear ${placeholder}`}
         >

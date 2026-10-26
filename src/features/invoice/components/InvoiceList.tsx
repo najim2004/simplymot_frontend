@@ -12,6 +12,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { format } from "date-fns";
 import { InvoicesHeader } from "./InvoicesHeader";
 import { GarageInvoicesTable } from "./GarageInvoicesTable";
+import { GarageInvoicesCards } from "./GarageInvoiceCard";
 
 function parseDateParam(dateStr: string | null): Date | undefined {
   if (!dateStr) return undefined;
@@ -167,17 +168,29 @@ export default function InvoiceList() {
         onSearchChange={setSearchTerm}
       />
 
-      {/* 2. Dedicated Table (like BookingsTable) */}
-      <GarageInvoicesTable
-        invoices={invoices}
-        isLoading={isLoading}
-        isError={isError}
-        skeletonRows={itemsPerPage}
-        onRetry={refetch}
-        onViewPdf={handleOpenPdf}
-        loadingInvoiceId={loadingInvoiceId}
-        searchTerm={debouncedSearch}
-      />
+      {/* 2. Direct data rendering with card view on tablet/phone and table on desktop (like Bookings) */}
+      <div className="space-y-4">
+        {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
+        <GarageInvoicesCards
+          invoices={invoices}
+          isLoading={isLoading}
+          skeletonCount={itemsPerPage}
+          onViewPdf={handleOpenPdf}
+          loadingInvoiceId={loadingInvoiceId}
+        />
+
+        {/* Desktop Table View (lg and above) */}
+        <GarageInvoicesTable
+          invoices={invoices}
+          isLoading={isLoading}
+          isError={isError}
+          skeletonRows={itemsPerPage}
+          onRetry={refetch}
+          onViewPdf={handleOpenPdf}
+          loadingInvoiceId={loadingInvoiceId}
+          searchTerm={debouncedSearch}
+        />
+      </div>
 
       {/* 3. Pagination with shadcn Select component (like Bookings page) */}
       {!isLoading && !isError && totalItems > 0 && (

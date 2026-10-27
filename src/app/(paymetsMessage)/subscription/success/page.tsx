@@ -13,7 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { useVerifySubscriptionSuccessQuery } from "@/features/subscriptions";
+import {
+  CurrentSubscription,
+  useVerifySubscriptionSuccessQuery,
+} from "@/features/subscriptions";
 
 function SubscriptionSuccessContent() {
   const searchParams = useSearchParams();
@@ -24,7 +27,9 @@ function SubscriptionSuccessContent() {
   );
   const [isVerifying, setIsVerifying] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<any | null>(null);
+  const [subscription, setSubscription] = useState<CurrentSubscription | null>(
+    null,
+  );
   const [apiMessage, setApiMessage] = useState<string | null>(null);
 
   const {
@@ -49,9 +54,15 @@ function SubscriptionSuccessContent() {
     }
 
     if (apiError) {
+      const err = apiError as {
+        data?: { message?: string | { message?: string } };
+        message?: string;
+      };
       const msg =
-        (apiError as any)?.data?.message ||
-        (apiError as any)?.message ||
+        (typeof err?.data?.message === "object"
+          ? err?.data?.message?.message
+          : err?.data?.message) ||
+        err?.message ||
         "Verification failed.";
       setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
       setIsVerifying(false);

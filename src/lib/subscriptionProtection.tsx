@@ -36,8 +36,10 @@ export const SubscriptionProtection: React.FC<SubscriptionProtectionProps> = ({ 
       return;
     }
 
-    const subscriptionStatus = subscriptionData?.data?.status;
-    const hasActiveSubscription = subscriptionStatus === "ACTIVE";
+    const hasActiveSubscription = Boolean(
+      subscriptionData?.data?.has_subscription ||
+        subscriptionData?.data?.subscription?.status === "ACTIVE",
+    );
 
     if (!hasActiveSubscription) {
       router.push("/garage/subscription");
@@ -53,8 +55,10 @@ export const SubscriptionProtection: React.FC<SubscriptionProtectionProps> = ({ 
       return <LoadingSpinner />;
     }
 
-    const subscriptionStatus = subscriptionData?.data?.status;
-    const hasActiveSubscription = subscriptionStatus === "ACTIVE";
+    const hasActiveSubscription = Boolean(
+      subscriptionData?.data?.has_subscription ||
+        subscriptionData?.data?.subscription?.status === "ACTIVE",
+    );
 
     if (!hasActiveSubscription) {
       return <LoadingSpinner />;

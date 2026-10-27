@@ -137,3 +137,5 @@ export function generateInvoicePdf(invoice: InvoiceDetail | Invoice | any): void
   // Save / open PDF
   doc.save(`invoice_${invoiceNumber}.pdf`);
 }
+
+export { printInvoice } from "@/lib/print-invoice";

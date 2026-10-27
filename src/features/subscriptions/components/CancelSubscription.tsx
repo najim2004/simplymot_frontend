@@ -13,9 +13,10 @@ import {
 import { X, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { updateSubscriptionStatus } from "../store";
+import type { CurrentSubscription } from "../types";
 
 interface CancelSubscriptionProps {
-  currentSubscription: any;
+  currentSubscription: CurrentSubscription;
 }
 
 export default function CancelSubscription({
@@ -62,10 +63,14 @@ export default function CancelSubscription({
         }, 500);
       }
     } catch (error) {
-      const err: any = error;
+      const err = error as {
+        data?: { message?: string | { message?: string } };
+        error?: string;
+      };
       const apiMessage =
-        err?.data?.message?.message ||
-        err?.data?.message ||
+        (typeof err?.data?.message === "object"
+          ? err?.data?.message?.message
+          : err?.data?.message) ||
         err?.error ||
         "Failed to cancel subscription.";
       toast.error(apiMessage);

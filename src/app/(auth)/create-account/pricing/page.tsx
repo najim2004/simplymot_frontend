@@ -93,89 +93,91 @@ export default function GaragePricing() {
 
       {/* Right Side - Pricing Card */}
       <div className="flex-1 lg:flex-1 flex items-center justify-center">
-        <div className="border border-[#19CA32] rounded-2xl">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg">
-            {/* Header */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="w-full max-w-lg border border-[#19CA32] rounded-2xl bg-white shadow-sm overflow-hidden">
+          {/* Top Section */}
+          <div className="p-8 pb-6 flex flex-col items-center text-center">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               One Simple Plan
             </h2>
 
-            {/* Description */}
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+            <div className="my-4 flex items-baseline justify-center">
+              <span className="text-3xl sm:text-4xl font-bold text-gray-900 mr-0.5">
+                £
+              </span>
+              <span className="text-6xl sm:text-7xl font-extrabold text-gray-900 tracking-tight">
+                49
+              </span>
+            </div>
+
+            <p className="text-gray-500 font-medium text-base mb-6">/month</p>
+
+            <button
+              onClick={handleGarageSignup}
+              className="w-full max-w-70 cursor-pointer bg-[#19CA32] hover:bg-green-600 text-white font-semibold py-3.5 px-6 rounded-xl text-base shadow-xs hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center"
+            >
+              Get Started
+            </button>
+          </div>
+
+          {/* Horizontal Divider */}
+          <div className="w-full border-t border-gray-200" />
+
+          {/* Bottom Section */}
+          <div className="p-8 pt-6 space-y-6">
+            <p className="text-gray-600 text-sm leading-relaxed text-center sm:text-left">
               We believe in fairness and transparency - no hidden fees, no
               contracts, no commission, and no confusing tiers. Just full access
               for one simple price.
             </p>
 
-            {/* Membership Label */}
-            <p className="text-gray-700 text-sm mb-2">Membership</p>
-
-            {/* Price */}
-            <div className="mb-4">
-              <span className="text-4xl font-bold text-gray-900">£49</span>
-              <span className="text-gray-600 ml-1">/month</span>
-            </div>
-
-            {/* Billing Info */}
-            <p className="text-gray-600 mb-6">
-              More MOT Bookings. No Commission. Cancel Anytime.
-            </p>
-
-            {/* CTA Button */}
-            <button
-              onClick={handleGarageSignup}
-              className="w-full cursor-pointer bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg mb-8 transition-colors duration-200"
-            >
-              Become a Member
-            </button>
-
-            {/* Features */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
                 Features
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <Package className="w-4 h-4 text-gray-600" />
+                  <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                    <Package className="w-4 h-4" />
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 leading-snug">
                     Unlimited opportunity to receive MOT bookings 24/7.
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <ShoppingBasket className="w-4 h-4 text-gray-600" />
+                  <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                    <ShoppingBasket className="w-4 h-4" />
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 leading-snug">
                     Boost your garage’s visibility.
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <Calendar className="w-4 h-4 text-gray-600" />
+                  <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                    <Calendar className="w-4 h-4" />
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 leading-snug">
                     Opportunity to upsell and offer extra services!
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <TrendingUp className="w-4 h-4 text-gray-600" />
+                  <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-700 leading-snug">
                     No contract. No commission.
                   </p>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <Package className="w-4 h-4 text-gray-600" />
+                  <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                    <Package className="w-4 h-4" />
                   </div>
-                  <p className="text-sm text-gray-700">Simple set up.</p>
+                  <p className="text-sm text-gray-700 leading-snug">
+                    Simple set up.
+                  </p>
                 </div>
               </div>
             </div>

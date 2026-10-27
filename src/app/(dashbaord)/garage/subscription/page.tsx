@@ -1,80 +1,50 @@
 "use client";
 
+import { FileText, Package, ShoppingCart, TrendingUp } from "lucide-react";
+import React, { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
-  ChevronDown,
-  FileText,
-  Package,
-  ShoppingCart,
-  Tag,
-  TrendingUp,
-} from "lucide-react";
-import React, { useMemo, useState } from "react";
-import {
+  SubscriptionPlanItem,
   useGetSubscriptionPlansQuery,
-  useCheckoutSubscriptionMutation,
-  useGetCurrentSubscriptionQuery,
-  CancelSubscription,
 } from "@/features/subscriptions";
 import { PAGINATION_CONFIG } from "@/config/pagination.config";
-import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
 import { isTestSubscriptionPlanName } from "../../../../config/test-subscription-plan.config";
 
-interface PlanItem {
-  id: string;
-  name: string;
-  description: string;
-  price_pence: number;
-  currency: string;
-  price_formatted: string;
-  [key: string]: unknown;
-}
-
-interface ApiError {
-  data?: {
-    message?: string | { message?: string };
-  };
-  error?: string;
-}
-
-// Date formatter helper
-const formatDate = (value: string | null | undefined) => {
-  if (!value || value === "N/A") return "N/A";
-  try {
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      return "N/A";
-    }
-    return format(date, "dd/MM/yyyy");
-  } catch {
-    return "N/A";
+// Helper to get formatted price and currency for plan display
+const getPlanPriceDisplay = (plan: SubscriptionPlanItem) => {
+  if (typeof plan.price_pence === "number" && plan.price_pence > 0) {
+    const amount = plan.price_pence / 100;
+    const formattedAmount = amount % 1 === 0 ? `${amount}` : amount.toFixed(2);
+    const currency =
+      plan.currency === "GBP" || !plan.currency
+        ? "£"
+        : plan.currency === "USD"
+          ? "$"
+          : plan.currency === "EUR"
+            ? "€"
+            : plan.currency;
+    return { currency, amount: formattedAmount };
   }
-};
 
-const isPromotionCurrentlyActive = (
-  promotion:
-    | {
-        code?: string | null;
-        stripe_promotion_code_id?: string | null;
-        active_until?: string | null;
+  if (plan.price_formatted) {
+    const match = plan.price_formatted.match(
+      /^([^\d]*)([\d,]+(?:\.\d+)?)(.*)$/,
+    );
+    if (match) {
+      let amount = match[2];
+      if (amount.endsWith(".00")) {
+        amount = amount.slice(0, -3);
       }
-    | null
-    | undefined,
-) => {
-  if (!promotion?.code && !promotion?.stripe_promotion_code_id) return false;
-  if (!promotion?.active_until) return true;
+      return { currency: match[1] || "£", amount };
+    }
+  }
 
-  const activeUntil = new Date(promotion.active_until);
-  if (isNaN(activeUntil.getTime())) return false;
-
-  return activeUntil.getTime() >= Date.now();
+  return { currency: "£", amount: "50" };
 };
 
 export default function SubscriptionPage() {
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoPlanId, setPromoPlanId] = useState<string | null>(null);
+  const router = useRouter();
 
   // Fetch subscription plans
   const {
@@ -86,73 +56,43 @@ export default function SubscriptionPage() {
     limit: PAGINATION_CONFIG.DEFAULT_LIMIT,
   });
 
-  // Fetch current subscription
-  const { data: currentSubscriptionData, isLoading: isLoadingCurrent } =
-    useGetCurrentSubscriptionQuery();
-
-  const [checkoutSubscription] = useCheckoutSubscriptionMutation();
-
-  const handleSelectPlan = async (plan: PlanItem) => {
-    setLoadingPlanId(plan.id);
-
-    try {
-      const cleanPromoCode = promoPlanId === plan.id ? promoCode.trim() : "";
-      const result = await checkoutSubscription({
-        plan_id: plan.id,
-        ...(cleanPromoCode ? { promo_code: cleanPromoCode } : {}),
-      }).unwrap();
-
-      if (result.success && result.data?.checkout_url) {
-        window.location.href = result.data.checkout_url;
-      }
-    } catch (err: unknown) {
-      const apiErr = err as ApiError;
-      const apiMessage =
-        typeof apiErr?.data?.message === "string"
-          ? apiErr.data.message
-          : apiErr?.data?.message?.message ||
-            apiErr?.error ||
-            "Checkout failed. Please try again.";
-      toast.error(apiMessage);
-    } finally {
-      setLoadingPlanId(null);
-    }
-  };
-
   const plans = useMemo(() => {
-    const fetchedPlans: PlanItem[] = plansData?.data?.plans || [];
+    const fetchedPlans: SubscriptionPlanItem[] = Array.isArray(plansData?.data)
+      ? plansData.data
+      : [];
     return fetchedPlans.filter(
       (plan) => !isTestSubscriptionPlanName(plan.name),
     );
-  }, [plansData?.data?.plans]);
+  }, [plansData?.data]);
 
-  if (isLoading || isLoadingCurrent) {
+  if (isLoading) {
     return (
       <div className="flex-1 lg:flex-1 flex items-center justify-center p-4 lg:p-8">
-        <div className="w-full">
-          <div className="flex justify-center items-center">
-            <div className="w-full max-w-md">
-              <div className="bg-white rounded-lg border-2 border-gray-200 p-6 shadow-sm animate-pulse">
-                <div className="flex justify-center mb-4">
-                  <Skeleton className="h-6 w-24 rounded-full" />
+        <div className="w-full flex justify-center items-center">
+          <div className="w-full max-w-115">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-pulse">
+              <div className="p-8 pb-6 flex flex-col items-center">
+                <Skeleton className="h-7 w-48 mb-4 rounded-md" />
+                <div className="flex items-baseline gap-2 my-3">
+                  <Skeleton className="h-14 w-28 rounded-md" />
                 </div>
-                <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
-                <Skeleton className="h-4 w-full mb-6 mx-auto" />
-                <div className="mb-6">
-                  <div className="flex justify-center items-baseline gap-2 mb-1">
-                    <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-6 w-16" />
-                  </div>
-                  <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-4 w-16 mb-6 rounded-md" />
+                <Skeleton className="h-12 w-full max-w-70 rounded-xl" />
+              </div>
+              <div className="w-full border-t border-gray-200" />
+              <div className="p-8 pt-6 space-y-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-3.5 w-full rounded" />
+                  <Skeleton className="h-3.5 w-5/6 rounded" />
+                  <Skeleton className="h-3.5 w-4/6 rounded" />
                 </div>
-                <Skeleton className="h-12 w-full mb-6 rounded-md" />
                 <div>
-                  <Skeleton className="h-6 w-24 mb-3" />
+                  <Skeleton className="h-5 w-24 mb-4 rounded" />
                   <div className="space-y-3">
                     {[1, 2, 3, 4, 5].map((index) => (
                       <div key={index} className="flex items-start gap-3">
-                        <Skeleton className="h-5 w-5 rounded mt-0.5" />
-                        <Skeleton className="h-4 flex-1" />
+                        <Skeleton className="h-4 w-4 rounded mt-0.5" />
+                        <Skeleton className="h-4 flex-1 rounded" />
                       </div>
                     ))}
                   </div>
@@ -176,8 +116,6 @@ export default function SubscriptionPage() {
       </div>
     );
   }
-
-  const currentSubscription = currentSubscriptionData?.data;
 
   // If no plans available, show empty state
   if (plans.length === 0) {
@@ -246,308 +184,100 @@ export default function SubscriptionPage() {
   return (
     <div className="flex-1 h-full lg:flex-1 flex items-center justify-center p-4 lg:p-8">
       <div className="w-full">
-        <div className="flex justify-center items-center gap-4">
+        <div className="flex flex-wrap justify-center items-stretch gap-6">
           {plans.map((plan) => {
-            const planSub = (plan.current_subscription as Record<string, unknown> | null) || null;
-            const sub = (planSub || currentSubscription) as Record<string, any> | null;
-            const isCurrentPlan =
-              Boolean(planSub) ||
-              Boolean(
-                currentSubscription &&
-                  (currentSubscription.plan?.id === plan.id ||
-                    currentSubscription.plan_id === plan.id),
-              );
-
-            const isActiveSubscription = sub?.status === "ACTIVE";
-            const isSuspended = sub?.status === "SUSPENDED" || sub?.status === "PAST_DUE";
-
-            const periodEnd = sub?.billing?.current_period_end || sub?.current_period_end;
-            const daysRemaining = sub?.trial?.days_remaining ?? sub?.trial_information?.days_remaining ?? 0;
-
-            const isCancelledButActive =
-              sub?.status === "CANCELLED" &&
-              (new Date(periodEnd).getTime() > Date.now() || daysRemaining > 0);
-
-            const hasActivePromotion = isPromotionCurrentlyActive(
-              sub?.promotion,
+            const hasSubscription = Boolean(
+              plan.has_subscription || plan.is_current_plan,
             );
+            const priceInfo = getPlanPriceDisplay(plan);
 
             return (
               <div
                 key={plan.id}
-                className={`relative w-fit min-w-[400px] max-w-[500px] border rounded-xl p-8 bg-white transition-all duration-200 hover:shadow-lg ${
-                  isCurrentPlan && isActiveSubscription
-                    ? "border-green-500 ring-2 ring-blue-100 bg-blue-50"
-                    : isCurrentPlan && isSuspended
-                      ? "border-yellow-500 ring-2 ring-yellow-100 bg-yellow-50"
-                      : isCurrentPlan && isCancelledButActive
-                        ? "border-orange-500 ring-2 ring-orange-100 bg-orange-50"
-                        : isCurrentPlan &&
-                            !isActiveSubscription &&
-                            !isCancelledButActive &&
-                            !isSuspended
-                          ? "border-red-500 ring-2 ring-red-100 bg-red-50"
-                          : "border-gray-200 hover:border-gray-300"
+                className={`relative w-full max-w-115 border rounded-2xl bg-white transition-all duration-200 shadow-sm hover:shadow-md ${
+                  hasSubscription
+                    ? "border-green-500 ring-2 ring-green-100"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
-                {isCurrentPlan && isSuspended && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center gap-1 whitespace-nowrap">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                      Suspended - Payment Required
+                {/* Current Plan Badge */}
+                {hasSubscription && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                    <span className="bg-[#19CA32] text-white px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-1 whitespace-nowrap shadow-xs">
+                      Current Plan
                     </span>
                   </div>
                 )}
 
-                {isCurrentPlan && isCancelledButActive && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center gap-1 whitespace-nowrap">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      {(currentSubscription?.trial_information?.days_remaining ??
-                        0) > 0
-                        ? `Cancelled (${currentSubscription.trial_information?.days_remaining} days trial left)`
-                        : `Cancelled (Active Until ${formatDate(
-                            currentSubscription.current_period_end,
-                          )})`}
-                    </span>
-                  </div>
-                )}
-
-                {isCurrentPlan &&
-                  !isActiveSubscription &&
-                  !isCancelledButActive &&
-                  !isSuspended && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-red-500 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center gap-1 whitespace-nowrap">
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                        Cancelled
-                      </span>
-                    </div>
-                  )}
-
-                <div className="mb-6">
-                  <h3 className="sm:text-2xl text-xl pb-2 font-bold text-gray-900">
-                    One simple plan
+                {/* Top Section: Title, Price, Frequency, Button */}
+                <div className="p-8 pb-6 flex flex-col items-center text-center">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+                    {plan.name || "One Simple Plan"}
                   </h3>
-                  <p className="text-gray-600 text-sm">
-                    We believe in fairness & transparency - no hidden fees, no
-                    contracts, no commission, and no confusing tiers. Just full
-                    access for one simple price.
-                  </p>
 
-                  <div className="my-4">
-                    <p className="mb-2.5">Membership</p>
-                    <span className="sm:text-4xl text-2xl font-bold text-gray-900">
-                      {plan.price_formatted}
+                  <div className="my-4 flex items-baseline justify-center">
+                    {priceInfo.currency && (
+                      <span className="text-3xl sm:text-4xl font-bold text-gray-900 mr-0.5">
+                        {priceInfo.currency}
+                      </span>
+                    )}
+                    <span className="text-6xl sm:text-7xl font-extrabold text-gray-900 tracking-tight">
+                      {priceInfo.amount}
                     </span>
-                    <span className="text-gray-600 ml-1">/month</span>
                   </div>
 
-                  <p className="text-sm">
-                    {plan.price_formatted} billed automatically every month on
-                    the sign-up date (unless cancelled)
+                  <p className="text-gray-500 font-medium text-base mb-6">
+                    /month
                   </p>
+
+                  {/* Single Action Button (No icon) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasSubscription) {
+                        router.push(
+                          `/garage/subscription/details?plan_id=${plan.id}`,
+                        );
+                      } else {
+                        router.push(
+                          `/garage/subscription/order-summary?plan_id=${plan.id}`,
+                        );
+                      }
+                    }}
+                    className="w-full max-w-70 cursor-pointer py-3.5 px-6 rounded-xl font-semibold transition-all duration-200 text-base bg-[#19CA32] hover:bg-green-600 text-white shadow-xs hover:shadow-md active:scale-[0.98] flex items-center justify-center text-center"
+                  >
+                    {hasSubscription ? "View Details" : "Get Started"}
+                  </button>
                 </div>
 
-                {!(isCurrentPlan && isActiveSubscription) && (
-                  <div className="mb-5">
-                    <button
-                      type="button"
-                      aria-expanded={promoPlanId === plan.id}
-                      aria-controls={`promo-code-panel-${plan.id}`}
-                      onClick={() => {
-                        const shouldOpen = promoPlanId !== plan.id;
-                        setPromoPlanId(shouldOpen ? plan.id : null);
-                        if (!shouldOpen) setPromoCode("");
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:border-[#19CA32] hover:bg-green-50/40"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Tag className="h-4 w-4" />
-                        I have a promo code
-                      </span>
-                      <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-300 ${
-                          promoPlanId === plan.id ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
+                {/* Horizontal Divider */}
+                <div className="w-full border-t border-gray-200" />
 
-                    <div
-                      id={`promo-code-panel-${plan.id}`}
-                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                        promoPlanId === plan.id
-                          ? "max-h-20 opacity-100"
-                          : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      <input
-                        id={`promo-code-${plan.id}`}
-                        value={promoCode}
-                        onChange={(event) =>
-                          setPromoCode(event.target.value.toUpperCase())
-                        }
-                        placeholder="Enter code"
-                        className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm uppercase outline-none transition-colors focus:border-[#19CA32] focus:ring-2 focus:ring-[#19CA32]/10"
-                      />
-                    </div>
-                  </div>
-                )}
+                {/* Bottom Section: Description & Features */}
+                <div className="p-8 pt-6 space-y-6">
+                  {/* Description Paragraph */}
+                  <p className="text-gray-600 text-sm leading-relaxed text-center sm:text-left">
+                    {plan.description ||
+                      "We believe in fairness & transparency - no hidden fees, no contracts, no commission, and no confusing tiers. Just full access for one simple price."}
+                  </p>
 
-                {/* choose plan button */}
-                {isCurrentPlan ? (
-                  <div className="space-y-3 mb-6 ">
-                    {/* Cancel Subscription Component - Only show for active subscriptions */}
-                    {isActiveSubscription && (
-                      <CancelSubscription
-                        currentSubscription={currentSubscription}
-                      />
-                    )}
-
-                    {isActiveSubscription && hasActivePromotion && (
-                      <div className="rounded-lg border border-green-200 bg-white p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                          <Tag className="h-4 w-4 text-[#19CA32]" />
-                          Promo code applied
+                  {/* Features List */}
+                  <div>
+                    <h4 className="text-base font-semibold text-gray-900 mb-4">
+                      Features
+                    </h4>
+                    <div className="space-y-3.5">
+                      {getFeatures().map((feature, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="shrink-0 mt-0.5 text-[#19CA32]">
+                            <feature.icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm text-gray-700 leading-snug">
+                            {feature.text}
+                          </span>
                         </div>
-                        <p className="mt-2 text-xs text-gray-600">
-                          {currentSubscription?.promotion?.active_until
-                            ? `Current promotion active until ${formatDate(
-                                currentSubscription.promotion.active_until,
-                              )}.`
-                            : "Current promotion is active on this subscription."}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Suspended Status - Show payment required message */}
-                    {isSuspended && (
-                      <div className="w-full py-3 px-4 rounded-lg bg-yellow-50 border border-yellow-200">
-                        <p className="text-sm text-yellow-800 text-center mb-2">
-                          <strong>Payment Required:</strong> Please update your
-                          payment method to reactivate your subscription.
-                        </p>
-                        <button
-                          onClick={() => handleSelectPlan(plan)}
-                          disabled={loadingPlanId === plan.id}
-                          className="w-full cursor-pointer py-3 px-6 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-50 text-sm disabled:cursor-not-allowed bg-orange-500 hover:bg-orange-700 text-white"
-                        >
-                          {loadingPlanId === plan.id
-                            ? "Processing..."
-                            : "Reactivate Subscription"}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Resubscribe Button for cancelled subscriptions only (not suspended) */}
-                    {!isActiveSubscription && !isSuspended && (
-                      <button
-                        onClick={() => handleSelectPlan(plan)}
-                        disabled={loadingPlanId === plan.id}
-                        className="w-full cursor-pointer py-3 px-6 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-50 text-sm disabled:cursor-not-allowed bg-orange-500 hover:bg-orange-700 text-white"
-                      >
-                        {loadingPlanId === plan.id
-                          ? "Processing..."
-                          : "Resubscribe"}
-                      </button>
-                    )}
-
-                    {/* Subscription Type Badge */}
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          isActiveSubscription
-                            ? "bg-blue-100 text-blue-800"
-                            : isSuspended
-                              ? "bg-yellow-100 text-yellow-800"
-                              : isCancelledButActive
-                                ? "bg-orange-100 text-orange-800"
-                                : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {(() => {
-                          const type = currentSubscription.subscription_type;
-                          if (type === "active_trial") return "Active";
-                          if (type === "trial_with_cancellation")
-                            return "Cancellation";
-                          return type?.replace(/_/g, " ");
-                        })()}
-                      </span>
-
-                      {/* Days Remaining Badge */}
-                      {currentSubscription.trial_information
-                        ?.days_remaining && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                          {currentSubscription.trial_information.days_remaining}{" "}
-                          days left
-                        </span>
-                      )}
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  // choose plan button
-                  <button
-                    onClick={() => handleSelectPlan(plan)}
-                    disabled={loadingPlanId === plan.id}
-                    className="w-full cursor-pointer py-3 px-6 rounded-lg font-semibold transition-colors duration-200 mb-6 disabled:opacity-50 text-sm disabled:cursor-not-allowed bg-[#19CA32] hover:bg-green-600 text-white"
-                  >
-                    {loadingPlanId === plan.id
-                      ? "Processing..."
-                      : `Choose ${plan.name}`}
-                  </button>
-                )}
-
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    Features
-                  </h4>
-                  <div className="space-y-3">
-                    {getFeatures().map((feature, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-0.5">
-                          <feature.icon className="w-4 h-4" />
-                        </div>
-                        <span className="text-sm text-gray-700">
-                          {feature.text}
-                        </span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>

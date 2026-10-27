@@ -227,7 +227,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
   };
 
   // Check if subscription is active
-  const hasActiveSubscription = subscriptionData?.data?.status === "ACTIVE";
+  const hasActiveSubscription = Boolean(
+    subscriptionData?.data?.has_subscription ||
+      subscriptionData?.data?.subscription?.status === "ACTIVE",
+  );
 
   // Protected routes that require active subscription
   const protectedRoutes = [
@@ -339,9 +342,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         {user?.type &&
           user.type.toLowerCase() === "garage" &&
           !isLoadingSubscription &&
-          (!subscriptionData?.success ||
-            !subscriptionData?.data ||
-            subscriptionData?.data?.status !== "ACTIVE") && (
+          !hasActiveSubscription && (
             <div className="p-2">
               <div
                 className="bg-red-500 text-white px-6 py-6 rounded-lg space-y-2"

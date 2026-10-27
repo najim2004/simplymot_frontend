@@ -8,6 +8,7 @@ import {
   InvoicesHeader,
   GarageInvoicesTable,
   GarageInvoicesCards,
+  printInvoice,
   type Invoice,
 } from "@/features/invoice";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -120,30 +121,34 @@ export default function InvoicesPage() {
   const handleOpenPdf = async (row: Invoice) => {
     if (!row?.id) return;
     setLoadingInvoiceId(row.id);
-    try {
-      const result = await fetchInvoiceById(row.id).unwrap();
-      const invoiceDetail = result?.data;
-      if (!invoiceDetail) {
-        toast.error("Failed to load invoice details");
-        return;
+
+    // 1. Open tab synchronously on click to bypass browser popup blockers (matching booking flow)
+    const printWindow =
+      typeof window !== "undefined" ? window.open("", "_blank") : null;
+    if (printWindow) {
+      try {
+        printWindow.document.write(
+          "<!DOCTYPE html><html><head><title>Generating Invoice PDF...</title></head><body style='font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:90vh;margin:0;color:#555;'><div style='text-align:center;'><p style='font-size:16px;font-weight:600;'>Preparing Invoice PDF...</p><p style='font-size:13px;color:#888;'>Please wait a moment while details are loaded.</p></div></body></html>",
+        );
+      } catch {
+        // Safe check
       }
-      const { pdf } = await import("@react-pdf/renderer");
-      const { default: InvoicePdfDocument } =
-        await import("@/features/invoice/components/InvoicePdfDocument");
-      const blob = await pdf(
-        <InvoicePdfDocument invoice={invoiceDetail} />,
-      ).toBlob();
-      const url = URL.createObjectURL(blob);
-      const tab = window.open(url, "_blank");
-      if (!tab)
-        toast.error("Pop-up blocked! Please allow pop-ups to view PDF.");
-      else toast.success("Invoice PDF opened in new tab");
-    } catch (err: unknown) {
-      const msg =
-        typeof err === "object" && err !== null && "data" in err
-          ? (err as { data?: { message?: string } }).data?.message
-          : null;
-      toast.error(msg || "Failed to generate invoice PDF");
+    }
+
+    try {
+      // 2. Fetch complete invoice detail from backend
+      const result = await fetchInvoiceById(row.id).unwrap();
+      const invoiceDetail = result?.data || row;
+      if (!printInvoice(invoiceDetail, printWindow)) {
+        printWindow?.close();
+        toast.warning("Unable to open invoice PDF. Please check pop-up permissions.");
+      }
+    } catch {
+      // 3. Graceful fallback to printing available row data if detail fetch fails
+      if (!printInvoice(row, printWindow)) {
+        printWindow?.close();
+        toast.warning("Unable to open invoice PDF. Please check pop-up permissions.");
+      }
     } finally {
       setLoadingInvoiceId(null);
     }

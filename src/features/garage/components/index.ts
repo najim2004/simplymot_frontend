@@ -1,11 +1,9 @@
-export { default as AccountSettings } from "./AccountSettings";
 export { default as AdditionalServicesAdd } from "./AdditionalServicesAdd";
 export { default as BreaksModal } from "./BreaksModal";
 export { default as CalendarView } from "./CalendarView";
 export { default as DefultCalanderView } from "./DefultCalanderView";
 export { default as DefultCalanderViewShimmer } from "./DefultCalanderViewShimmer";
 export { default as GarageProfileAdd } from "./GarageProfileAdd";
-export { default as GarageProfileCard } from "./GarageProfileCard";
 export { default as ManageHolidaysModal } from "./ManageHolidaysModal";
 export { default as ManageSlotsModal } from "./ManageSlotsModal";
 export { default as MotFeeAdd } from "./MotFeeAdd";

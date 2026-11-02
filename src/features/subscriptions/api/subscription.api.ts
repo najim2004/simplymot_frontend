@@ -9,6 +9,8 @@ import {
   GetSubscriptionPlansQueryArgs,
   GetSubscriptionPlansResponse,
   VerifySubscriptionSuccessResponse,
+  ValidatePromoCodeRequest,
+  ValidatePromoCodeResponse,
 } from "../types";
 
 export const subscriptionApi = apiSlice.injectEndpoints({
@@ -51,6 +53,17 @@ export const subscriptionApi = apiSlice.injectEndpoints({
       providesTags: ["Subscription"],
     }),
 
+    validatePromoCode: builder.mutation<
+      ValidatePromoCodeResponse,
+      ValidatePromoCodeRequest
+    >({
+      query: (body) => ({
+        url: "/api/subscription/validate-promo",
+        method: "POST",
+        body,
+      }),
+    }),
+
     checkoutSubscription: builder.mutation<
       CheckoutSubscriptionResponse,
       CheckoutSubscriptionRequest
@@ -85,6 +98,7 @@ export const {
   useVerifySubscriptionSuccessQuery,
   useGetSubscriptionPlansQuery,
   useGetSubscriptionPlanDetailsQuery,
+  useValidatePromoCodeMutation,
   useCheckoutSubscriptionMutation,
   useCancelSubscriptionMutation,
 } = subscriptionApi;

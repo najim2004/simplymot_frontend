@@ -17,6 +17,8 @@ import {
   SubscriptionPlanItem,
   useGetSubscriptionPlansQuery,
   useCheckoutSubscriptionMutation,
+  useValidatePromoCodeMutation,
+  ValidatedPromoData,
 } from "@/features/subscriptions";
 import { toast } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,11 +118,13 @@ function OrderSummaryContent() {
   const selectedPlanId = searchParams.get("plan_id");
 
   const [promoCodeInput, setPromoCodeInput] = useState("");
-  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<ValidatedPromoData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: plansData, isLoading: isLoadingPlans } =
     useGetSubscriptionPlansQuery();
+  const [validatePromo, { isLoading: isValidatingPromo }] =
+    useValidatePromoCodeMutation();
   const [checkoutSubscription] = useCheckoutSubscriptionMutation();
 
   const plans = useMemo(() => {
@@ -139,19 +143,43 @@ function OrderSummaryContent() {
 
   const priceInfo = useMemo(() => formatPlanPrice(plan), [plan]);
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = promoCodeInput.trim().toUpperCase();
     if (!clean) {
       toast.warning("Please enter a valid coupon code.");
       return;
     }
-    setAppliedPromoCode(clean);
-    toast.success(`Coupon code "${clean}" applied!`);
+    if (!plan) return;
+
+    try {
+      const res = await validatePromo({
+        plan_id: plan.id,
+        code: clean,
+      }).unwrap();
+
+      if (res.success && res.data?.valid) {
+        setAppliedPromo(res.data);
+        toast.success(
+          `Coupon "${res.data.code}" applied! (${res.data.percent_off}% off)`
+        );
+      } else {
+        toast.error("Invalid coupon code.");
+      }
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      const message =
+        typeof apiErr?.data?.message === "string"
+          ? apiErr.data.message
+          : apiErr?.data?.message?.message ||
+            apiErr?.error ||
+            "Invalid or inactive promo code.";
+      toast.error(message);
+    }
   };
 
   const handleRemovePromo = () => {
-    setAppliedPromoCode(null);
+    setAppliedPromo(null);
     setPromoCodeInput("");
     toast.info("Coupon code removed.");
   };
@@ -166,7 +194,7 @@ function OrderSummaryContent() {
     try {
       const result = await checkoutSubscription({
         plan_id: plan.id,
-        ...(appliedPromoCode ? { promo_code: appliedPromoCode } : {}),
+        ...(appliedPromo?.code ? { promo_code: appliedPromo.code } : {}),
       }).unwrap();
 
       if (result.success && result.data?.checkout_url) {
@@ -219,10 +247,17 @@ function OrderSummaryContent() {
     { label: "Subtotal", value: priceInfo.formatted, bold: true },
     {
       label: "Discount",
-      value: appliedPromoCode ? "Calculated at checkout" : "£0.00",
+      value: appliedPromo
+        ? `-${appliedPromo.discount_formatted} (${appliedPromo.percent_off}% off)`
+        : "£0.00",
+      highlight: Boolean(appliedPromo),
     },
     { label: "Tax (Estimated)", value: "£0.00" },
   ];
+
+  const totalDueToday = appliedPromo
+    ? appliedPromo.final_price_formatted
+    : priceInfo.formatted;
 
   return (
     <div className="w-full min-h-[calc(100vh-140px)] flex items-center justify-center py-6 sm:py-10 px-2 sm:px-4">
@@ -287,14 +322,14 @@ function OrderSummaryContent() {
                 Have a promo code?
               </label>
 
-              {appliedPromoCode ? (
+              {appliedPromo ? (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-xs text-emerald-900 bg-white px-2.5 py-1 rounded-md border border-emerald-200">
-                      {appliedPromoCode}
+                      {appliedPromo.code}
                     </span>
                     <span className="text-xs font-semibold text-emerald-800">
-                      Promo Applied
+                      {appliedPromo.percent_off}% Off Applied
                     </span>
                   </div>
                   <button
@@ -318,10 +353,17 @@ function OrderSummaryContent() {
                   />
                   <button
                     type="submit"
-                    disabled={!promoCodeInput.trim()}
-                    className="h-11 px-6 rounded-xl bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-2xs"
+                    disabled={!promoCodeInput.trim() || isValidatingPromo}
+                    className="h-11 px-6 rounded-xl bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-2xs flex items-center justify-center gap-1.5"
                   >
-                    Apply
+                    {isValidatingPromo ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Applying...</span>
+                      </>
+                    ) : (
+                      "Apply"
+                    )}
                   </button>
                 </form>
               )}
@@ -329,7 +371,7 @@ function OrderSummaryContent() {
 
             {/* Line Items Breakdown */}
             <div className="space-y-4 text-sm sm:text-base pt-2">
-              {lineItems.map(({ label, value, bold }) => (
+              {lineItems.map(({ label, value, bold, highlight }) => (
                 <div
                   key={label}
                   className="flex justify-between items-center text-gray-500"
@@ -337,9 +379,11 @@ function OrderSummaryContent() {
                   <span>{label}</span>
                   <span
                     className={
-                      bold
-                        ? "font-semibold text-gray-900"
-                        : "font-medium text-gray-900"
+                      highlight
+                        ? "font-semibold text-emerald-600"
+                        : bold
+                          ? "font-semibold text-gray-900"
+                          : "font-medium text-gray-900"
                     }
                   >
                     {value}
@@ -354,7 +398,7 @@ function OrderSummaryContent() {
                   Total due today
                 </span>
                 <span className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-                  {priceInfo.formatted}
+                  {totalDueToday}
                 </span>
               </div>
             </div>

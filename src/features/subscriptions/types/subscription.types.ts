@@ -194,3 +194,27 @@ export interface VerifySubscriptionSuccessResponse {
   message?: string;
   data: VerifySubscriptionSuccessData;
 }
+
+export interface ValidatePromoCodeRequest {
+  plan_id: string;
+  code: string;
+}
+
+export interface ValidatedPromoData {
+  valid: boolean;
+  code: string;
+  name?: string;
+  percent_off: number;
+  discount_pence: number;
+  discount_formatted: string;
+  final_price_pence: number;
+  final_price_formatted: string;
+  duration?: string;
+}
+
+export interface ValidatePromoCodeResponse {
+  statusCode?: number;
+  success: boolean;
+  message?: string;
+  data: ValidatedPromoData;
+}

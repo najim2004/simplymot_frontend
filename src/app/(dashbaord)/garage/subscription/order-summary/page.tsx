@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useMemo, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Check,
+  FileText,
+  Package,
+  ShoppingCart,
+  TrendingUp,
   Lock,
   Loader2,
   AlertCircle,
@@ -20,22 +23,95 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isTestSubscriptionPlanName } from "@/config/test-subscription-plan.config";
 
 interface ApiError {
-  data?: {
-    message?: string | { message?: string };
-  };
+  data?: { message?: string | { message?: string } };
   error?: string;
 }
 
-const DEFAULT_PLAN_FEATURES = [
-  "Unlimited opportunity to receive MOT bookings 24/7",
-  "Boost your garage’s local visibility",
-  "Opportunity to upsell and offer extra services",
-  "No contract. No commission",
-  "Simple & instant automated setup",
+const PLAN_FEATURES = [
+  {
+    icon: Package,
+    text: "Unlimited opportunity to receive MOT bookings 24/7.",
+  },
+  { icon: ShoppingCart, text: "Boost your garage's visibility." },
+  { icon: FileText, text: "Opportunity to upsell and offer extra services!" },
+  { icon: TrendingUp, text: "No contract. No commission." },
+  { icon: Package, text: "Simple set up." },
 ];
 
+const formatPlanPrice = (plan: SubscriptionPlanItem | null) => {
+  if (!plan) return { currency: "£", amount: "5", formatted: "£5.00" };
+
+  const currency =
+    plan.currency === "GBP" || !plan.currency ? "£" : plan.currency;
+  if (typeof plan.price_pence === "number" && plan.price_pence > 0) {
+    const numeric = plan.price_pence / 100;
+    const amount = numeric % 1 === 0 ? `${numeric}` : numeric.toFixed(2);
+    return { currency, amount, formatted: `£${numeric.toFixed(2)}` };
+  }
+
+  const raw = plan.price_formatted?.replace(/^[^\d]*/, "") || "5.00";
+  const amount = raw.endsWith(".00") ? raw.slice(0, -3) : raw;
+  const formatted = raw.includes(".")
+    ? `${currency}${raw}`
+    : `${currency}${raw}.00`;
+  return { currency, amount, formatted: plan.price_formatted || formatted };
+};
+
+function OrderSummarySkeleton() {
+  return (
+    <div className="w-full min-h-[calc(100vh-140px)] flex items-center justify-center py-6 sm:py-10 px-2 sm:px-4">
+      <div className="w-full max-w-285 flex flex-col lg:flex-row items-center lg:items-start justify-center gap-6 lg:gap-8">
+        {/* Left Card Skeleton */}
+        <div className="w-full max-w-115 shrink-0 bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-6">
+          <div className="flex flex-col items-center space-y-3">
+            <Skeleton className="h-7 w-44 rounded-md" />
+            <Skeleton className="h-14 w-24 rounded-md" />
+            <Skeleton className="h-4 w-16 rounded" />
+          </div>
+          <div className="border-t border-gray-200 pt-6 space-y-4">
+            <Skeleton className="h-12 w-full rounded" />
+            <Skeleton className="h-5 w-20 rounded" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+                  <Skeleton className="h-4 w-full rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Card Skeleton */}
+        <div className="w-full max-w-155 flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-8 sm:p-10 space-y-6">
+          <Skeleton className="h-8 w-52 rounded" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-36 rounded" />
+            <div className="flex gap-2">
+              <Skeleton className="h-11 flex-1 rounded-xl" />
+              <Skeleton className="h-11 w-24 rounded-xl" />
+            </div>
+          </div>
+          <div className="space-y-4 pt-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex justify-between">
+                <Skeleton className="h-4 w-24 rounded" />
+                <Skeleton className="h-4 w-16 rounded" />
+              </div>
+            ))}
+          </div>
+          <div className="pt-6 border-t border-gray-200 flex justify-between">
+            <Skeleton className="h-6 w-32 rounded" />
+            <Skeleton className="h-9 w-24 rounded" />
+          </div>
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OrderSummaryContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlanId = searchParams.get("plan_id");
 
@@ -43,30 +119,25 @@ function OrderSummaryContent() {
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch plans
   const { data: plansData, isLoading: isLoadingPlans } =
     useGetSubscriptionPlansQuery();
-
   const [checkoutSubscription] = useCheckoutSubscriptionMutation();
 
   const plans = useMemo(() => {
-    const fetchedPlans: SubscriptionPlanItem[] = Array.isArray(plansData?.data)
+    const fetched: SubscriptionPlanItem[] = Array.isArray(plansData?.data)
       ? plansData.data
       : [];
-    return fetchedPlans.filter(
-      (plan) => !isTestSubscriptionPlanName(plan.name),
-    );
+    return fetched.filter((p) => !isTestSubscriptionPlanName(p.name));
   }, [plansData?.data]);
 
-  // Determine which plan to display: match selectedPlanId or default to the first available plan
   const plan = useMemo(() => {
-    if (!plans || plans.length === 0) return null;
-    if (selectedPlanId) {
-      const match = plans.find((p) => p.id === selectedPlanId);
-      if (match) return match;
-    }
-    return plans[0];
+    if (!plans.length) return null;
+    return (
+      (selectedPlanId && plans.find((p) => p.id === selectedPlanId)) || plans[0]
+    );
   }, [plans, selectedPlanId]);
+
+  const priceInfo = useMemo(() => formatPlanPrice(plan), [plan]);
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,10 +164,9 @@ function OrderSummaryContent() {
 
     setIsSubmitting(true);
     try {
-      const cleanPromo = appliedPromoCode?.trim() || undefined;
       const result = await checkoutSubscription({
         plan_id: plan.id,
-        ...(cleanPromo ? { promo_code: cleanPromo } : {}),
+        ...(appliedPromoCode ? { promo_code: appliedPromoCode } : {}),
       }).unwrap();
 
       if (result.success && result.data?.checkout_url) {
@@ -108,61 +178,19 @@ function OrderSummaryContent() {
       }
     } catch (err: unknown) {
       const apiErr = err as ApiError;
-      const apiMessage =
+      const message =
         typeof apiErr?.data?.message === "string"
           ? apiErr.data.message
           : apiErr?.data?.message?.message ||
             apiErr?.error ||
             "Checkout failed. Please try again.";
-      toast.error(apiMessage);
+      toast.error(message);
       setIsSubmitting(false);
     }
   };
 
-  // Loading Skeleton State
-  if (isLoadingPlans) {
-    return (
-      <div className="w-full space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-            <Skeleton className="h-8 w-44 rounded" />
-            <Skeleton className="h-4 w-56 rounded" />
-            <div className="border-l-4 border-gray-200 pl-6 space-y-4 pt-2">
-              <Skeleton className="h-7 w-36 rounded" />
-              <Skeleton className="h-9 w-48 rounded" />
-              <Skeleton className="h-4 w-28 rounded" />
-              <div className="space-y-3 pt-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-4 w-full rounded" />
-                ))}
-              </div>
-            </div>
-            <Skeleton className="h-5 w-32 rounded pt-4" />
-          </div>
+  if (isLoadingPlans) return <OrderSummarySkeleton />;
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-            <Skeleton className="h-8 w-48 rounded" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-36 rounded" />
-              <Skeleton className="h-11 w-full rounded-lg" />
-            </div>
-            <div className="space-y-3 pt-2">
-              <Skeleton className="h-4 w-full rounded" />
-              <Skeleton className="h-4 w-full rounded" />
-              <Skeleton className="h-4 w-full rounded" />
-              <div className="pt-4 border-t border-gray-200 flex justify-between">
-                <Skeleton className="h-5 w-32 rounded" />
-                <Skeleton className="h-8 w-28 rounded" />
-              </div>
-            </div>
-            <Skeleton className="h-12 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Plan Not Found State
   if (!plan) {
     return (
       <div className="w-full max-w-md mx-auto my-16 text-center bg-white p-8 sm:p-10 rounded-2xl border border-gray-100 shadow-sm">
@@ -173,7 +201,8 @@ function OrderSummaryContent() {
           No Plan Selected
         </h2>
         <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-          Please select a subscription plan from the pricing page to proceed with your order.
+          Please select a subscription plan from the pricing page to proceed
+          with your order.
         </p>
         <Link
           href="/garage/subscription"
@@ -186,85 +215,69 @@ function OrderSummaryContent() {
     );
   }
 
+  const lineItems = [
+    { label: "Subtotal", value: priceInfo.formatted, bold: true },
+    {
+      label: "Discount",
+      value: appliedPromoCode ? "Calculated at checkout" : "£0.00",
+    },
+    { label: "Tax (Estimated)", value: "£0.00" },
+  ];
+
   return (
-    <div className="w-full">
-      {/* Side-by-side Cards Grid taking Full Width */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-stretch">
-        {/* Left Column: Order Summary Card */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-6 sm:p-8 flex flex-col justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-              Order Summary
-            </h1>
-            <p className="text-sm text-gray-500 mt-1 mb-8">
-              Review your order before payment
+    <div className="w-full min-h-[calc(100vh-140px)] flex items-center justify-center py-6 sm:py-10 px-2 sm:px-4">
+      <div className="w-full flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8">
+        {/* Left Column: Plan Card */}
+        <div className="relative w-full max-w-115 shrink-0 border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="p-8 pb-6 flex flex-col items-center text-center">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+              {plan.name || "One Simple Plan"}
+            </h3>
+
+            <div className="my-4 flex items-baseline justify-center">
+              {priceInfo.currency && (
+                <span className="text-3xl sm:text-4xl font-bold text-gray-900 mr-0.5">
+                  {priceInfo.currency}
+                </span>
+              )}
+              <span className="text-6xl sm:text-7xl font-extrabold text-gray-900 tracking-tight">
+                {priceInfo.amount}
+              </span>
+            </div>
+
+            <p className="text-gray-500 font-medium text-base">/month</p>
+          </div>
+
+          <div className="w-full border-t border-gray-200" />
+
+          <div className="p-8 pt-6 space-y-6">
+            <p className="text-gray-600 text-sm leading-relaxed text-center sm:text-left">
+              {plan.description ||
+                "We believe in fairness & transparency - no hidden fees, no contracts, no commission, and no confusing tiers. Just full access for one simple price."}
             </p>
 
-            {/* Plan Details with Vertical Brand Line */}
-            <div className="border-l-4 border-[#19CA32] pl-5 sm:pl-6 py-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {plan.name || "One Simple Plan"}
-                </h2>
-                <span className="bg-[#19CA32] text-white text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-2xs">
-                  Most Popular
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-baseline">
-                <span className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-                  {plan.price_formatted}
-                </span>
-                <span className="text-gray-500 font-medium text-base ml-1.5">
-                  / month
-                </span>
-              </div>
-
-              <p className="text-xs sm:text-sm text-gray-400 font-medium mt-1 mb-6">
-                Billed Monthly
-              </p>
-
-              {/* Feature Checklist */}
+            <div>
+              <h4 className="text-base font-semibold text-gray-900 mb-4 text-left">
+                Features
+              </h4>
               <div className="space-y-3.5">
-                {DEFAULT_PLAN_FEATURES.map((feature, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-2.5 text-sm text-gray-700"
-                  >
-                    <Check
-                      className="w-4 h-4 text-[#19CA32] shrink-0"
-                      strokeWidth={2.5}
-                    />
-                    <span>{feature}</span>
+                {PLAN_FEATURES.map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <feature.icon className="w-4 h-4 shrink-0 mt-0.5 text-[#19CA32]" />
+                    <span className="text-sm text-gray-700 leading-snug">
+                      {feature.text}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-
-          {/* Go Back Link at bottom */}
-          <div className="pt-8">
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  router.back();
-                } else {
-                  router.push("/garage/subscription");
-                }
-              }}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#19CA32] hover:text-[#16b82e] transition-colors group cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-              <span>Go Back</span>
-            </button>
-          </div>
         </div>
 
         {/* Right Column: Payment Summary Card */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-6 sm:p-8 flex flex-col justify-between">
+        <div className="w-full max-w-3xl flex-1 border border-gray-200 rounded-2xl bg-white shadow-sm p-8 flex flex-col justify-between">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-6 sm:mb-8">
               Payment Summary
             </h2>
 
@@ -275,9 +288,9 @@ function OrderSummaryContent() {
               </label>
 
               {appliedPromoCode ? (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-xs text-emerald-900 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="font-mono font-bold text-xs text-emerald-900 bg-white px-2.5 py-1 rounded-md border border-emerald-200">
                       {appliedPromoCode}
                     </span>
                     <span className="text-xs font-semibold text-emerald-800">
@@ -301,12 +314,12 @@ function OrderSummaryContent() {
                       setPromoCodeInput(e.target.value.toUpperCase())
                     }
                     placeholder="Enter promo code"
-                    className="flex-1 h-11 px-4 rounded-lg border border-gray-300 text-sm font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#19CA32]/20 focus:border-[#19CA32] transition-all bg-white"
+                    className="flex-1 h-11 px-4 rounded-xl border border-gray-200 text-sm font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#19CA32]/20 focus:border-[#19CA32] transition-all bg-white"
                   />
                   <button
                     type="submit"
                     disabled={!promoCodeInput.trim()}
-                    className="h-11 px-6 rounded-lg bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-2xs"
+                    className="h-11 px-6 rounded-xl bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 shadow-2xs"
                   >
                     Apply
                   </button>
@@ -315,34 +328,33 @@ function OrderSummaryContent() {
             </div>
 
             {/* Line Items Breakdown */}
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between items-center text-gray-500">
-                <span>Subtotal</span>
-                <span className="font-semibold text-gray-900">
-                  {plan.price_formatted}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-gray-500">
-                <span>Discount</span>
-                <span className="font-medium text-gray-900">
-                  {appliedPromoCode ? "Calculated at checkout" : "£0.00"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-gray-500">
-                <span>Tax (Estimated)</span>
-                <span className="font-medium text-gray-900">£0.00</span>
-              </div>
+            <div className="space-y-4 text-sm sm:text-base pt-2">
+              {lineItems.map(({ label, value, bold }) => (
+                <div
+                  key={label}
+                  className="flex justify-between items-center text-gray-500"
+                >
+                  <span>{label}</span>
+                  <span
+                    className={
+                      bold
+                        ? "font-semibold text-gray-900"
+                        : "font-medium text-gray-900"
+                    }
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
 
-              {/* Horizontal Line Divider */}
-              <div className="border-t border-gray-200 pt-5 mt-5" />
+              <div className="border-t border-gray-200 pt-6 mt-6" />
 
-              {/* Total Due Today */}
               <div className="flex justify-between items-baseline pt-1">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-base sm:text-lg font-semibold text-gray-800">
                   Total due today
                 </span>
-                <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  {plan.price_formatted}
+                <span className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                  {priceInfo.formatted}
                 </span>
               </div>
             </div>
@@ -358,12 +370,11 @@ function OrderSummaryContent() {
           </div>
 
           <div>
-            {/* Primary Action Button */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={handleProceedToStripe}
-              className="w-full h-12 rounded-xl bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-base flex items-center justify-center gap-2 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-12 sm:h-13 rounded-xl bg-[#19CA32] hover:bg-[#16b82e] text-white font-semibold text-base sm:text-lg flex items-center justify-center gap-2 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -378,9 +389,9 @@ function OrderSummaryContent() {
               )}
             </button>
 
-            {/* Terms microcopy */}
             <p className="text-xs text-gray-400 text-center mt-4 leading-relaxed">
-              By continuing, you agree to our Terms of Service and Privacy Policy.
+              By continuing, you agree to our Terms of Service and Privacy
+              Policy.
             </p>
           </div>
         </div>
@@ -391,16 +402,7 @@ function OrderSummaryContent() {
 
 export default function OrderSummaryPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="w-full space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-            <Skeleton className="h-96 w-full rounded-2xl" />
-            <Skeleton className="h-96 w-full rounded-2xl" />
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<OrderSummarySkeleton />}>
       <OrderSummaryContent />
     </Suspense>
   );

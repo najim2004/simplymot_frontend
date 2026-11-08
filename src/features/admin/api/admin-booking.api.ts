@@ -3,11 +3,12 @@ import { PAGINATION_CONFIG } from "@/config/pagination.config";
 
 export const bookingManagementApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getAllBookings: builder.query<any, { page?: number; limit?: number; search?: string; status?: string; startdate?: string; enddate?: string }>({
+    getAllBookings: builder.query<any, { page?: number; limit?: number; search?: string; status?: string; startdate?: string; enddate?: string; id?: string }>({
       query: (params) => {
         const queryParams = new URLSearchParams();
         queryParams.append("page", (params.page || PAGINATION_CONFIG.DEFAULT_PAGE).toString());
         queryParams.append("limit", (params.limit || PAGINATION_CONFIG.DEFAULT_LIMIT).toString());
+        if (params.id) queryParams.append("id", params.id);
         if (params.search) queryParams.append("search", params.search);
         if (params.status) queryParams.append("status", params.status);
         if (params.startdate) queryParams.append("startdate", params.startdate);

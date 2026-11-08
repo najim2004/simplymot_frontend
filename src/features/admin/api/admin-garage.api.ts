@@ -1,39 +1,125 @@
 import { apiSlice } from "@/lib/api/api-slice";
 import { PAGINATION_CONFIG } from "@/config/pagination.config";
+import type { Pagination } from "@/types";
+
+export type GarageOwner = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  avatar: string | null;
+  status: string;
+  created_at?: string;
+  email_verified_at?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  post_code?: string | null;
+  subscriptions?: Array<{
+    id: string;
+    status: string;
+    price_pence?: number;
+    currency?: string;
+    current_period_start?: string;
+    current_period_end?: string;
+    next_billing_date?: string;
+    stripe_subscription_id?: string;
+    plan?: {
+      id: string;
+      name: string;
+      currency?: string;
+      price_pence?: number;
+    };
+  }>;
+};
+
+export type GarageServiceItem = {
+  id: string;
+  title: string;
+  type: string;
+  vehicle_class: string | null;
+  price: string | number | null;
+  created_at?: string;
+};
+
+export type ScheduleInterval = {
+  id: string;
+  day_of_week: string;
+  is_closed: boolean;
+  slot_duration: number | null;
+  buffer_time: number | null;
+  open_time: string | null;
+  close_time: string | null;
+  break_times?: Array<{
+    id: string;
+    start_time: string;
+    end_time: string;
+  }>;
+};
+
+export type GarageHoliday = {
+  id: string;
+  date: string;
+  description: string | null;
+};
+
+export type GarageSchedule = {
+  id: string;
+  garage_id: string;
+  schedule_intervals: ScheduleInterval[];
+  holidays: GarageHoliday[];
+};
+
+export type GarageAuditLog = {
+  id: string;
+  created_at: string;
+  table_name: string;
+  record_id: string;
+  action: string;
+  actor_type: string | null;
+  actor_id: string | null;
+  changes: any;
+  metadata?: any;
+};
 
 export type Garage = {
   id: string;
-  garage_name: string;
-  email: string;
-  phone_number: string;
+  garage_name: string | null;
+  garage_image?: string | null;
+  phone_number: string | null;
+  contact_email: string | null;
+  email?: string;
+  vts_number: string | null;
   address: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  post_code?: string | null;
+  zip_code?: string | null;
+  is_visible?: boolean;
+  garage_status?: string;
   status: string;
   created_at: string;
-  approved_at: string | null;
-  email_verified_at: string | null;
-  vts_number: string;
-  primary_contact: string;
+  approved_at?: string | null;
+  email_verified_at?: string | null;
+  primary_contact?: string;
+  owner_id?: string;
+  owner_name?: string | null;
+  owner_email?: string | null;
+  owner_phone?: string | null;
+  owner_avatar?: string | null;
+  owner_status?: string;
+  subscription_status?: string;
+  subscription_plan?: string | null;
+  owner?: GarageOwner | null;
 };
 
-export type SingleGarage = {
-  id: string;
-  garage_name: string;
-  email: string;
-  phone_number: string;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  zip_code: string | null;
-  status: string;
-  created_at: string;
-  approved_at: string | null;
-  email_verified_at: string | null;
-  vts_number: string;
-  primary_contact: string;
+export type SingleGarage = Garage & {
+  services?: GarageServiceItem[];
+  schedule?: GarageSchedule | null;
+  activity_logs?: GarageAuditLog[];
 };
-
-import type { Pagination } from "@/types";
 
 export type GaragesResponseData = {
   garages: Garage[];
@@ -47,14 +133,21 @@ export type GaragesAPIResponse = {
 
 export type IAGarageResponse = {
   data: SingleGarage;
-  pagination: Pagination;
+  pagination?: Pagination;
 };
 
 export const garagesApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAllGarages: builder.query<
       GaragesAPIResponse,
-      { page?: number; limit?: number; status?: string; search?: string; startdate?: string; enddate?: string }
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        startdate?: string;
+        enddate?: string;
+      }
     >({
       query: (params) => {
         const queryParams = new URLSearchParams();
@@ -94,8 +187,8 @@ export const garagesApi = apiSlice.injectEndpoints({
               total,
               totalPages: pages,
               pages,
-            }
-          }
+            },
+          },
         } as any;
       },
       providesTags: ["Garage"],
@@ -109,23 +202,51 @@ export const garagesApi = apiSlice.injectEndpoints({
       providesTags: ["Garage"],
     }),
 
+    toggleGarageVisibility: builder.mutation<
+      { success?: boolean; message?: string; data?: any },
+      { id: string; is_visible?: boolean }
+    >({
+      query: ({ id, is_visible }) => ({
+        url: `/api/admin/garages/${id}/visibility`,
+        method: "PATCH",
+        body: is_visible !== undefined ? { is_visible } : {},
+      }),
+      invalidatesTags: ["Garage"],
+    }),
+
     approveAGarage: builder.mutation<
       { success?: boolean; message?: string },
       string
     >({
       queryFn: async (id, api, extraOptions, baseQuery) => {
-        const garageRes = await baseQuery({ url: `/api/admin/garages/${id}`, method: "GET" });
+        const garageRes = await baseQuery({
+          url: `/api/admin/garages/${id}`,
+          method: "GET",
+        });
         if (garageRes.error) return { error: garageRes.error };
         const ownerEmail = (garageRes.data as any)?.data?.owner?.email;
         if (!ownerEmail) {
-          return { error: { status: 400, data: { message: "Owner email not found" } } as any };
+          return {
+            error: {
+              status: 400,
+              data: { message: "Owner email not found" },
+            } as any,
+          };
         }
 
-        const usersRes = await baseQuery({ url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`, method: "GET" });
+        const usersRes = await baseQuery({
+          url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`,
+          method: "GET",
+        });
         if (usersRes.error) return { error: usersRes.error };
         const user = (usersRes.data as any)?.data?.[0];
         if (!user) {
-          return { error: { status: 404, data: { message: "Owner user not found" } } as any };
+          return {
+            error: {
+              status: 404,
+              data: { message: "Owner user not found" },
+            } as any,
+          };
         }
 
         const approveRes = await baseQuery({
@@ -143,18 +264,34 @@ export const garagesApi = apiSlice.injectEndpoints({
       string
     >({
       queryFn: async (id, api, extraOptions, baseQuery) => {
-        const garageRes = await baseQuery({ url: `/api/admin/garages/${id}`, method: "GET" });
+        const garageRes = await baseQuery({
+          url: `/api/admin/garages/${id}`,
+          method: "GET",
+        });
         if (garageRes.error) return { error: garageRes.error };
         const ownerEmail = (garageRes.data as any)?.data?.owner?.email;
         if (!ownerEmail) {
-          return { error: { status: 400, data: { message: "Owner email not found" } } as any };
+          return {
+            error: {
+              status: 400,
+              data: { message: "Owner email not found" },
+            } as any,
+          };
         }
 
-        const usersRes = await baseQuery({ url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`, method: "GET" });
+        const usersRes = await baseQuery({
+          url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`,
+          method: "GET",
+        });
         if (usersRes.error) return { error: usersRes.error };
         const user = (usersRes.data as any)?.data?.[0];
         if (!user) {
-          return { error: { status: 404, data: { message: "Owner user not found" } } as any };
+          return {
+            error: {
+              status: 404,
+              data: { message: "Owner user not found" },
+            } as any,
+          };
         }
 
         const rejectRes = await baseQuery({
@@ -172,7 +309,7 @@ export const garagesApi = apiSlice.injectEndpoints({
         url: `/api/admin/users`,
         method: "POST",
         body: {
-          email: body.email,
+          email: body.email || body.contact_email,
           name: body.garage_name || body.primary_contact || "Garage Owner",
           password: "Password123!",
           kind: "GARAGE",
@@ -187,18 +324,34 @@ export const garagesApi = apiSlice.injectEndpoints({
       string
     >({
       queryFn: async (id, api, extraOptions, baseQuery) => {
-        const garageRes = await baseQuery({ url: `/api/admin/garages/${id}`, method: "GET" });
+        const garageRes = await baseQuery({
+          url: `/api/admin/garages/${id}`,
+          method: "GET",
+        });
         if (garageRes.error) return { error: garageRes.error };
         const ownerEmail = (garageRes.data as any)?.data?.owner?.email;
         if (!ownerEmail) {
-          return { error: { status: 400, data: { message: "Owner email not found" } } as any };
+          return {
+            error: {
+              status: 400,
+              data: { message: "Owner email not found" },
+            } as any,
+          };
         }
 
-        const usersRes = await baseQuery({ url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`, method: "GET" });
+        const usersRes = await baseQuery({
+          url: `/api/admin/users?search=${encodeURIComponent(ownerEmail)}`,
+          method: "GET",
+        });
         if (usersRes.error) return { error: usersRes.error };
         const user = (usersRes.data as any)?.data?.[0];
         if (!user) {
-          return { error: { status: 404, data: { message: "Owner user not found" } } as any };
+          return {
+            error: {
+              status: 404,
+              data: { message: "Owner user not found" },
+            } as any,
+          };
         }
 
         const deleteRes = await baseQuery({
@@ -217,6 +370,7 @@ export const garagesApi = apiSlice.injectEndpoints({
 export const {
   useGetAllGaragesQuery,
   useGetAGarageByIdQuery,
+  useToggleGarageVisibilityMutation,
   useCreateGarageMutation,
   useApproveAGarageMutation,
   useRejectAGarageMutation,

@@ -48,3 +48,7 @@ export { default as SubscriptionDetailsTab } from "./components/SubscriptionsMan
 export { default as MigrationTab } from "./components/SubscriptionsManagement/components/MigrationTab";
 export { default as JobsTab } from "./components/SubscriptionsManagement/components/JobsTab";
 export { default as GarageSubscriptionsTab } from "./components/SubscriptionsManagement/components/GarageSubscriptionsTab";
+
+export { GarageManagementHeader } from "./components/GarageManagement/GarageManagementHeader";
+export { GarageManagementTable } from "./components/GarageManagement/GarageManagementTable";
+export { ViewOwnerDetailsModal } from "./components/GarageManagement/ViewOwnerDetailsModal";

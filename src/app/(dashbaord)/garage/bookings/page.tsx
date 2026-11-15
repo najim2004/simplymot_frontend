@@ -45,6 +45,9 @@ function BookingsContent() {
   const [endDate, setEndDate] = useState<Date | undefined>(() =>
     parseDateParam(searchParams.get("to_date")),
   );
+  const [filterStatus, setFilterStatus] = useState<string>(
+    () => searchParams.get("status") || "all",
+  );
 
   // Modals state
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(
@@ -96,8 +99,10 @@ function BookingsContent() {
   // Debounce search input by 400ms
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  // Sync state to URL search params whenever filters or pagination change
+  // Sync state to URL search params silently without router refresh
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const params = new URLSearchParams();
 
     const trimmedSearch = debouncedSearch.trim();
@@ -110,6 +115,9 @@ function BookingsContent() {
     if (endDate) {
       params.set("to_date", format(endDate, "yyyy-MM-dd"));
     }
+    if (filterStatus && filterStatus !== "all") {
+      params.set("status", filterStatus);
+    }
     if (currentPage > 1) {
       params.set("page", currentPage.toString());
     }
@@ -118,67 +126,39 @@ function BookingsContent() {
     }
 
     const newQueryString = params.toString();
-    const currentQueryString = searchParams.toString();
+    const newRelativePathQuery = `${pathname}${newQueryString ? `?${newQueryString}` : ""}`;
+    const currentPathQuery = `${window.location.pathname}${window.location.search}`;
 
-    if (newQueryString !== currentQueryString) {
-      router.replace(
-        `${pathname}${newQueryString ? `?${newQueryString}` : ""}`,
-        { scroll: false },
-      );
+    if (newRelativePathQuery !== currentPathQuery) {
+      window.history.replaceState(null, "", newRelativePathQuery);
     }
   }, [
     debouncedSearch,
     startDate,
     endDate,
+    filterStatus,
     currentPage,
     itemsPerPage,
     pathname,
-    router,
-    searchParams,
   ]);
 
-  // Sync state when navigating back/forward in browser history
+  // Sync state when navigating back/forward with browser history
   useEffect(() => {
-    const urlSearch = searchParams.get("search") || "";
-    const urlFromDate = parseDateParam(searchParams.get("from_date"));
-    const urlToDate = parseDateParam(searchParams.get("to_date"));
-    const urlPage = Number(searchParams.get("page")) || 1;
-    const urlLimit = Number(searchParams.get("limit")) || 10;
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      setSearchTerm(sp.get("search") || "");
+      setCurrentPage(Number(sp.get("page")) || 1);
+      setItemsPerPage(Number(sp.get("limit")) || 10);
+      setStartDate(parseDateParam(sp.get("from_date")));
+      setEndDate(parseDateParam(sp.get("to_date")));
+      setFilterStatus(sp.get("status") || "all");
+    };
 
-    if (urlSearch !== searchTerm) {
-      setSearchTerm(urlSearch);
-    }
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage);
-    }
-    if (urlLimit !== itemsPerPage) {
-      setItemsPerPage(urlLimit);
-    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-    const fromChanged =
-      (urlFromDate && !startDate) ||
-      (!urlFromDate && startDate) ||
-      (urlFromDate &&
-        startDate &&
-        format(urlFromDate, "yyyy-MM-dd") !== format(startDate, "yyyy-MM-dd"));
-
-    if (fromChanged) {
-      setStartDate(urlFromDate);
-    }
-
-    const toChanged =
-      (urlToDate && !endDate) ||
-      (!urlToDate && endDate) ||
-      (urlToDate &&
-        endDate &&
-        format(urlToDate, "yyyy-MM-dd") !== format(endDate, "yyyy-MM-dd"));
-
-    if (toChanged) {
-      setEndDate(urlToDate);
-    }
-  }, [currentPage, endDate, itemsPerPage, searchParams, searchTerm, startDate]);
-
-  // RTK Query: fetch bookings directly from API with search and date filters
+  // RTK Query: fetch bookings directly from API with search, status and date filters
   const {
     data: bookingsData,
     isLoading,
@@ -186,6 +166,7 @@ function BookingsContent() {
     refetch,
   } = useGetBookingsQuery({
     search: debouncedSearch.trim() || undefined,
+    status: filterStatus !== "all" ? filterStatus : undefined,
     from_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
     to_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
     page: currentPage,
@@ -207,6 +188,11 @@ function BookingsContent() {
     setCurrentPage(1);
   };
 
+  const handleFilterStatusChange = (status: string) => {
+    setFilterStatus(status);
+    setCurrentPage(1);
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -218,14 +204,16 @@ function BookingsContent() {
 
   return (
     <div>
-      {/* 1. Header with title, date filters and search in one row */}
+      {/* 1. Header with title, status dropdown, date filters and search in one row */}
       <BookingsHeader
         startDate={startDate}
         endDate={endDate}
         searchTerm={searchTerm}
+        filterStatus={filterStatus}
         onStartDateChange={handleStartDateChange}
         onEndDateChange={handleEndDateChange}
         onSearchChange={handleSearchChange}
+        onFilterStatusChange={handleFilterStatusChange}
       />
 
       {/* 2. Direct data rendering with optional chaining */}
@@ -233,7 +221,7 @@ function BookingsContent() {
         {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
         <GarageBookingsCards
           bookings={bookingsData?.data}
-          isLoading={isLoading}
+          isLoading={isLoading && !bookingsData}
           skeletonCount={itemsPerPage}
           onView={(booking) => router.push(`/garage/bookings/${booking.id}`)}
           onPrint={handlePrint}
@@ -244,7 +232,7 @@ function BookingsContent() {
         {/* Desktop Table View (lg and above) */}
         <BookingsTable
           bookings={bookingsData?.data}
-          isLoading={isLoading}
+          isLoading={isLoading && !bookingsData}
           isError={isError}
           skeletonRows={itemsPerPage}
           onRetry={refetch}
@@ -260,48 +248,47 @@ function BookingsContent() {
         <ReusablePagination
           currentPage={currentPage}
           totalPages={
-            bookingsData?.meta_data?.total
-              ? Math.ceil(bookingsData.meta_data.total / itemsPerPage)
-              : 1
+            Math.ceil((bookingsData?.meta_data?.total || 0) / itemsPerPage) || 1
           }
           itemsPerPage={itemsPerPage}
-          totalItems={bookingsData?.meta_data?.total ?? 0}
+          totalItems={bookingsData?.meta_data?.total || 0}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
         />
       )}
 
-      {/* 5. Reschedule Modal */}
-      {rescheduleBooking && (
-        <RescheduleBookingModal
-          key={rescheduleBooking.id}
-          isOpen={Boolean(rescheduleBooking)}
-          booking={rescheduleBooking}
-          onClose={() => setRescheduleBooking(null)}
-          onSuccess={() => refetch()}
-        />
-      )}
+      {/* 4. Action Modals */}
+      <RescheduleBookingModal
+        isOpen={Boolean(rescheduleBooking)}
+        onClose={() => setRescheduleBooking(null)}
+        booking={rescheduleBooking}
+        onSuccess={() => {
+          setRescheduleBooking(null);
+          refetch();
+        }}
+      />
 
-      {/* 6. Cancel Modal */}
-      {cancelBooking && (
-        <CancelBookingModal
-          key={cancelBooking.id}
-          isOpen={Boolean(cancelBooking)}
-          booking={cancelBooking}
-          onClose={() => setCancelBooking(null)}
-          onSuccess={() => refetch()}
-        />
-      )}
+      <CancelBookingModal
+        isOpen={Boolean(cancelBooking)}
+        onClose={() => setCancelBooking(null)}
+        booking={cancelBooking}
+        onSuccess={() => {
+          setCancelBooking(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
 
-export default function Bookings() {
+export default function BookingsPage() {
   return (
     <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-100">
-          <div className="text-gray-500 text-sm">Loading bookings...</div>
+          <div className="text-gray-500 text-sm font-medium">
+            Loading bookings...
+          </div>
         </div>
       }
     >

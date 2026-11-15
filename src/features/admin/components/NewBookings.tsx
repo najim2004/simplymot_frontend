@@ -37,7 +37,9 @@ export default function NewBookings() {
     page: 1,
     limit: 5,
   });
-  const allBookings = bookingsData?.data?.bookings || [];
+  const allBookings = Array.isArray(bookingsData?.data)
+    ? bookingsData?.data
+    : (bookingsData?.data as any)?.bookings || [];
   const bookings = allBookings.slice(0, 5);
 
   //   const getStatusColor = (status: string) => {

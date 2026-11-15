@@ -52,3 +52,11 @@ export { default as GarageSubscriptionsTab } from "./components/SubscriptionsMan
 export { GarageManagementHeader } from "./components/GarageManagement/GarageManagementHeader";
 export { GarageManagementTable } from "./components/GarageManagement/GarageManagementTable";
 export { ViewOwnerDetailsModal } from "./components/GarageManagement/ViewOwnerDetailsModal";
+
+export { DriverManagementHeader } from "./components/DriverManagement/DriverManagementHeader";
+export { DriverManagementTable } from "./components/DriverManagement/DriverManagementTable";
+export { ViewDriverDetailsModal } from "./components/DriverManagement/ViewDriverDetailsModal";
+
+export { BookingManagementHeader } from "./components/BookingManagement/BookingManagementHeader";
+export { BookingManagementTable } from "./components/BookingManagement/BookingManagementTable";
+export { ViewBookingGarageModal } from "./components/BookingManagement/ViewBookingGarageModal";

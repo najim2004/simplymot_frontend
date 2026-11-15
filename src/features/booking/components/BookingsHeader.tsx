@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface BookingsHeaderProps {
@@ -17,9 +24,11 @@ export interface BookingsHeaderProps {
   startDate: Date | undefined;
   endDate: Date | undefined;
   searchTerm: string;
+  filterStatus?: string;
   onStartDateChange: (date: Date | undefined) => void;
   onEndDateChange: (date: Date | undefined) => void;
   onSearchChange: (search: string) => void;
+  onFilterStatusChange?: (status: string) => void;
 }
 
 interface DatePickerInputProps {
@@ -42,11 +51,11 @@ function DatePickerInput({
           <Button
             variant="outline"
             className={cn(
-              "h-11 w-full justify-start px-2.5 sm:px-4 text-xs sm:text-sm font-normal sm:min-w-47.5 border-gray-300",
+              "h-11 w-full justify-start px-2.5 sm:px-4 text-xs sm:text-sm font-normal sm:min-w-42.5 border-gray-300 bg-white hover:bg-gray-50",
               !date ? "text-muted-foreground" : "pr-8 sm:pr-10",
             )}
           >
-            <CalendarIcon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0" />
+            <CalendarIcon className="mr-1.5 sm:mr-2 h-4 w-4 shrink-0 text-gray-500" />
             <span className="truncate">
               {date ? format(date, "dd/MM/yyyy") : placeholder}
             </span>
@@ -88,9 +97,11 @@ export function BookingsHeader({
   startDate,
   endDate,
   searchTerm,
+  filterStatus,
   onStartDateChange,
   onEndDateChange,
   onSearchChange,
+  onFilterStatusChange,
 }: BookingsHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
@@ -98,8 +109,30 @@ export function BookingsHeader({
         {title}
       </h1>
 
-      {/* Date Filter and Search on the right */}
+      {/* Status, Date Filter and Search on the right */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {/* Status Dropdown */}
+        {onFilterStatusChange && (
+          <div className="w-full sm:w-44">
+            <Select
+              value={filterStatus || "all"}
+              onValueChange={onFilterStatusChange}
+            >
+              <SelectTrigger className="h-11 w-full border-gray-300 bg-white hover:bg-gray-50 text-xs sm:text-sm font-normal">
+                <SelectValue placeholder="All Bookings" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Bookings</SelectItem>
+                <SelectItem value="BOOKED">Booked</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Date Pickers */}
         <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-row sm:w-auto">
           <DatePickerInput
             placeholder="Start Date"
@@ -112,16 +145,18 @@ export function BookingsHeader({
             onDateChange={onEndDateChange}
           />
         </div>
+
+        {/* Search Input */}
         <div className="relative w-full sm:w-auto">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+            <Search className="h-4 w-4 text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search bookings..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="block h-11 w-full sm:w-72 pl-10 pr-9 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+            className="block h-11 w-full sm:w-64 pl-9 pr-9 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-xs sm:text-sm"
           />
           {searchTerm && (
             <button
@@ -138,3 +173,5 @@ export function BookingsHeader({
     </div>
   );
 }
+
+export default BookingsHeader;

@@ -44,6 +44,9 @@ function DriverBookingsContent() {
   const [endDate, setEndDate] = useState<Date | undefined>(() =>
     parseDateParam(searchParams.get("to_date")),
   );
+  const [filterStatus, setFilterStatus] = useState<string>(
+    () => searchParams.get("status") || "all",
+  );
 
   // Modals state
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
@@ -55,8 +58,10 @@ function DriverBookingsContent() {
   // Debounce search input by 400ms
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  // Sync state to URL search params whenever filters or pagination change
+  // Sync state to URL search params silently without router refresh
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const params = new URLSearchParams();
 
     const trimmedSearch = debouncedSearch.trim();
@@ -69,6 +74,9 @@ function DriverBookingsContent() {
     if (endDate) {
       params.set("to_date", format(endDate, "yyyy-MM-dd"));
     }
+    if (filterStatus && filterStatus !== "all") {
+      params.set("status", filterStatus);
+    }
     if (currentPage > 1) {
       params.set("page", currentPage.toString());
     }
@@ -77,67 +85,39 @@ function DriverBookingsContent() {
     }
 
     const newQueryString = params.toString();
-    const currentQueryString = searchParams.toString();
+    const newRelativePathQuery = `${pathname}${newQueryString ? `?${newQueryString}` : ""}`;
+    const currentPathQuery = `${window.location.pathname}${window.location.search}`;
 
-    if (newQueryString !== currentQueryString) {
-      router.replace(
-        `${pathname}${newQueryString ? `?${newQueryString}` : ""}`,
-        { scroll: false },
-      );
+    if (newRelativePathQuery !== currentPathQuery) {
+      window.history.replaceState(null, "", newRelativePathQuery);
     }
   }, [
     debouncedSearch,
     startDate,
     endDate,
+    filterStatus,
     currentPage,
     itemsPerPage,
     pathname,
-    router,
-    searchParams,
   ]);
 
-  // Sync state when navigating back/forward in browser history
+  // Sync state when navigating back/forward with browser history
   useEffect(() => {
-    const urlSearch = searchParams.get("search") || "";
-    const urlFromDate = parseDateParam(searchParams.get("from_date"));
-    const urlToDate = parseDateParam(searchParams.get("to_date"));
-    const urlPage = Number(searchParams.get("page")) || 1;
-    const urlLimit = Number(searchParams.get("limit")) || 10;
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      setSearchTerm(sp.get("search") || "");
+      setCurrentPage(Number(sp.get("page")) || 1);
+      setItemsPerPage(Number(sp.get("limit")) || 10);
+      setStartDate(parseDateParam(sp.get("from_date")));
+      setEndDate(parseDateParam(sp.get("to_date")));
+      setFilterStatus(sp.get("status") || "all");
+    };
 
-    if (urlSearch !== searchTerm) {
-      setSearchTerm(urlSearch);
-    }
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage);
-    }
-    if (urlLimit !== itemsPerPage) {
-      setItemsPerPage(urlLimit);
-    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-    const fromChanged =
-      (urlFromDate && !startDate) ||
-      (!urlFromDate && startDate) ||
-      (urlFromDate &&
-        startDate &&
-        format(urlFromDate, "yyyy-MM-dd") !== format(startDate, "yyyy-MM-dd"));
-
-    if (fromChanged) {
-      setStartDate(urlFromDate);
-    }
-
-    const toChanged =
-      (urlToDate && !endDate) ||
-      (!urlToDate && endDate) ||
-      (urlToDate &&
-        endDate &&
-        format(urlToDate, "yyyy-MM-dd") !== format(endDate, "yyyy-MM-dd"));
-
-    if (toChanged) {
-      setEndDate(urlToDate);
-    }
-  }, [currentPage, endDate, itemsPerPage, searchParams, searchTerm, startDate]);
-
-  // RTK Query: fetch current customer's bookings with search and date filters
+  // RTK Query: fetch current customer's bookings with search, status and date filters
   const {
     data: bookingsData,
     isLoading,
@@ -145,6 +125,7 @@ function DriverBookingsContent() {
     refetch,
   } = useGetBookingsQuery({
     search: debouncedSearch.trim() || undefined,
+    status: filterStatus !== "all" ? filterStatus : undefined,
     from_date: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
     to_date: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
     page: currentPage,
@@ -166,6 +147,11 @@ function DriverBookingsContent() {
     setCurrentPage(1);
   };
 
+  const handleFilterStatusChange = (status: string) => {
+    setFilterStatus(status);
+    setCurrentPage(1);
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -177,15 +163,17 @@ function DriverBookingsContent() {
 
   return (
     <div>
-      {/* 1. Header with title, date filters and search in one clean row */}
+      {/* 1. Header with title, status dropdown, date filters and search in one clean row */}
       <BookingsHeader
         title="My Bookings"
         startDate={startDate}
         endDate={endDate}
         searchTerm={searchTerm}
+        filterStatus={filterStatus}
         onStartDateChange={handleStartDateChange}
         onEndDateChange={handleEndDateChange}
         onSearchChange={handleSearchChange}
+        onFilterStatusChange={handleFilterStatusChange}
       />
 
       {/* 2. Driver-specific data cards and table */}
@@ -193,7 +181,7 @@ function DriverBookingsContent() {
         {/* Mobile & Tablet Card View (< lg: visible on phone/tablet) */}
         <DriverBookingsCards
           bookings={bookingsData?.data}
-          isLoading={isLoading}
+          isLoading={isLoading && !bookingsData}
           skeletonCount={itemsPerPage}
           onView={(booking) => router.push(`/driver/my-bookings/${booking.id}`)}
           onReschedule={setRescheduleBooking}
@@ -203,7 +191,7 @@ function DriverBookingsContent() {
         {/* Desktop Table View (lg and above) */}
         <DriverBookingsTable
           bookings={bookingsData?.data}
-          isLoading={isLoading}
+          isLoading={isLoading && !bookingsData}
           isError={isError}
           skeletonRows={itemsPerPage}
           onRetry={refetch}
@@ -218,48 +206,41 @@ function DriverBookingsContent() {
         <ReusablePagination
           currentPage={currentPage}
           totalPages={
-            bookingsData?.meta_data?.total
-              ? Math.ceil(bookingsData.meta_data.total / itemsPerPage)
-              : 1
+            Math.ceil((bookingsData?.meta_data?.total || 0) / itemsPerPage) || 1
           }
           itemsPerPage={itemsPerPage}
-          totalItems={bookingsData?.meta_data?.total ?? 0}
+          totalItems={bookingsData?.meta_data?.total || 0}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
         />
       )}
 
-      {/* 4. Driver View Detail Modal */}
-      {viewBooking && (
-        <DriverViewBookingModal
-          key={viewBooking.id}
-          isOpen={Boolean(viewBooking)}
-          booking={viewBooking}
-          onClose={() => setViewBooking(null)}
-        />
-      )}
+      {/* 4. Action Modals */}
+      <DriverViewBookingModal
+        isOpen={Boolean(viewBooking)}
+        onClose={() => setViewBooking(null)}
+        booking={viewBooking}
+      />
 
-      {/* 5. Common Reschedule Modal */}
-      {rescheduleBooking && (
-        <RescheduleBookingModal
-          key={rescheduleBooking.id}
-          isOpen={Boolean(rescheduleBooking)}
-          booking={rescheduleBooking}
-          onClose={() => setRescheduleBooking(null)}
-          onSuccess={() => refetch()}
-        />
-      )}
+      <RescheduleBookingModal
+        isOpen={Boolean(rescheduleBooking)}
+        onClose={() => setRescheduleBooking(null)}
+        booking={rescheduleBooking}
+        onSuccess={() => {
+          setRescheduleBooking(null);
+          refetch();
+        }}
+      />
 
-      {/* 6. Cancel Modal */}
-      {cancelBooking && (
-        <CancelBookingModal
-          key={cancelBooking.id}
-          isOpen={Boolean(cancelBooking)}
-          booking={cancelBooking}
-          onClose={() => setCancelBooking(null)}
-          onSuccess={() => refetch()}
-        />
-      )}
+      <CancelBookingModal
+        isOpen={Boolean(cancelBooking)}
+        onClose={() => setCancelBooking(null)}
+        booking={cancelBooking}
+        onSuccess={() => {
+          setCancelBooking(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
@@ -269,7 +250,9 @@ export default function MyBookingsPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-100">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="text-gray-500 text-sm font-medium">
+            Loading your bookings...
+          </div>
         </div>
       }
     >

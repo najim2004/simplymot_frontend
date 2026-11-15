@@ -54,8 +54,10 @@ function ManageGaragesContent() {
   // Debounce search input by 400ms
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  // Sync state to URL search params
+  // Sync state to URL search params silently without router refresh
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const params = new URLSearchParams();
 
     const trimmedSearch = debouncedSearch.trim();
@@ -79,13 +81,11 @@ function ManageGaragesContent() {
     }
 
     const newQueryString = params.toString();
-    const currentQueryString = searchParams.toString();
+    const newRelativePathQuery = `${pathname}${newQueryString ? `?${newQueryString}` : ""}`;
+    const currentPathQuery = `${window.location.pathname}${window.location.search}`;
 
-    if (newQueryString !== currentQueryString) {
-      router.replace(
-        `${pathname}${newQueryString ? `?${newQueryString}` : ""}`,
-        { scroll: false },
-      );
+    if (newRelativePathQuery !== currentPathQuery) {
+      window.history.replaceState(null, "", newRelativePathQuery);
     }
   }, [
     debouncedSearch,
@@ -95,48 +95,23 @@ function ManageGaragesContent() {
     currentPage,
     itemsPerPage,
     pathname,
-    router,
-    searchParams,
   ]);
 
-  // Sync state when navigating back/forward
+  // Sync state when navigating back/forward with browser history
   useEffect(() => {
-    const urlSearch = searchParams.get("search") || "";
-    const urlFromDate = parseDateParam(searchParams.get("from_date"));
-    const urlToDate = parseDateParam(searchParams.get("to_date"));
-    const urlPage = Number(searchParams.get("page")) || 1;
-    const urlLimit = Number(searchParams.get("limit")) || 10;
-    const urlTab = searchParams.get("tab") || "all";
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      setSearchTerm(sp.get("search") || "");
+      setCurrentPage(Number(sp.get("page")) || 1);
+      setItemsPerPage(Number(sp.get("limit")) || 10);
+      setStartDate(parseDateParam(sp.get("from_date")));
+      setEndDate(parseDateParam(sp.get("to_date")));
+      setActiveTab(sp.get("tab") || "all");
+    };
 
-    if (urlSearch !== searchTerm) setSearchTerm(urlSearch);
-    if (urlPage !== currentPage) setCurrentPage(urlPage);
-    if (urlLimit !== itemsPerPage) setItemsPerPage(urlLimit);
-    if (urlTab !== activeTab) setActiveTab(urlTab);
-
-    const fromChanged =
-      (urlFromDate && !startDate) ||
-      (!urlFromDate && startDate) ||
-      (urlFromDate &&
-        startDate &&
-        format(urlFromDate, "yyyy-MM-dd") !== format(startDate, "yyyy-MM-dd"));
-    if (fromChanged) setStartDate(urlFromDate);
-
-    const toChanged =
-      (urlToDate && !endDate) ||
-      (!urlToDate && endDate) ||
-      (urlToDate &&
-        endDate &&
-        format(urlToDate, "yyyy-MM-dd") !== format(endDate, "yyyy-MM-dd"));
-    if (toChanged) setEndDate(toChanged ? urlToDate : undefined);
-  }, [
-    activeTab,
-    currentPage,
-    endDate,
-    itemsPerPage,
-    searchParams,
-    searchTerm,
-    startDate,
-  ]);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Map activeTab to status query parameter
   const apiStatus = useMemo(() => {
@@ -238,7 +213,7 @@ function ManageGaragesContent() {
       <div>
         <GarageManagementTable
           garages={displayedGarages}
-          isLoading={isLoading}
+          isLoading={isLoading && !garagesData}
           isError={isError}
           skeletonRows={itemsPerPage}
           hasPagination={!isLoading && !isError && totalGarages > 0}

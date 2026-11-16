@@ -9,7 +9,6 @@ import {
   XCircle,
   User as UserIcon,
   Building2,
-  Car,
 } from "lucide-react";
 import {
   Table,
@@ -27,8 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { AdminBooking } from "../../api/admin-booking.api";
+import {
+  formatSlotDate,
+  formatSlotTimeRange,
+} from "@/features/booking";
 
 export interface BookingManagementTableProps {
   bookings?: AdminBooking[];
@@ -53,38 +55,6 @@ function getInitials(name?: string | null, fallback = "U"): string {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
   return clean.slice(0, 2).toUpperCase();
-}
-
-function formatDate(dateString?: string | null): string {
-  if (!dateString) return "N/A";
-  try {
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "N/A";
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
-    return "N/A";
-  }
-}
-
-function formatSlotTime(startsAt?: string | null, endsAt?: string | null): string {
-  if (!startsAt) return "";
-  try {
-    const start = new Date(startsAt);
-    if (isNaN(start.getTime())) return "";
-    const startH = String(start.getHours()).padStart(2, "0");
-    const startM = String(start.getMinutes()).padStart(2, "0");
-    if (!endsAt) return `${startH}:${startM}`;
-    const end = new Date(endsAt);
-    if (isNaN(end.getTime())) return `${startH}:${startM}`;
-    const endH = String(end.getHours()).padStart(2, "0");
-    const endM = String(end.getMinutes()).padStart(2, "0");
-    return `${startH}:${startM} - ${endH}:${endM}`;
-  } catch {
-    return "";
-  }
 }
 
 function getStatusBadge(status?: string | null) {
@@ -201,7 +171,7 @@ export function BookingManagementTable({
         <TableHeader>
           <TableRow className="border-b border-gray-200 bg-gray-50/50 hover:bg-gray-50/50">
             <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-              Booking No.
+              Booking #
             </TableHead>
             <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
               Customer
@@ -296,17 +266,9 @@ export function BookingManagementTable({
                 const ownerAvatar = owner?.avatar;
 
                 const vehicle = booking.vehicle;
-                const bookingRef =
-                  booking.booking_number ||
-                  `#${booking.id.slice(0, 8).toUpperCase()}`;
-
-                const slotDate = formatDate(
-                  booking.slot?.starts_at || booking.order_date,
-                );
-                const slotTime = formatSlotTime(
-                  booking.slot?.starts_at,
-                  booking.slot?.ends_at,
-                );
+                const slotStartsAt =
+                  booking.slot?.starts_at || booking.order_date;
+                const slotEndsAt = booking.slot?.ends_at;
 
                 const isCancelled =
                   booking.status?.toUpperCase() === "CANCELLED";
@@ -318,9 +280,9 @@ export function BookingManagementTable({
                   >
                     {/* 1. Booking Number */}
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-mono text-xs font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded inline-block border border-gray-200">
-                        {bookingRef}
-                      </div>
+                      <span className="text-sm text-gray-900">
+                        {booking.booking_number ?? "—"}
+                      </span>
                     </TableCell>
 
                     {/* 2. Customer: Name, Avatar, Contact */}
@@ -435,34 +397,26 @@ export function BookingManagementTable({
 
                     {/* 5. Vehicle */}
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {vehicle ? (
-                        <div>
-                          <span className="inline-block px-2 py-0.5 bg-amber-400 text-black rounded font-mono font-bold text-xs border border-amber-500 shadow-2xs">
-                            {vehicle.registration_number}
-                          </span>
-                          {(vehicle.make || vehicle.model) && (
-                            <p className="text-xs text-gray-600 mt-1">
-                              {vehicle.make} {vehicle.model}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-900">
+                          {vehicle?.make ?? "N/A"}
+                        </span>
+                        <span className="text-xs text-gray-500 font-mono mt-0.5">
+                          {vehicle?.registration_number ?? "N/A"}
+                        </span>
+                      </div>
                     </TableCell>
 
                     {/* 6. Slot */}
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-medium">
-                        {slotDate}
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-900">
+                          {formatSlotDate(slotStartsAt)}
+                        </span>
+                        <span className="text-xs text-gray-500 mt-0.5">
+                          {formatSlotTimeRange(slotStartsAt, slotEndsAt)}
+                        </span>
                       </div>
-                      {slotTime ? (
-                        <div className="text-xs text-gray-500 font-mono">
-                          {slotTime}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-400">--:--</div>
-                      )}
                     </TableCell>
 
                     {/* 7. Status */}

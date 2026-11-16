@@ -98,7 +98,7 @@ export default function RescheduleBookingModal({
       setReason("");
       setOpenCalendar(false);
     }
-  }, [isOpen, booking.id, booking.starts_at, booking]);
+  }, [isOpen, booking?.id, booking?.starts_at, booking]);
 
   const slotsList: SlotItem[] = slotsResponse?.data?.slots || [];
 

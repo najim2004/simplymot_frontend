@@ -123,16 +123,17 @@ export default function AutoReminder({
     <>
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={() => setIsOpen(true)}
-        className="h-10 px-5 cursor-pointer border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 hover:shadow font-semibold text-gray-700"
+        className="h-11 w-11 cursor-pointer border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-gray-700"
+        title="Auto Reminder Settings"
+        aria-label="Auto Reminder Settings"
       >
-        <Settings className="h-4 w-4 mr-2" />
-        Auto Reminder
+        <Settings className="h-5 w-5" />
       </Button>
 
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
               Auto Reminder Settings
@@ -207,7 +208,7 @@ export default function AutoReminder({
                   </div>
 
                   {vehiclesNeedingReminder > 0 && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg px-4 py-3">
+                    <div className="bg-linear-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
                         <p className="text-sm text-blue-900 font-semibold">

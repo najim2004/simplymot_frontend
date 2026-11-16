@@ -96,6 +96,9 @@ export function DriverBookingsTable({
         <TableHeader className="bg-gray-50">
           <TableRow>
             <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Booking #
+            </TableHead>
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Garage
             </TableHead>
             <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -119,6 +122,9 @@ export function DriverBookingsTable({
           {isLoading
             ? Array.from({ length: skeletonRows }).map((_, index) => (
                 <TableRow key={`skeleton-row-${index}`}>
+                  <TableCell className="px-6 py-4">
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
                   <TableCell className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <Skeleton className="h-9 w-9 rounded-full" />
@@ -154,6 +160,13 @@ export function DriverBookingsTable({
                       : ""
                   }
                 >
+                  {/* 0. Booking Number */}
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-900">
+                      {row?.booking_number ?? "—"}
+                    </span>
+                  </TableCell>
+
                   {/* 1. Garage: Name & Image */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">

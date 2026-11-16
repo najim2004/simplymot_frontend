@@ -171,7 +171,7 @@ export function GarageBookingsTable({
                 >
                   {/* 0. Booking Number */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-mono text-xs font-semibold text-[#19CA32] bg-[#19CA32]/10 px-2 py-1 rounded">
+                    <span className="text-sm text-gray-900">
                       {row?.booking_number ?? "—"}
                     </span>
                   </TableCell>

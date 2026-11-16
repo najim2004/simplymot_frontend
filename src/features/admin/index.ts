@@ -44,6 +44,9 @@ export { useAutoReminderSettings } from "./components/VehiclesManagement/useAuto
 export { useVehicleReminders } from "./components/VehiclesManagement/useVehicleReminders";
 export { default as MotReminderSection } from "./components/VehiclesManagement/MotReminderSection";
 export { default as SendReminderModal } from "./components/VehiclesManagement/SendReminderModal";
+export { VehiclesManagementHeader } from "./components/VehiclesManagement/VehiclesManagementHeader";
+export { VehiclesManagementTable } from "./components/VehiclesManagement/VehiclesManagementTable";
+export type { VehicleTableRow } from "./components/VehiclesManagement/VehiclesManagementTable";
 export { default as SubscriptionDetailsTab } from "./components/SubscriptionsManagement/components/SubscriptionDetailsTab";
 export { default as MigrationTab } from "./components/SubscriptionsManagement/components/MigrationTab";
 export { default as JobsTab } from "./components/SubscriptionsManagement/components/JobsTab";

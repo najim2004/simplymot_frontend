@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +33,12 @@ export function CreateRoleDialog({
   const [description, setDescription] = useState("");
   const [cloneFromRoleId, setCloneFromRoleId] = useState(DEFAULT_ROLES[1].id);
 
+  const handleClose = () => {
+    setRoleName("");
+    setDescription("");
+    onOpenChange(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roleName.trim()) {
@@ -63,47 +62,50 @@ export function CreateRoleDialog({
     };
 
     onRoleCreated(newRole);
-    onOpenChange(false);
-    setRoleName("");
-    setDescription("");
+    handleClose();
     toast.success(`Role "${newRole.name}" created!`);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white p-6">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-green-100 text-[#19CA32]">
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <DialogTitle className="text-xl font-bold text-gray-900">
-                Create Custom Role
-              </DialogTitle>
-              <DialogDescription className="text-xs text-gray-500">
-                Define a tailored role with specific permission boundaries.
-              </DialogDescription>
-            </div>
+    <CustomReusableModal
+      isOpen={open}
+      onClose={handleClose}
+      title="Create Custom Role"
+      showHeader={false}
+      hideClose={true}
+      className="flex max-w-md flex-col"
+      contentClassName="flex min-h-0 flex-col overflow-hidden p-0"
+    >
+      <div className="flex max-h-[90vh] min-h-0 flex-col overflow-hidden rounded-lg bg-white">
+        <div className="flex shrink-0 items-center justify-between bg-linear-to-r from-[#19CA32] to-[#16b82e] px-5 py-4 text-white shadow-md">
+          <div>
+            <h2 className="text-lg font-semibold">Create Custom Role</h2>
+            <p className="mt-0.5 text-xs text-white/90">
+              Define a tailored role with specific permission boundaries
+            </p>
           </div>
-        </DialogHeader>
+          <ShieldCheck className="h-5 w-5 opacity-90" />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 overflow-y-auto p-5"
+        >
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-900">
-              Role Name <span className="text-rose-500">*</span>
+            <Label className="text-sm font-medium text-gray-700">
+              Role Name <span className="text-red-500">*</span>
             </Label>
             <Input
               required
               value={roleName}
               onChange={(e) => setRoleName(e.target.value)}
               placeholder="e.g. Returns Coordinator, VIP Concierge"
-              className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-900">
+            <Label className="text-sm font-medium text-gray-700">
               Description
             </Label>
             <Textarea
@@ -111,52 +113,55 @@ export function CreateRoleDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief description of the responsibilities and scope..."
-              className="text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+              className="h-20 resize-none text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-900">
+            <Label className="text-sm font-medium text-gray-700">
               Initial Permissions (Clone from template)
             </Label>
-            <Select value={cloneFromRoleId} onValueChange={setCloneFromRoleId}>
-              <SelectTrigger className="h-10 w-full bg-white text-xs text-gray-900 focus:ring-[#19CA32]/20">
+            <Select
+              value={cloneFromRoleId}
+              onValueChange={setCloneFromRoleId}
+            >
+              <SelectTrigger className="h-11 w-full border-gray-300 bg-white text-sm focus:ring-[#19CA32]/20">
                 <SelectValue placeholder="Select template" />
               </SelectTrigger>
               <SelectContent className="bg-white">
                 {DEFAULT_ROLES.map((r) => (
-                  <SelectItem key={r.id} value={r.id} className="text-xs">
+                  <SelectItem key={r.id} value={r.id}>
                     {r.name} ({r.permissions.length} perms)
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-gray-500">
+            <p className="text-xs text-gray-500">
               You will be able to check or uncheck individual privileges in the
               Matrix.
             </p>
           </div>
 
-          <DialogFooter className="flex flex-row items-center justify-end gap-3 pt-3 sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="h-10 cursor-pointer px-4 text-xs font-medium"
-            >
-              Cancel
-            </Button>
+          <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
             <Button
               type="submit"
               disabled={!roleName.trim()}
-              className="h-10 cursor-pointer bg-[#19CA32] px-4 text-xs font-bold text-white shadow-xs hover:bg-green-600"
+              className="h-11 cursor-pointer rounded-lg bg-linear-to-r from-[#19CA32] to-[#16b82e] font-semibold text-white shadow-md hover:opacity-95 disabled:opacity-50"
             >
-              <Plus size={13} className="mr-1.5" />
+              <Plus size={14} className="mr-1.5" />
               Create Role
             </Button>
-          </DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="h-11 cursor-pointer rounded-lg font-semibold"
+            >
+              Cancel
+            </Button>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </CustomReusableModal>
   );
 }

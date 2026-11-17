@@ -2,22 +2,20 @@
 
 import { useState } from "react";
 import {
-  Ticket,
   Plus,
   Search,
   Pencil,
   Trash2,
   Copy,
-  Percent,
+  MoreVertical,
+  X,
+  Ticket,
+  CheckCircle,
   PoundSterling,
-  TrendingUp,
-  CheckCircle2,
-  AlertTriangle,
-  MoreHorizontal,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -35,14 +33,14 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { TablePagination } from "./TablePagination";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
+import ConfirmationModal from "@/components/reusable/ConfirmationModal";
 import { CouponDialog } from "./CouponDialog";
 import { INITIAL_COUPONS } from "./data";
 import type {
@@ -52,15 +50,15 @@ import type {
 } from "./types";
 
 const STATUS_BADGES: Record<CouponStatus, string> = {
-  Active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Scheduled: "bg-blue-50 text-blue-700 border-blue-200",
-  Expired: "bg-zinc-100 text-zinc-600 border-zinc-200",
-  Disabled: "bg-rose-50 text-rose-700 border-rose-200",
+  Active: "bg-green-100 text-green-800 border-green-200",
+  Scheduled: "bg-blue-100 text-blue-800 border-blue-200",
+  Expired: "bg-gray-100 text-gray-600 border-gray-200",
+  Disabled: "bg-red-100 text-red-800 border-red-200",
 };
 
 export function AdminPromoCodesPage() {
   const [coupons, setCoupons] = useState<DiscountCoupon[]>(INITIAL_COUPONS);
-  const [activeTab, setActiveTab] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -70,7 +68,6 @@ export function AdminPromoCodesPage() {
     null,
   );
 
-  // Stats calculation
   const totalCoupons = coupons.length;
   const activeCoupons = coupons.filter((c) => c.status === "Active").length;
   const totalRedemptions = coupons.reduce((sum, c) => sum + c.timesUsed, 0);
@@ -83,17 +80,48 @@ export function AdminPromoCodesPage() {
     0,
   );
 
-  // Filter coupons
+  const couponStats = [
+    {
+      label: "Total Coupons",
+      value: totalCoupons,
+      icon: Ticket,
+      bgColor: "bg-blue-100",
+      iconColor: "text-blue-600",
+    },
+    {
+      label: "Active",
+      value: activeCoupons,
+      icon: CheckCircle,
+      bgColor: "bg-green-100",
+      iconColor: "text-green-600",
+    },
+    {
+      label: "Redemptions",
+      value: totalRedemptions,
+      icon: Percent,
+      bgColor: "bg-purple-100",
+      iconColor: "text-purple-600",
+    },
+    {
+      label: "Discount Given",
+      value: `£${estimatedSavings.toLocaleString()}`,
+      icon: PoundSterling,
+      bgColor: "bg-amber-100",
+      iconColor: "text-amber-600",
+    },
+  ];
+
   const filteredCoupons = coupons.filter((c) => {
-    const matchesTab =
-      activeTab === "All" || c.status.toLowerCase() === activeTab.toLowerCase();
+    const matchesStatus =
+      statusFilter === "all" ||
+      c.status.toLowerCase() === statusFilter.toLowerCase();
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
       c.code.toLowerCase().includes(q) ||
       c.description.toLowerCase().includes(q);
 
-    return matchesTab && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredCoupons.length / pageSize) || 1;
@@ -101,6 +129,7 @@ export function AdminPromoCodesPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+  const hasPagination = filteredCoupons.length > 0;
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -166,355 +195,296 @@ export function AdminPromoCodesPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 lg:p-8">
-      {/* 0. Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Promo Codes</h1>
-        <p className="text-sm text-gray-500">
-          Create discount campaigns, set usage limits, and track redemptions.
-        </p>
-      </div>
+    <div className="space-y-6">
+      {/* Header — matches garage/booking management */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <h1 className="whitespace-nowrap text-2xl font-bold tracking-tight text-gray-900">
+          Coupons & Discounts
+        </h1>
 
-      {/* 1. Header Overview Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs transition hover:border-[#19CA32]/40">
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Total Coupons
-            </p>
-            <div className="grid h-8 w-8 place-items-center rounded-md bg-[#DDF7E0] text-[#19CA32] shadow-xs">
-              <Ticket size={16} />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end gap-2.5">
-            <span className="text-2xl font-bold text-gray-900">
-              {totalCoupons}
-            </span>
-            <span className="mb-0.5 flex items-center gap-0.5 text-xs font-semibold text-emerald-600">
-              <TrendingUp size={13} /> {activeCoupons} Active
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-gray-400">
-            Promotional discount codes
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs transition hover:border-[#19CA32]/40">
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Total Redemptions
-            </p>
-            <div className="grid h-8 w-8 place-items-center rounded-md bg-gray-100 text-gray-600 shadow-xs">
-              <CheckCircle2 size={16} />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end gap-2.5">
-            <span className="text-2xl font-bold text-gray-900">
-              {totalRedemptions}
-            </span>
-            <span className="mb-0.5 text-xs font-semibold text-gray-500">
-              Bookings
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-gray-400">Total customer uses</p>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs transition hover:border-[#19CA32]/40">
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Discount Given
-            </p>
-            <div className="grid h-8 w-8 place-items-center rounded-md bg-gray-100 text-gray-600 shadow-xs">
-              <PoundSterling size={16} />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end gap-2.5">
-            <span className="text-2xl font-bold text-gray-900">
-              £{estimatedSavings.toLocaleString()}
-            </span>
-            <span className="mb-0.5 text-xs font-semibold text-emerald-600">
-              Saved
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-gray-400">
-            Total savings delivered
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-amber-200/60 bg-amber-50/40 p-5 shadow-xs">
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Avg. Conversion Boost
-            </p>
-            <div className="grid h-8 w-8 place-items-center rounded-md bg-[#DDF7E0] text-[#19CA32] shadow-xs">
-              <Percent size={16} />
-            </div>
-          </div>
-          <div className="mt-3 flex items-end gap-2.5">
-            <span className="text-2xl font-bold text-gray-900">+28.4%</span>
-            <span className="mb-0.5 text-xs font-semibold text-amber-800">
-              Checkout rate
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Campaign uplift estimate
-          </p>
-        </div>
-      </div>
-
-      {/* 2. Coupons Table Container */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs">
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-4">
-          <div className="relative min-w-64 flex-1">
-            <Search
-              size={16}
-              className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-            />
-            <Input
-              placeholder="Search coupon code or description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 rounded-md pl-9 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            {["All", "Active", "Scheduled", "Expired", "Disabled"].map(
-              (tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setCurrentPage(1);
-                  }}
-                  className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                    activeTab === tab
-                      ? "bg-[#19CA32] text-white shadow-xs"
-                      : "border border-gray-200 text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ),
-            )}
-
-            <Button
-              onClick={handleOpenAdd}
-              className="ml-2 h-9 cursor-pointer rounded-md bg-[#19CA32] text-xs font-semibold text-white shadow-xs hover:bg-green-600"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="w-full sm:w-44">
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setCurrentPage(1);
+              }}
             >
-              <Plus size={14} className="mr-1 stroke-[2.5]" /> Add Coupon
-            </Button>
+              <SelectTrigger className="h-11 w-full cursor-pointer border-gray-300 bg-white text-xs sm:text-sm">
+                <SelectValue placeholder="All Coupons" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Coupons</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="disabled">Disabled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="relative w-full sm:w-auto">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search coupons..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block h-11 w-full rounded-lg border border-gray-300 bg-white py-0 pr-9 pl-9 text-xs leading-5 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-primary focus:outline-none sm:w-64 sm:text-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setCurrentPage(1);
+                }}
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer p-1 text-gray-400 hover:text-gray-600"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <Button
+            onClick={handleOpenAdd}
+            className="h-11 cursor-pointer bg-[#19CA32] px-4 text-sm font-semibold text-white hover:bg-green-600"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Add Coupon
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        {couponStats.map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-gray-100 bg-white p-6"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">
+                  {stat.value}
+                </p>
+              </div>
+              <div className={`rounded-lg p-3 ${stat.bgColor}`}>
+                <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      {filteredCoupons.length === 0 ? (
+        <div className="flex min-h-100 items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg text-gray-600">No coupons found</p>
+            <p className="mt-2 text-sm text-gray-500">
+              Create a coupon or adjust your filters
+            </p>
           </div>
         </div>
+      ) : (
+        <div>
+          <div
+            className={`overflow-x-auto border border-gray-300 bg-white ${
+              hasPagination ? "rounded-t-lg" : "rounded-lg"
+            }`}
+          >
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Coupon Code
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Discount
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Min. Spend
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Validity
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Redemptions
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Status
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-200">
+                {paginatedCoupons.map((coupon) => {
+                  const percentUsed = Math.min(
+                    100,
+                    Math.round((coupon.timesUsed / coupon.usageLimit) * 100),
+                  );
 
-        {/* Coupons Table */}
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow className="border-gray-100 hover:bg-transparent">
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Coupon Code & Campaign
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Discount
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Min. Spend
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Validity
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Redemptions
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Status
-              </TableHead>
-              <TableHead className="px-4 py-3.5 text-right text-xs font-semibold tracking-wider text-gray-500 uppercase">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-gray-100">
-            {filteredCoupons.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="h-32 text-center text-sm text-gray-500"
-                >
-                  No coupons found matching criteria.
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedCoupons.map((coupon) => {
-                const percentUsed = Math.min(
-                  100,
-                  Math.round((coupon.timesUsed / coupon.usageLimit) * 100),
-                );
-
-                return (
-                  <TableRow
-                    key={coupon.id}
-                    className="border-gray-100 transition-colors hover:bg-green-50/40"
-                  >
-                    {/* Code & Description */}
-                    <TableCell className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded border border-gray-200 bg-gray-100 px-2 py-0.5 font-mono text-sm font-medium text-gray-900">
-                          {coupon.code}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyCode(coupon.code)}
-                          title="Copy Code"
-                          className="rounded p-1 text-gray-400 transition hover:text-gray-900"
-                        >
-                          <Copy size={13} />
-                        </button>
-                      </div>
-                      <p className="mt-1 max-w-xs truncate text-xs text-gray-500">
-                        {coupon.description}
-                      </p>
-                    </TableCell>
-
-                    {/* Discount Value */}
-                    <TableCell className="px-4 py-3.5">
-                      <Badge
-                        variant="outline"
-                        className="rounded-md border border-[#19CA32]/40 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-gray-900"
-                      >
-                        {coupon.discountType === "percentage"
-                          ? `${coupon.discountValue}% OFF`
-                          : `£${coupon.discountValue} OFF`}
-                      </Badge>
-                      {coupon.maxDiscount && (
-                        <span className="mt-0.5 block text-xs text-gray-500">
-                          Up to £{coupon.maxDiscount}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Min Spend */}
-                    <TableCell className="px-4 py-3.5 text-sm font-medium text-gray-900">
-                      £{coupon.minSpend}
-                    </TableCell>
-
-                    {/* Validity */}
-                    <TableCell className="px-4 py-3.5 text-sm whitespace-nowrap text-gray-500">
-                      <div className="font-medium text-gray-900">
-                        Until {coupon.expiryDate}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        From {coupon.startDate}
-                      </div>
-                    </TableCell>
-
-                    {/* Redemptions Progress */}
-                    <TableCell className="px-4 py-3.5">
-                      <div className="w-32">
-                        <div className="mb-1 flex items-center justify-between text-xs font-medium text-gray-900">
-                          <span>
-                            <span className="font-medium text-gray-900">
-                              {coupon.timesUsed}
-                            </span>{" "}
-                            used
+                  return (
+                    <TableRow key={coupon.id} className="hover:bg-gray-50">
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 font-mono text-sm font-medium text-gray-900">
+                            {coupon.code}
                           </span>
-                          <span className="text-gray-500">
-                            /{coupon.usageLimit}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(coupon.code)}
+                            title="Copy Code"
+                            className="cursor-pointer rounded p-1 text-gray-400 transition hover:text-gray-900"
+                          >
+                            <Copy size={13} />
+                          </button>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
-                          <div
-                            className={`h-full rounded-full ${
-                              percentUsed >= 90 ? "bg-rose-500" : "bg-[#19CA32]"
-                            }`}
-                            style={{ width: `${percentUsed}%` }}
-                          />
-                        </div>
-                      </div>
-                    </TableCell>
+                        <p className="mt-1 max-w-xs truncate text-xs text-gray-500">
+                          {coupon.description}
+                        </p>
+                      </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
+                      <TableCell className="px-6 py-4">
                         <Badge
                           variant="outline"
-                          className={`rounded-md border px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGES[coupon.status]}`}
+                          className="rounded-md border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-800"
                         >
-                          {coupon.status}
+                          {coupon.discountType === "percentage"
+                            ? `${coupon.discountValue}% OFF`
+                            : `£${coupon.discountValue} OFF`}
                         </Badge>
-                        <Switch
-                          checked={coupon.status === "Active"}
-                          onCheckedChange={() => handleToggleStatus(coupon.id)}
-                          title="Toggle Active/Disabled"
-                          className="scale-75 data-[state=checked]:bg-[#19CA32]"
-                        />
-                      </div>
-                    </TableCell>
+                        {coupon.maxDiscount && (
+                          <span className="mt-0.5 block text-xs text-gray-500">
+                            Up to £{coupon.maxDiscount}
+                          </span>
+                        )}
+                      </TableCell>
 
-                    {/* Actions */}
-                    <TableCell className="px-4 py-3.5 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-md text-gray-500 hover:text-gray-900"
-                          >
-                            <MoreHorizontal size={16} />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36 bg-white">
-                          <DropdownMenuItem
-                            onClick={() => handleOpenEdit(coupon)}
-                            className="cursor-pointer text-xs font-medium"
-                          >
-                            <Pencil size={14} className="mr-2" />
-                            Edit Coupon
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleCopyCode(coupon.code)}
-                            className="cursor-pointer text-xs font-medium"
-                          >
-                            <Copy size={14} className="mr-2" />
-                            Copy Code
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setCouponToDelete(coupon)}
-                            className="cursor-pointer text-xs font-medium text-rose-600 focus:text-rose-600"
-                          >
-                            <Trash2 size={14} className="mr-2" />
-                            Delete Coupon
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                      <TableCell className="px-6 py-4 text-sm font-medium text-gray-900">
+                        £{coupon.minSpend}
+                      </TableCell>
 
-        {/* Pagination */}
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredCoupons.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize);
-            setCurrentPage(1);
-          }}
-          itemLabel="coupons"
-          pageSizeOptions={[5, 10, 20, 50]}
-        />
-      </div>
+                      <TableCell className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
+                        <div className="font-medium text-gray-900">
+                          Until {coupon.expiryDate}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          From {coupon.startDate}
+                        </div>
+                      </TableCell>
 
-      {/* 3. Add/Edit Coupon Dialog */}
+                      <TableCell className="px-6 py-4">
+                        <div className="w-32">
+                          <div className="mb-1 flex items-center justify-between text-xs font-medium text-gray-900">
+                            <span>{coupon.timesUsed} used</span>
+                            <span className="text-gray-500">
+                              /{coupon.usageLimit}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div
+                              className={`h-full rounded-full ${
+                                percentUsed >= 90
+                                  ? "bg-red-500"
+                                  : "bg-[#19CA32]"
+                              }`}
+                              style={{ width: `${percentUsed}%` }}
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGES[coupon.status]}`}
+                          >
+                            {coupon.status}
+                          </Badge>
+                          <Switch
+                            checked={coupon.status === "Active"}
+                            onCheckedChange={() =>
+                              handleToggleStatus(coupon.id)
+                            }
+                            title="Toggle Active/Disabled"
+                            className="scale-75 data-[state=checked]:bg-[#19CA32]"
+                          />
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="px-6 py-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 cursor-pointer text-gray-500 hover:text-gray-900"
+                            >
+                              <MoreVertical size={16} />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-36 bg-white"
+                          >
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEdit(coupon)}
+                              className="cursor-pointer text-xs font-medium"
+                            >
+                              <Pencil size={14} className="mr-2" />
+                              Edit Coupon
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCopyCode(coupon.code)}
+                              className="cursor-pointer text-xs font-medium"
+                            >
+                              <Copy size={14} className="mr-2" />
+                              Copy Code
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setCouponToDelete(coupon)}
+                              className="cursor-pointer text-xs font-medium text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 size={14} className="mr-2" />
+                              Delete Coupon
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <ReusablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={pageSize}
+            totalItems={filteredCoupons.length}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(limit) => {
+              setPageSize(limit);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+      )}
+
       <CouponDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
@@ -522,44 +492,16 @@ export function AdminPromoCodesPage() {
         onSaveCoupon={handleSaveCoupon}
       />
 
-      {/* 4. Delete Confirmation Dialog */}
-      <Dialog
+      <ConfirmationModal
         open={!!couponToDelete}
-        onOpenChange={(open) => !open && setCouponToDelete(null)}
-      >
-        <DialogContent className="max-w-md bg-white p-6 sm:rounded-lg">
-          <DialogHeader>
-            <div className="mb-2 mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
-              <AlertTriangle size={20} />
-            </div>
-            <DialogTitle className="text-center text-base font-bold text-gray-900">
-              Delete Coupon &ldquo;{couponToDelete?.code}&rdquo;?
-            </DialogTitle>
-            <DialogDescription className="text-center text-xs text-gray-500">
-              Customers will no longer be able to apply this discount code
-              during checkout.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row items-center justify-center gap-3 pt-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCouponToDelete(null)}
-              className="h-9 px-4 text-xs font-medium"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={confirmDeleteCoupon}
-              className="h-9 px-4 text-xs font-semibold"
-            >
-              Delete Coupon
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onClose={() => setCouponToDelete(null)}
+        onConfirm={confirmDeleteCoupon}
+        title={`Delete Coupon "${couponToDelete?.code || ""}"?`}
+        description="Customers will no longer be able to apply this discount code during checkout."
+        confirmText="Delete Coupon"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

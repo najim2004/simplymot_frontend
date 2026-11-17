@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -7,6 +8,7 @@ import {
   ShoppingCart,
   FileText,
   TrendingUp,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -15,65 +17,180 @@ import {
   useCreateASubscriptionMutation,
   useGetAllSubscriptionsQuery,
 } from "@/features/admin";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const PLAN_FEATURES = [
+  {
+    icon: Package,
+    text: "Unlimited opportunity to receive MOT bookings 24/7.",
+  },
+  { icon: ShoppingCart, text: "Boost your garage's visibility." },
+  {
+    icon: FileText,
+    text: "Opportunity to upsell and offer extra services!",
+  },
+  { icon: TrendingUp, text: "No contract. No commission." },
+  { icon: Package, text: "Simple set up." },
+];
+
+const formatPlanPrice = (subscription: {
+  price_pence?: number;
+  price_formatted?: string;
+  currency?: string;
+}) => {
+  const currency =
+    subscription.currency === "GBP" || !subscription.currency
+      ? "£"
+      : subscription.currency;
+
+  if (
+    typeof subscription.price_pence === "number" &&
+    subscription.price_pence > 0
+  ) {
+    const numeric = subscription.price_pence / 100;
+    const amount = numeric % 1 === 0 ? `${numeric}` : numeric.toFixed(2);
+    return { currency, amount };
+  }
+
+  const raw =
+    subscription.price_formatted?.replace(/^[^\d]*/, "") || "50";
+  const amount = raw.endsWith(".00") ? raw.slice(0, -3) : raw;
+  return { currency, amount };
+};
+
+function PlanCardSkeleton() {
+  return (
+    <div className="relative flex w-full max-w-115 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex flex-col items-center space-y-3 p-8 pb-6 text-center">
+        <Skeleton className="h-7 w-48 rounded-md" />
+        <div className="my-2 flex items-baseline justify-center gap-1">
+          <Skeleton className="h-14 w-28 rounded-md" />
+        </div>
+        <Skeleton className="h-4 w-16 rounded" />
+        <Skeleton className="h-12 w-full max-w-70 rounded-xl" />
+      </div>
+
+      <div className="w-full border-t border-gray-200" />
+
+      <div className="space-y-6 p-8 pt-6">
+        <div className="space-y-2">
+          <Skeleton className="h-3.5 w-full rounded" />
+          <Skeleton className="h-3.5 w-5/6 rounded" />
+          <Skeleton className="h-3.5 w-4/6 rounded" />
+        </div>
+        <div>
+          <Skeleton className="mb-4 h-5 w-24 rounded" />
+          <div className="space-y-3.5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="mt-0.5 h-4 w-4 shrink-0 rounded-full" />
+                <Skeleton className="h-4 w-full rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPlanCard({
+  subscription,
+  onViewDetails,
+}: {
+  subscription: any;
+  onViewDetails: (id: string) => void;
+}) {
+  const { currency, amount } = formatPlanPrice(subscription);
+  const isActive = Boolean(subscription.is_active);
+
+  return (
+    <div
+      className={`relative flex w-full max-w-115 flex-col rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:shadow-md ${
+        isActive
+          ? "border-green-500 ring-2 ring-green-100"
+          : "border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+        <span
+          className={`rounded-full px-4 py-1 text-xs font-semibold whitespace-nowrap shadow-xs ${
+            isActive
+              ? "bg-[#19CA32] text-white"
+              : "border border-red-200 bg-red-50 text-red-700"
+          }`}
+        >
+          {isActive ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <div className="flex flex-col items-center p-8 pb-6 text-center">
+        <h3 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+          {subscription.name || "One Simple Plan"}
+        </h3>
+
+        <div className="my-4 flex items-baseline justify-center">
+          <span className="mr-0.5 text-3xl font-bold text-gray-900 sm:text-4xl">
+            {currency}
+          </span>
+          <span className="text-6xl font-extrabold tracking-tight text-gray-900 sm:text-7xl">
+            {amount}
+          </span>
+        </div>
+
+        <p className="mb-6 text-base font-medium text-gray-500">/month</p>
+
+        <button
+          type="button"
+          onClick={() => onViewDetails(subscription.id)}
+          className="flex w-full max-w-70 cursor-pointer items-center justify-center rounded-xl bg-[#19CA32] px-6 py-3.5 text-center text-base font-semibold text-white shadow-xs transition-all duration-200 hover:bg-green-600 hover:shadow-md active:scale-[0.98]"
+        >
+          View Details
+        </button>
+      </div>
+
+      <div className="w-full border-t border-gray-200" />
+
+      <div className="space-y-6 p-8 pt-6">
+        <p className="text-center text-sm leading-relaxed text-gray-600 sm:text-left">
+          {subscription.description ||
+            "We believe in fairness & transparency - no hidden fees, no contracts, no commission, and no confusing tiers. Just full access for one simple price."}
+        </p>
+
+        <div>
+          <h4 className="mb-4 text-left text-base font-semibold text-gray-900">
+            Features
+          </h4>
+          <div className="space-y-3.5">
+            {PLAN_FEATURES.map((feature, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <feature.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#19CA32]" />
+                <span className="text-sm leading-snug text-gray-700">
+                  {feature.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SubscriptionsManagement() {
   const router = useRouter();
 
-  // Fetch all subscriptions without pagination (using a high limit)
   const allSubscriptions = useGetAllSubscriptionsQuery({
     page: 1,
-    limit: 1000, // High limit to get all subscriptions
+    limit: 1000,
   });
 
   const handleViewDetails = (id: string) => {
     router.push(`/admin/subscriptions-management/${id}`);
-  };
-
-  // Format price from pence to pounds
-  const formatPrice = (pence: number) => {
-    return `£${(pence / 100).toFixed(2)}`;
-  };
-
-  // Get features list for a subscription
-  const getFeatures = (subscription: any) => {
-    const features = [
-      {
-        icon: Package,
-        text: "Unlimited opportunity to receive MOT bookings — 24/7",
-      },
-      {
-        icon: ShoppingCart,
-        text: "Boost Your Garage's Visibility.",
-      },
-      {
-        icon: FileText,
-        text: "Opportunity to upsell and offer extra services!",
-      },
-      {
-        icon: TrendingUp,
-        text: "No contract. No commission.",
-      },
-      {
-        icon: Package,
-        text: "Simple set up.",
-      },
-    ];
-
-    return features;
   };
 
   const [createSubscription, { isLoading }] = useCreateASubscriptionMutation();
@@ -91,7 +208,7 @@ export default function SubscriptionsManagement() {
         max_vehicles: 1000,
       };
 
-      const res = await createSubscription(payload).unwrap();
+      await createSubscription(payload).unwrap();
       toast.success("Subscription created successfully!");
 
       reset();
@@ -101,246 +218,117 @@ export default function SubscriptionsManagement() {
     }
   };
 
+  const subscriptions = allSubscriptions?.data?.data || [];
+
   return (
     <>
-      {allSubscriptions?.data?.data?.length === 0 && (
-        <div className="mb-6 flex justify-between">
-          <h1 className="text-2xl font-semibold">List of All Subscriptions</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                className="justify-start bg-white hover:bg-white text-black cursor-pointer"
-              >
-                <Plus className="mr-1" /> Add Subscription
-              </Button>
-            </DialogTrigger>
-
-            <DialogContent className="sm:max-w-106.25">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <DialogHeader>
-                  <DialogTitle>Add Subscription</DialogTitle>
-                </DialogHeader>
-
-                <div className="grid gap-4 mt-6">
-                  {/* <div className="grid gap-3">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    {...register("name", { required: true })}
-                    placeholder="Subscription name"
-                  />
-                </div> */}
-
-                  <div className="grid gap-3">
-                    <Label htmlFor="price">Price</Label>
-                    <Input
-                      id="price_pence"
-                      type="number"
-                      {...register("price_pence", { required: true, min: 0 })}
-                      placeholder="Subscription price (£)"
-                    />
-                  </div>
-
-                  {/* <div className="grid gap-3">
-                  <Label htmlFor="max_bookings_per_month">
-                    Max bookings per month
-                  </Label>
-                  <Input
-                    id="max_bookings_per_month"
-                    type="number"
-                    {...register("max_bookings_per_month", {
-                      required: true,
-                      min: 1,
-                    })}
-                    placeholder="Max bookings"
-                  />
-                </div> */}
-
-                  {/* <div className="grid gap-3">
-                  <Label htmlFor="max_vehicles">Max Vehicles</Label>
-                  <Input
-                    id="max_vehicles"
-                    type="number"
-                    {...register("max_vehicles", { required: true, min: 1 })}
-                    placeholder="Max vehicles"
-                  />
-                </div> */}
-
-                  {/* <div className="grid gap-3">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    {...register("description")}
-                    placeholder="Description"
-                  />
-                </div> */}
-                </div>
-
-                <DialogFooter className="mt-4">
-                  <DialogClose asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="bg-red-800 hover:bg-red-700 cursor-pointer text-white hover:text-white"
-                    >
-                      Cancel
-                    </Button>
-                  </DialogClose>
-
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="bg-green-600 cursor-pointer hover:bg-green-500"
-                  >
-                    {isLoading ? "Creating..." : "Create"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+      {subscriptions.length === 0 && !allSubscriptions.isLoading && (
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Subscription Management
+          </h1>
+          <Button
+            onClick={() => setOpen(true)}
+            className="h-11 cursor-pointer bg-[#19CA32] px-4 text-sm font-semibold text-white hover:bg-green-600"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Add Subscription
+          </Button>
         </div>
       )}
 
-      {/* Subscription Cards Grid */}
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)] py-8">
-        {allSubscriptions.isLoading ? (
-          <div className="w-full max-w-md">
-            {/* Shimmer Skeleton Card */}
-            <div className="bg-white rounded-lg border-2 border-green-200 p-6 shadow-sm animate-pulse">
-              {/* Title Skeleton */}
-              <Skeleton className="h-8 w-3/4 mb-2" />
-
-              {/* Description Skeleton */}
-              <Skeleton className="h-4 w-full mb-6" />
-              <Skeleton className="h-4 w-5/6 mb-6" />
-
-              {/* Membership Section Skeleton */}
-              <div className="mb-6">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <div className="flex items-baseline gap-2 mb-1">
-                  <Skeleton className="h-10 w-32" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-                <Skeleton className="h-3 w-full" />
-              </div>
-
-              {/* Button Skeleton */}
-              <Skeleton className="h-10 w-full mb-6 rounded-md" />
-
-              {/* Features Section Skeleton */}
-              <div>
-                <Skeleton className="h-4 w-20 mb-3" />
-                <div className="space-y-3">
-                  {[1, 2, 3, 4, 5].map((index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Skeleton className="h-5 w-5 rounded mt-0.5" />
-                      <Skeleton className="h-4 flex-1" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status Badge Skeleton */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <Skeleton className="h-6 w-20 rounded-full" />
-              </div>
+      <CustomReusableModal
+        isOpen={open}
+        onClose={() => {
+          if (isLoading) return;
+          setOpen(false);
+          reset();
+        }}
+        title="Add Subscription"
+        showHeader={false}
+        hideClose={true}
+        className="flex max-w-md flex-col"
+        contentClassName="flex min-h-0 flex-col overflow-hidden p-0"
+      >
+        <div className="flex flex-col overflow-hidden rounded-lg bg-white">
+          <div className="flex shrink-0 items-center justify-between bg-linear-to-r from-[#19CA32] to-[#16b82e] px-5 py-4 text-white shadow-md">
+            <div>
+              <h2 className="text-lg font-semibold">Add Subscription</h2>
+              <p className="mt-0.5 text-xs text-white/90">
+                Create a new garage subscription plan
+              </p>
             </div>
+            <Package className="h-5 w-5 opacity-90" />
           </div>
-        ) : allSubscriptions?.data?.data?.length === 0 ? (
-          <div className="text-center text-gray-500">
-            No subscriptions found. Create your first subscription!
+
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-5 p-5"
+          >
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="price_pence"
+                className="text-sm font-medium text-gray-700"
+              >
+                Price <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="price_pence"
+                type="number"
+                {...register("price_pence", { required: true, min: 0 })}
+                placeholder="Subscription price (£)"
+                className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="h-11 cursor-pointer rounded-lg bg-linear-to-r from-[#19CA32] to-[#16b82e] font-semibold text-white shadow-md hover:opacity-95"
+              >
+                {isLoading ? "Creating..." : "Create"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setOpen(false);
+                  reset();
+                }}
+                disabled={isLoading}
+                className="h-11 cursor-pointer rounded-lg font-semibold"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      </CustomReusableModal>
+
+      <div className="flex min-h-[calc(100vh-140px)] w-full items-center justify-center px-4 py-6 sm:py-10">
+        {allSubscriptions.isLoading ? (
+          <div className="flex w-full flex-wrap items-stretch justify-center gap-6">
+            <PlanCardSkeleton />
+          </div>
+        ) : subscriptions.length === 0 ? (
+          <div className="max-w-md rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm sm:p-10">
+            <Inbox className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+            <h2 className="mb-2 text-xl font-bold text-gray-900">
+              No Plans Available
+            </h2>
+            <p className="text-sm leading-relaxed text-gray-500">
+              Create your first subscription plan to get started.
+            </p>
           </div>
         ) : (
-          <div className="w-full max-w-md">
-            {allSubscriptions?.data?.data?.map((subscription: any) => {
-              const features = getFeatures(subscription);
-              const price = formatPrice(subscription.price_pence);
-
-              return (
-                <div
-                  key={subscription.id}
-                  className="bg-white rounded-lg border-2 border-green-200 p-6 shadow-sm hover:shadow-md transition-shadow w-full"
-                >
-                  {/* Title */}
-                  <h2 className="text-2xl font-bold text-black mb-2">
-                    {/* {subscription.name} */}
-                    One Simple Plan
-                  </h2>
-
-                  {/* Description */}
-                  {/* {subscription.description && (
-                    <p className="text-sm text-gray-700 mb-6">
-                      {subscription.description}
-                    </p>
-                  )} */}
-                  <p className="text-sm text-gray-700 mb-6">
-                    We believe in fairness and transparency - no hidden fees, no
-                    contracts, no commissions, and no confusing tiers. Just full
-                    access for one simple price.
-                  </p>
-
-                  {/* Membership Section */}
-                  <div className="mb-6">
-                    <div className="text-sm font-semibold text-black mb-2">
-                      Membership
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-4xl font-bold text-black">
-                        {subscription.price_formatted || price.split(".")[0]}
-                      </span>
-                      <span className="text-lg text-black">/month</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {subscription.price_formatted || price} billed
-                      automatically every month on the sign-up date (unless
-                      cancelled)
-                    </p>
-                  </div>
-
-                  {/* Details Button */}
-                  <Button
-                    onClick={() => handleViewDetails(subscription.id)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-md mb-6 cursor-pointer"
-                  >
-                    Details
-                  </Button>
-
-                  {/* Features Section */}
-                  <div>
-                    <div className="text-sm font-semibold text-black mb-3">
-                      Features
-                    </div>
-                    <div className="space-y-3">
-                      {features.map((feature, index) => {
-                        const IconComponent = feature.icon;
-                        return (
-                          <div key={index} className="flex items-start gap-3">
-                            <IconComponent className="h-5 w-5 text-black mt-0.5 shrink-0 stroke-1" />
-                            <span className="text-sm text-black">
-                              {feature.text}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <span
-                      className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium ${
-                        subscription.is_active
-                          ? "bg-green-100 text-green-800 border border-green-300"
-                          : "bg-red-100 text-red-800 border border-red-300"
-                      }`}
-                    >
-                      {subscription.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="flex w-full flex-wrap items-stretch justify-center gap-6">
+            {subscriptions.map((subscription: any) => (
+              <AdminPlanCard
+                key={subscription.id}
+                subscription={subscription}
+                onViewDetails={handleViewDetails}
+              />
+            ))}
           </div>
         )}
       </div>

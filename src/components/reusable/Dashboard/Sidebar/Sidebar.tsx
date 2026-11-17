@@ -34,6 +34,7 @@ import {
   Tags,
   Star,
   ShieldCheck,
+  Inbox,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout as logoutAction } from "@/features/auth/store/auth.slice";
@@ -213,8 +214,14 @@ export default function Sidebar({ onClose }: SidebarProps) {
     },
     {
       icon: Tags,
-      label: "Promo Codes",
-      href: "/admin/promo-codes",
+      label: "Coupons & Discounts",
+      href: "/admin/coupons",
+      role: "admin",
+    },
+    {
+      icon: Inbox,
+      label: "Inquiries",
+      href: "/admin/inquiries",
       role: "admin",
     },
   ];

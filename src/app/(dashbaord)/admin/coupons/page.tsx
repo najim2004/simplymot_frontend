@@ -2,6 +2,6 @@
 
 import { AdminPromoCodesPage } from "@/features/admin/components/PromoCodeManagement/AdminPromoCodesPage";
 
-export default function PromoCodesPage() {
+export default function CouponsPage() {
   return <AdminPromoCodesPage />;
 }

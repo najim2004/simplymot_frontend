@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";
+import { Car, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import {
   useGetAllVehiclesQuery,
   useDeleteVehicleMutation,
@@ -15,8 +16,40 @@ import {
   SendReminderModal,
   VehiclesManagementHeader,
   VehiclesManagementTable,
+  AdminStatsCards,
   type VehicleTableRow,
 } from "@/features/admin";
+
+const DUMMY_VEHICLE_STATS = [
+  {
+    label: "Total Vehicles",
+    value: 2156,
+    icon: Car,
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
+  },
+  {
+    label: "Expired MOT",
+    value: 214,
+    icon: AlertTriangle,
+    bgColor: "bg-red-100",
+    iconColor: "text-red-600",
+  },
+  {
+    label: "Expiring Soon",
+    value: 387,
+    icon: Clock,
+    bgColor: "bg-amber-100",
+    iconColor: "text-amber-600",
+  },
+  {
+    label: "Valid MOT",
+    value: 1555,
+    icon: CheckCircle,
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
+  },
+];
 
 type ExpiryStatus = "all" | "expired" | "expired_soon" | "not_expired";
 type SortByExpiry = "asc" | "desc" | undefined;
@@ -289,6 +322,8 @@ function VehiclesManagementContent() {
         onSortByExpiryChange={handleSortByExpiryChange}
         onSendReminderClick={handleSendReminderClick}
       />
+
+      <AdminStatsCards stats={DUMMY_VEHICLE_STATS} />
 
       <div>
         <VehiclesManagementTable

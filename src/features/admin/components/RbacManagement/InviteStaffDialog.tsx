@@ -3,14 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, X, RefreshCw, UserRoundPlus } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,11 +46,12 @@ export function InviteStaffDialog({
   const availableRoles = roles.length > 0 ? roles : DEFAULT_ROLES;
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<
-    InviteCandidate | null
-  >(null);
-  const [roleId, setRoleId] = useState(availableRoles[1]?.id || availableRoles[0]?.id);
+  const [selectedUser, setSelectedUser] = useState<InviteCandidate | null>(
+    null,
+  );
+  const [roleId, setRoleId] = useState(
+    availableRoles[1]?.id || availableRoles[0]?.id,
+  );
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,17 +68,14 @@ export function InviteStaffDialog({
   const handleSelectUser = (userId: string) => {
     const user = INVITE_CANDIDATES.find((u) => u.id === userId) || null;
     setSelectedUser(user);
-    setSelectedUserId(userId);
     setSearchQuery("");
   };
 
-  const handleClose = (next: boolean) => {
-    if (!next) {
-      setSelectedUser(null);
-      setSelectedUserId(null);
-      setSearchQuery("");
-    }
-    onOpenChange(next);
+  const handleClose = () => {
+    if (isSubmitting) return;
+    setSelectedUser(null);
+    setSearchQuery("");
+    onOpenChange(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,7 +121,7 @@ export function InviteStaffDialog({
 
       onStaffInvited(newStaff);
       setIsSubmitting(false);
-      handleClose(false);
+      handleClose();
 
       toast.success(`Added ${selectedUser.name} to staff team!`, {
         description: `${selectedRole.name} • ${department}`,
@@ -139,29 +130,39 @@ export function InviteStaffDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md bg-white p-6 sm:rounded-lg">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-gray-900">
-            Add Staff Member
-          </DialogTitle>
-          <DialogDescription className="text-xs text-gray-500">
-            Search an existing user account to assign their staff role.
-          </DialogDescription>
-        </DialogHeader>
+    <CustomReusableModal
+      isOpen={open}
+      onClose={handleClose}
+      title="Add Staff Member"
+      showHeader={false}
+      hideClose={true}
+      className="flex max-w-md flex-col"
+      contentClassName="flex min-h-0 flex-col overflow-hidden p-0"
+    >
+      <div className="flex max-h-[90vh] min-h-0 flex-col overflow-hidden rounded-lg bg-white">
+        <div className="flex shrink-0 items-center justify-between bg-linear-to-r from-[#19CA32] to-[#16b82e] px-5 py-4 text-white shadow-md">
+          <div>
+            <h2 className="text-lg font-semibold">Add Staff Member</h2>
+            <p className="mt-0.5 text-xs text-white/90">
+              Search an existing user account to assign their staff role
+            </p>
+          </div>
+          <UserRoundPlus className="h-5 w-5 opacity-90" />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* User Selection Field */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 overflow-y-auto p-5"
+        >
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-gray-900">
+            <Label className="text-sm font-medium text-gray-700">
               User Account
             </Label>
 
             {selectedUser ? (
-              /* Selected User Chip */
-              <div className="flex items-center justify-between rounded-md border border-green-200/60 bg-green-50 p-2.5">
+              <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#19CA32] text-xs font-bold text-white">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#19CA32] text-xs font-bold text-white">
                     {selectedUser.name
                       .split(" ")
                       .map((n) => n[0])
@@ -183,17 +184,13 @@ export function InviteStaffDialog({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setSelectedUserId(null);
-                  }}
-                  className="h-7 text-xs font-medium text-gray-500 hover:text-gray-900"
+                  onClick={() => setSelectedUser(null)}
+                  className="h-8 cursor-pointer text-sm font-medium text-gray-500 hover:text-gray-900"
                 >
                   Change
                 </Button>
               </div>
             ) : (
-              /* User Search Input & Dropdown Results */
               <div className="space-y-1">
                 <div className="relative">
                   <Search
@@ -205,21 +202,20 @@ export function InviteStaffDialog({
                     placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10 rounded-md border-gray-200 pl-9 pr-8 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+                    className="h-11 rounded-md border-gray-300 pr-8 pl-9 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery("")}
-                      className="absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-500 hover:text-gray-900"
+                      className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-900"
                     >
                       <X size={14} />
                     </button>
                   )}
                 </div>
 
-                {/* Dropdown list of accounts */}
-                <div className="max-h-44 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xs">
+                <div className="max-h-44 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xs">
                   {filteredUsers.length === 0 ? (
                     <p className="p-3 text-center text-xs text-gray-500">
                       No user found with &ldquo;{searchQuery}&rdquo;.
@@ -227,7 +223,8 @@ export function InviteStaffDialog({
                   ) : (
                     filteredUsers.map((u) => {
                       const isAlreadyStaff = existingStaff.some(
-                        (s) => s.email.toLowerCase() === u.email.toLowerCase(),
+                        (s) =>
+                          s.email.toLowerCase() === u.email.toLowerCase(),
                       );
                       const initials = u.name
                         .split(" ")
@@ -239,7 +236,9 @@ export function InviteStaffDialog({
                       return (
                         <div
                           key={u.id}
-                          onClick={() => !isAlreadyStaff && handleSelectUser(u.id)}
+                          onClick={() =>
+                            !isAlreadyStaff && handleSelectUser(u.id)
+                          }
                           className={`flex cursor-pointer items-center justify-between p-2.5 transition-colors ${
                             isAlreadyStaff
                               ? "cursor-not-allowed bg-gray-50 opacity-50"
@@ -280,17 +279,16 @@ export function InviteStaffDialog({
             )}
           </div>
 
-          {/* Role and Department in 1 row, 2 columns with full width */}
           <div className="grid w-full grid-cols-2 gap-3">
             <div className="min-w-0 space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-900">Role</Label>
+              <Label className="text-sm font-medium text-gray-700">Role</Label>
               <Select value={roleId} onValueChange={setRoleId}>
-                <SelectTrigger className="h-10 w-full bg-white text-xs text-gray-900 focus:ring-[#19CA32]/20">
+                <SelectTrigger className="h-11 w-full border-gray-300 bg-white text-sm focus:ring-[#19CA32]/20">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
                   {availableRoles.map((r) => (
-                    <SelectItem key={r.id} value={r.id} className="text-xs">
+                    <SelectItem key={r.id} value={r.id}>
                       {r.name}
                     </SelectItem>
                   ))}
@@ -299,14 +297,16 @@ export function InviteStaffDialog({
             </div>
 
             <div className="min-w-0 space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-900">Department</Label>
+              <Label className="text-sm font-medium text-gray-700">
+                Department
+              </Label>
               <Select value={department} onValueChange={setDepartment}>
-                <SelectTrigger className="h-10 w-full bg-white text-xs text-gray-900 focus:ring-[#19CA32]/20">
+                <SelectTrigger className="h-11 w-full border-gray-300 bg-white text-sm focus:ring-[#19CA32]/20">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
                   {DEPARTMENTS.map((d) => (
-                    <SelectItem key={d} value={d} className="text-xs">
+                    <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
                   ))}
@@ -315,36 +315,36 @@ export function InviteStaffDialog({
             </div>
           </div>
 
-          {/* Action Buttons with generous gap */}
-          <DialogFooter className="flex flex-row items-center justify-end gap-3 pt-3 sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleClose(false)}
-              className="h-9 cursor-pointer px-4 text-xs font-medium"
-            >
-              Cancel
-            </Button>
+          <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
             <Button
               type="submit"
               disabled={!selectedUser || isSubmitting}
-              className="h-9 cursor-pointer bg-[#19CA32] px-4 text-xs font-semibold text-white shadow-xs hover:bg-green-600"
+              className="h-11 cursor-pointer rounded-lg bg-linear-to-r from-[#19CA32] to-[#16b82e] font-semibold text-white shadow-md hover:opacity-95 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
-                  <RefreshCw size={13} className="mr-1.5 animate-spin" />
+                  <RefreshCw size={14} className="mr-1.5 animate-spin" />
                   Adding...
                 </>
               ) : (
                 <>
-                  <UserRoundPlus size={13} className="mr-1.5" />
-                  Add Staff Member
+                  <UserRoundPlus size={14} className="mr-1.5" />
+                  Add Staff
                 </>
               )}
             </Button>
-          </DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="h-11 cursor-pointer rounded-lg font-semibold"
+            >
+              Cancel
+            </Button>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </CustomReusableModal>
   );
 }

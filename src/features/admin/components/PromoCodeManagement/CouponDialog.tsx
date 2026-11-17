@@ -1,15 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Sparkles, Ticket } from "lucide-react";
+import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,194 +113,190 @@ function CouponForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      {/* Code with Generator */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-gray-900">
-          Coupon Code <span className="text-rose-500">*</span>
-        </Label>
-        <div className="flex gap-2">
-          <Input
-            autoFocus
-            placeholder="e.g. FLASH20, SUMMER50"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            className="font-mono text-sm uppercase focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleGenerateCode}
-            className="h-10 shrink-0 text-xs font-semibold"
-          >
-            <Sparkles size={13} className="mr-1 text-[#19CA32]" /> Auto Code
-          </Button>
-        </div>
-      </div>
-
-      {/* Type & Value */}
-      <div className="grid w-full grid-cols-2 gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">Discount Type</Label>
-          <Select
-            value={discountType}
-            onValueChange={(val) => setDiscountType(val as CouponDiscountType)}
-          >
-            <SelectTrigger className="h-10 w-full bg-white text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="percentage" className="text-xs">
-                Percentage (%)
-              </SelectItem>
-              <SelectItem value="fixed" className="text-xs">
-                Fixed Amount (£)
-              </SelectItem>
-            </SelectContent>
-          </Select>
+    <form
+      onSubmit={handleSubmit}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-gray-700">
+            Coupon Code <span className="text-red-500">*</span>
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              autoFocus
+              placeholder="e.g. FLASH20, SUMMER50"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              className="h-11 font-mono text-sm uppercase focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGenerateCode}
+              className="h-11 shrink-0 cursor-pointer text-sm font-semibold"
+            >
+              <Sparkles size={14} className="mr-1 text-[#19CA32]" /> Auto Code
+            </Button>
+          </div>
         </div>
 
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">
-            Discount Value {discountType === "percentage" ? "(%)" : "(£)"}
+        <div className="grid w-full grid-cols-2 gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Discount Type
+            </Label>
+            <Select
+              value={discountType}
+              onValueChange={(val) =>
+                setDiscountType(val as CouponDiscountType)
+              }
+            >
+              <SelectTrigger className="h-11 w-full border-gray-300 bg-white text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="percentage">Percentage (%)</SelectItem>
+                <SelectItem value="fixed">Fixed Amount (£)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Discount Value {discountType === "percentage" ? "(%)" : "(£)"}
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              max={discountType === "percentage" ? "100" : undefined}
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+          </div>
+        </div>
+
+        <div className="grid w-full grid-cols-2 gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Minimum Spend (£)
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              value={minSpend}
+              onChange={(e) => setMinSpend(e.target.value)}
+              placeholder="0"
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+          </div>
+
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Max Discount (£){" "}
+              <span className="font-normal text-gray-400">(Optional)</span>
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              value={maxDiscount}
+              onChange={(e) => setMaxDiscount(e.target.value)}
+              placeholder="No cap"
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+          </div>
+        </div>
+
+        <div className="grid w-full grid-cols-2 gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Start Date
+            </Label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+          </div>
+
+          <div className="min-w-0 space-y-1.5">
+            <Label className="text-sm font-medium text-gray-700">
+              Expiry Date
+            </Label>
+            <Input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-gray-700">
+            Total Usage Limit
           </Label>
           <Input
             type="number"
             min="1"
-            max={discountType === "percentage" ? "100" : undefined}
-            value={discountValue}
-            onChange={(e) => setDiscountValue(e.target.value)}
-            className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+            value={usageLimit}
+            onChange={(e) => setUsageLimit(e.target.value)}
+            className="h-11 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
           />
         </div>
-      </div>
 
-      {/* Min Spend & Max Discount */}
-      <div className="grid w-full grid-cols-2 gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">
-            Minimum Spend (£)
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-gray-700">
+            Campaign Description
           </Label>
-          <Input
-            type="number"
-            min="0"
-            value={minSpend}
-            onChange={(e) => setMinSpend(e.target.value)}
-            placeholder="0"
-            className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
+          <Textarea
+            rows={2}
+            placeholder="e.g. 15% promotional discount on MOT bookings"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="h-20 resize-none text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
           />
         </div>
 
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">
-            Max Discount (£){" "}
-            <span className="font-normal text-muted-foreground">(Optional)</span>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-gray-700">
+            Coupon Status
           </Label>
-          <Input
-            type="number"
-            min="0"
-            value={maxDiscount}
-            onChange={(e) => setMaxDiscount(e.target.value)}
-            placeholder="No cap"
-            className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-          />
+          <Select
+            value={status}
+            onValueChange={(val) => setStatus(val as CouponStatus)}
+          >
+            <SelectTrigger className="h-11 w-full border-gray-300 bg-white text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Scheduled">Scheduled</SelectItem>
+              <SelectItem value="Expired">Expired</SelectItem>
+              <SelectItem value="Disabled">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* Dates: Start Date & Expiry Date */}
-      <div className="grid w-full grid-cols-2 gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">Start Date</Label>
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-          />
-        </div>
-
-        <div className="min-w-0 space-y-1.5">
-          <Label className="text-xs font-semibold text-gray-900">Expiry Date</Label>
-          <Input
-            type="date"
-            value={expiryDate}
-            onChange={(e) => setExpiryDate(e.target.value)}
-            className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-          />
-        </div>
-      </div>
-
-      {/* Usage Limit */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-gray-900">
-          Total Usage Limit
-        </Label>
-        <Input
-          type="number"
-          min="1"
-          value={usageLimit}
-          onChange={(e) => setUsageLimit(e.target.value)}
-          className="h-10 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-        />
-      </div>
-
-      {/* Description */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-gray-900">
-          Campaign Description
-        </Label>
-        <Textarea
-          rows={2}
-          placeholder="e.g. 15% promotional discount on MOT bookings"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="text-xs focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-        />
-      </div>
-
-      {/* Status */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-gray-900">Coupon Status</Label>
-        <Select
-          value={status}
-          onValueChange={(val) => setStatus(val as CouponStatus)}
+      <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-gray-200 bg-white px-5 py-4">
+        <Button
+          type="submit"
+          className="h-11 cursor-pointer rounded-lg bg-linear-to-r from-[#19CA32] to-[#16b82e] font-semibold text-white shadow-md hover:opacity-95"
         >
-          <SelectTrigger className="h-10 w-full bg-white text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="Active" className="text-xs">
-              Active
-            </SelectItem>
-            <SelectItem value="Scheduled" className="text-xs">
-              Scheduled
-            </SelectItem>
-            <SelectItem value="Expired" className="text-xs">
-              Expired
-            </SelectItem>
-            <SelectItem value="Disabled" className="text-xs">
-              Disabled
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <DialogFooter className="flex flex-row items-center justify-end gap-3 pt-3 sm:gap-3">
+          {couponToEdit ? "Update Coupon" : "Create Coupon"}
+        </Button>
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="h-9 px-4 text-xs font-medium"
+          className="h-11 cursor-pointer rounded-lg font-semibold"
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          className="h-9 cursor-pointer bg-[#19CA32] px-4 text-xs font-semibold text-white shadow-xs hover:bg-green-600"
-        >
-          {couponToEdit ? "Update Coupon" : "Create Coupon"}
-        </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }
@@ -318,17 +307,30 @@ export function CouponDialog({
   couponToEdit,
   onSaveCoupon,
 }: CouponDialogProps) {
+  const handleClose = () => onOpenChange(false);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-white p-6 sm:rounded-lg">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-gray-900">
-            {couponToEdit ? "Edit Coupon" : "Create New Coupon"}
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Set discount value, campaign restrictions, and active validity dates.
-          </DialogDescription>
-        </DialogHeader>
+    <CustomReusableModal
+      isOpen={open}
+      onClose={handleClose}
+      title={couponToEdit ? "Edit Coupon" : "Create New Coupon"}
+      showHeader={false}
+      hideClose={true}
+      className="flex max-h-[min(90dvh,calc(100vh-2rem))] max-w-2xl flex-col"
+      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white">
+        <div className="flex shrink-0 items-center justify-between bg-linear-to-r from-[#19CA32] to-[#16b82e] px-5 py-4 text-white shadow-md">
+          <div>
+            <h2 className="text-lg font-semibold">
+              {couponToEdit ? "Edit Coupon" : "Create New Coupon"}
+            </h2>
+            <p className="mt-0.5 text-xs text-white/90">
+              Set discount value, restrictions, and validity dates
+            </p>
+          </div>
+          <Ticket className="h-5 w-5 opacity-90" />
+        </div>
 
         {open && (
           <CouponForm
@@ -336,12 +338,12 @@ export function CouponDialog({
             couponToEdit={couponToEdit}
             onSaveCoupon={(data) => {
               onSaveCoupon(data);
-              onOpenChange(false);
+              handleClose();
             }}
-            onCancel={() => onOpenChange(false)}
+            onCancel={handleClose}
           />
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </CustomReusableModal>
   );
 }

@@ -7,17 +7,55 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import {
+  CalendarCheck,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from "lucide-react";
+import {
   useGetAllBookingsQuery,
   useCancelBookingMutation,
   BookingManagementHeader,
   BookingManagementTable,
   ViewDriverDetailsModal,
   ViewBookingGarageModal,
+  AdminStatsCards,
   type AdminBooking,
   type AdminBookingCustomer,
   type AdminBookingGarage,
   type Driver,
 } from "@/features/admin";
+
+const DUMMY_BOOKING_STATS = [
+  {
+    label: "Total Bookings",
+    value: 1842,
+    icon: CalendarCheck,
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
+  },
+  {
+    label: "Completed",
+    value: 1264,
+    icon: CheckCircle,
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
+  },
+  {
+    label: "Pending",
+    value: 318,
+    icon: Clock,
+    bgColor: "bg-amber-100",
+    iconColor: "text-amber-600",
+  },
+  {
+    label: "Cancelled",
+    value: 260,
+    icon: XCircle,
+    bgColor: "bg-red-100",
+    iconColor: "text-red-600",
+  },
+];
 import {
   RescheduleBookingModal,
   CancelBookingModal,
@@ -279,6 +317,8 @@ function ManageBookingsContent() {
         onSearchChange={handleSearchChange}
         onFilterStatusChange={handleFilterStatusChange}
       />
+
+      <AdminStatsCards stats={DUMMY_BOOKING_STATS} />
 
       {/* 2. Direct data rendering: Table and pagination joined with zero gap */}
       <div>

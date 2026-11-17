@@ -6,14 +6,47 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
+import { Users, CheckCircle, Ban, Car } from "lucide-react";
 import {
   useGetAllDriversQuery,
   useToggleBanDriverMutation,
   DriverManagementHeader,
   DriverManagementTable,
   ViewDriverDetailsModal,
+  AdminStatsCards,
   type Driver,
 } from "@/features/admin";
+
+const DUMMY_DRIVER_STATS = [
+  {
+    label: "Total Drivers",
+    value: 642,
+    icon: Users,
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
+  },
+  {
+    label: "Active",
+    value: 581,
+    icon: CheckCircle,
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
+  },
+  {
+    label: "Banned",
+    value: 61,
+    icon: Ban,
+    bgColor: "bg-red-100",
+    iconColor: "text-red-600",
+  },
+  {
+    label: "With Vehicles",
+    value: 498,
+    icon: Car,
+    bgColor: "bg-purple-100",
+    iconColor: "text-purple-600",
+  },
+];
 
 function parseDateParam(dateStr: string | null): Date | undefined {
   if (!dateStr) return undefined;
@@ -207,6 +240,8 @@ function ManageDriversContent() {
         onSearchChange={handleSearchChange}
         onFilterStatusChange={handleFilterStatusChange}
       />
+
+      <AdminStatsCards stats={DUMMY_DRIVER_STATS} />
 
       {/* 2. Direct data rendering: Table and pagination joined with zero gap */}
       <div>

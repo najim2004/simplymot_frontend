@@ -52,6 +52,9 @@ export { default as MigrationTab } from "./components/SubscriptionsManagement/co
 export { default as JobsTab } from "./components/SubscriptionsManagement/components/JobsTab";
 export { default as GarageSubscriptionsTab } from "./components/SubscriptionsManagement/components/GarageSubscriptionsTab";
 
+export { AdminStatsCards } from "./components/shared/AdminStatsCards";
+export type { AdminStatItem } from "./components/shared/AdminStatsCards";
+
 export { GarageManagementHeader } from "./components/GarageManagement/GarageManagementHeader";
 export { GarageManagementTable } from "./components/GarageManagement/GarageManagementTable";
 export { ViewOwnerDetailsModal } from "./components/GarageManagement/ViewOwnerDetailsModal";
@@ -79,3 +82,8 @@ export { CouponDialog } from "./components/PromoCodeManagement/CouponDialog";
 export { TablePagination } from "./components/PromoCodeManagement/TablePagination";
 export { INITIAL_COUPONS } from "./components/PromoCodeManagement/data";
 export type { DiscountCoupon, CouponStatus, CouponDiscountType } from "./components/PromoCodeManagement/types";
+
+export { InquiriesManagementPage } from "./components/InquiriesManagement/InquiriesManagementPage";
+export { InquiryDetailModal } from "./components/InquiriesManagement/InquiryDetailModal";
+export { INITIAL_INQUIRIES } from "./components/InquiriesManagement/data";
+export type { ContactInquiry, InquiryStatus } from "./components/InquiriesManagement/types";

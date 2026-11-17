@@ -7,13 +7,51 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import {
+  Warehouse,
+  Eye,
+  EyeOff,
+  CheckCircle,
+} from "lucide-react";
+import {
   useGetAllGaragesQuery,
   useToggleGarageVisibilityMutation,
   GarageManagementHeader,
   GarageManagementTable,
   ViewOwnerDetailsModal,
+  AdminStatsCards,
   type Garage,
 } from "@/features/admin";
+
+const DUMMY_GARAGE_STATS = [
+  {
+    label: "Total Garages",
+    value: 128,
+    icon: Warehouse,
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
+  },
+  {
+    label: "Visible",
+    value: 96,
+    icon: Eye,
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
+  },
+  {
+    label: "Hidden",
+    value: 32,
+    icon: EyeOff,
+    bgColor: "bg-amber-100",
+    iconColor: "text-amber-600",
+  },
+  {
+    label: "Active Owners",
+    value: 84,
+    icon: CheckCircle,
+    bgColor: "bg-purple-100",
+    iconColor: "text-purple-600",
+  },
+];
 
 function parseDateParam(dateStr: string | null): Date | undefined {
   if (!dateStr) return undefined;
@@ -208,6 +246,8 @@ function ManageGaragesContent() {
         onSearchChange={handleSearchChange}
         onFilterStatusChange={handleFilterStatusChange}
       />
+
+      <AdminStatsCards stats={DUMMY_GARAGE_STATS} />
 
       {/* 2. Direct data rendering: Table and pagination joined with zero gap */}
       <div>

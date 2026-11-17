@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useCreateRoleMutation, useUpdateRoleMutation } from "@/features/admin";
 import { useGetRoleByIdQuery } from "@/features/admin";;;
-import { toast } from 'react-toastify';
+import { toast } from "sonner";
 
 interface CreateRoleModalProps {
     open: boolean;

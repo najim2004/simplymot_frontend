@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import AutoReminder from "./AutoRemainder";
 import { useAutoReminderSettings } from "./useAutoReminder";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 interface MotReminderSectionProps {
   selectedRowsCount: number;

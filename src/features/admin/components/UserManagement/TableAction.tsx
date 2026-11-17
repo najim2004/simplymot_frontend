@@ -33,7 +33,7 @@ import {
 } from "@/features/admin";
 import { useAppDispatch } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import UserBanModal from "./UserBanModal";
 import AssignRolesConfirmModal from "./AssignRolesConfirmModal";
 import AssignRolesResultModal from "./AssignRolesResultModal";

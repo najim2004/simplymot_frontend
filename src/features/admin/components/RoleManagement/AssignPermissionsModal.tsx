@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAssignPermissionsToRoleMutation, useGetPermissionsQuery } from "@/features/admin";
 import { useGetRoleByIdQuery } from "@/features/admin";;;
 import { Shield, Plus, Minus, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast } from "sonner";
 import type { Permission } from '@/features/admin';
 
 interface AssignPermissionsModalProps {

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Database, Mail, ArrowRight, BarChart3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-toastify';
+import { toast } from "sonner";
 import {
   useGetMigrationStatusQuery,
   useGetMigrationSummaryQuery,

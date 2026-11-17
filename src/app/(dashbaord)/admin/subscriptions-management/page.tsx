@@ -9,7 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   TCreateSubscription,
   useCreateASubscriptionMutation,
@@ -116,7 +116,7 @@ export default function SubscriptionsManagement() {
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-106.25">
               <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>Add Subscription</DialogTitle>
@@ -316,7 +316,7 @@ export default function SubscriptionsManagement() {
                         const IconComponent = feature.icon;
                         return (
                           <div key={index} className="flex items-start gap-3">
-                            <IconComponent className="h-5 w-5 text-black mt-0.5 flex-shrink-0 stroke-1" />
+                            <IconComponent className="h-5 w-5 text-black mt-0.5 shrink-0 stroke-1" />
                             <span className="text-sm text-black">
                               {feature.text}
                             </span>

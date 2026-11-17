@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Loader2, Play, X, Calendar, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-toastify';
+import { toast } from "sonner";
 import {
   useGetMigrationJobsQuery,
   useGetMigrationJobDetailsQuery,

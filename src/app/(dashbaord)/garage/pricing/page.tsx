@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 export default function PricingPage() {
   // 1. Get Garage Profile to extract Garage ID

@@ -9,7 +9,7 @@ import { useCreateUserMutation, useUpdateUserMutation, useGetUserByIdQuery, useG
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import RoleList from "./RoleList";
 import { Eye, EyeOff, Pencil } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import ProfileImageUpload from "@/components/reusable/Common/CommonImage";
 
 interface CreateNewUserProps {

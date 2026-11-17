@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Clock } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -114,7 +114,7 @@ export default function RescheduleBookingModal({
     if (!booking) return;
 
     if (!selectedSlot) {
-      toast.warn("Please select an available time slot");
+      toast.warning("Please select an available time slot");
       return;
     }
 

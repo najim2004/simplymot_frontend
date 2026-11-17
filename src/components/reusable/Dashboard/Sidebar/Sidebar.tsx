@@ -22,7 +22,7 @@ import {
   HiHome,
 } from "react-icons/hi";
 import { HiArrowRightOnRectangle } from "react-icons/hi2";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import {
   LayoutGrid,
   Building2,
@@ -33,6 +33,7 @@ import {
   User,
   Tags,
   Star,
+  ShieldCheck,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout as logoutAction } from "@/features/auth/store/auth.slice";
@@ -193,9 +194,9 @@ export default function Sidebar({ onClose }: SidebarProps) {
       role: "admin",
     },
     {
-      icon: User,
-      label: "Role Management",
-      href: "/admin/roles-management",
+      icon: ShieldCheck,
+      label: "RBAC & Roles",
+      href: "/admin/rbac",
       role: "admin",
     },
     {

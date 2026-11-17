@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2, X } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import ReusableTable from "@/components/reusable/Dashboard/Table/ReuseableTable";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";

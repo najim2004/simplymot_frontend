@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, Trash2 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { updateSubscriptionStatus } from "../store";
 import type { CurrentSubscription } from "../types";
 

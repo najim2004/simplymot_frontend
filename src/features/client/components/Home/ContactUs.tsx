@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import LargeButtonReuseable from "@/components/reusable/LargeButtonReuseable";
 import { useCreateContactMessageMutation } from "@/features/contact";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 interface ContactFormData {
   name: string;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, ShieldCheck, Clock, Loader2 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { MotGroup, ServiceItem } from "../types";
 import { useDeleteServiceMutation } from "../api/garage.api";
 

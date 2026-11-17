@@ -5,7 +5,6 @@ import { AppConfig } from "@/config/app.config";
 import { Inter, Inder, Nunito_Sans } from "next/font/google";
 import { ReduxProvider } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
-import CustomToastContainer from "@/components/CustomToast/CustomToastContainer";
 
 export const metadata: Metadata = {
   title: AppConfig().app.meta.title,
@@ -72,7 +71,6 @@ export default function RootLayout({
       <body className={inter.className}>
         <ReduxProvider>
           <Toaster richColors position="top-right" />
-          <CustomToastContainer />
           {children}
         </ReduxProvider>
         {awinAdvertiserId ? (

@@ -1,21 +1,22 @@
-import { toast as reactToastify } from "react-toastify"
+import { toast as sonnerToast } from "sonner";
 
 interface ToastOptions {
-  title?: string
-  description?: string
-  variant?: "default" | "destructive"
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
 }
 
 export function useToast() {
   const toast = ({ title, description, variant = "default" }: ToastOptions) => {
-    const message = title && description ? `${title}: ${description}` : title || description || ""
-    
-    if (variant === "destructive") {
-      reactToastify.error(message)
-    } else {
-      reactToastify.success(message)
-    }
-  }
+    const message = title || description || "";
+    const options = title && description ? { description } : undefined;
 
-  return { toast }
+    if (variant === "destructive") {
+      sonnerToast.error(message, options);
+    } else {
+      sonnerToast.success(message, options);
+    }
+  };
+
+  return { toast };
 }

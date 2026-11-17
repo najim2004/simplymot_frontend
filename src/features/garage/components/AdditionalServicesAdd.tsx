@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Loader2, Layers, Wrench } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { ServiceItem } from "../types";
 import { useDeleteServiceMutation } from "../api/garage.api";
 

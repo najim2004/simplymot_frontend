@@ -63,3 +63,19 @@ export { ViewDriverDetailsModal } from "./components/DriverManagement/ViewDriver
 export { BookingManagementHeader } from "./components/BookingManagement/BookingManagementHeader";
 export { BookingManagementTable } from "./components/BookingManagement/BookingManagementTable";
 export { ViewBookingGarageModal } from "./components/BookingManagement/ViewBookingGarageModal";
+
+export { AdminRbacPage } from "./components/RbacManagement/AdminRbacPage";
+export { RbacStats } from "./components/RbacManagement/RbacStats";
+export { StaffTable } from "./components/RbacManagement/StaffTable";
+export { RolesMatrix } from "./components/RbacManagement/RolesMatrix";
+export { AuditLogsTable } from "./components/RbacManagement/AuditLogsTable";
+export { InviteStaffDialog } from "./components/RbacManagement/InviteStaffDialog";
+export { CreateRoleDialog } from "./components/RbacManagement/CreateRoleDialog";
+export { PERMISSION_GROUPS, ALL_PERMISSION_KEYS, DEFAULT_ROLES, RBAC_STATS, INITIAL_STAFF_MEMBERS, INITIAL_AUDIT_LOGS } from "./components/RbacManagement/data";
+export type { PermissionKey, StaffMember, RoleItem, RbacAuditLog, RbacStat, PermissionGroup, PermissionDefinition, InviteCandidate } from "./components/RbacManagement/types";
+
+export { AdminPromoCodesPage } from "./components/PromoCodeManagement/AdminPromoCodesPage";
+export { CouponDialog } from "./components/PromoCodeManagement/CouponDialog";
+export { TablePagination } from "./components/PromoCodeManagement/TablePagination";
+export { INITIAL_COUPONS } from "./components/PromoCodeManagement/data";
+export type { DiscountCoupon, CouponStatus, CouponDiscountType } from "./components/PromoCodeManagement/types";

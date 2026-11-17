@@ -20,7 +20,7 @@ import {
   useValidatePromoCodeMutation,
   ValidatedPromoData,
 } from "@/features/subscriptions";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isTestSubscriptionPlanName } from "@/config/test-subscription-plan.config";
 

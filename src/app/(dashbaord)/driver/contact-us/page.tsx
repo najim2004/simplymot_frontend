@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useCreateContactMessageMutation } from "@/features/contact";
 import { useAppSelector } from "@/store/hooks";

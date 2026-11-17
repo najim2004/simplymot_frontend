@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { format } from "date-fns";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";

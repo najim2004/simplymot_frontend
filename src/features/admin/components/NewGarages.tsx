@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 // import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
-// import { toast } from "react-toastify";
+// import { toast } from "sonner";
 import Link from "next/link";
 import {
   useGetAllGaragesQuery,

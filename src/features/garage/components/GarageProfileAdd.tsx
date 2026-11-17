@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Pencil, X, Tag, Camera, Check } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import Image from "next/image";
 import { DEFAULT_GARAGE_AVATAR_SRC } from "@/lib/garage-assets";
 

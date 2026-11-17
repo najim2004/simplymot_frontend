@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import ConfirmationModal from "@/components/reusable/ConfirmationModal";
 import {
   useGetVehiclesQuery,

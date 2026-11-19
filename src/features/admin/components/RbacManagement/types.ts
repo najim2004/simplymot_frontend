@@ -89,15 +89,6 @@ export interface RbacAuditLog {
   status: "Success" | "Warning" | "Failed";
 }
 
-export interface RbacStat {
-  label: string;
-  value: string;
-  change: string;
-  up: boolean;
-  icon: LucideIcon;
-  accent?: boolean;
-  subtext: string;
-}
 
 export interface InviteCandidate {
   id: string;

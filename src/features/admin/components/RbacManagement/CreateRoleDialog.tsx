@@ -73,7 +73,7 @@ export function CreateRoleDialog({
       title="Create Custom Role"
       showHeader={false}
       hideClose={true}
-      className="flex max-w-md flex-col"
+      className="flex max-w-xl flex-col"
       contentClassName="flex min-h-0 flex-col overflow-hidden p-0"
     >
       <div className="flex max-h-[90vh] min-h-0 flex-col overflow-hidden rounded-lg bg-white">

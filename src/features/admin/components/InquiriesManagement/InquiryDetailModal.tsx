@@ -212,7 +212,11 @@ export function InquiryDetailModal({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
+            <div
+              className={`grid gap-3 border-t border-gray-200 pt-3 ${
+                inquiry.status !== "Resolved" ? "grid-cols-3" : "grid-cols-2"
+              }`}
+            >
               <Button
                 type="submit"
                 disabled={isSending}
@@ -221,7 +225,7 @@ export function InquiryDetailModal({
                 <Send size={14} className="mr-1.5" />
                 {isSending ? "Sending..." : "Send Reply"}
               </Button>
-              {inquiry.status !== "Resolved" ? (
+              {inquiry.status !== "Resolved" && (
                 <Button
                   type="button"
                   variant="outline"
@@ -236,16 +240,16 @@ export function InquiryDetailModal({
                 >
                   <CheckCircle2 size={14} className="mr-1.5" /> Mark Resolved
                 </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  className="h-11 cursor-pointer rounded-lg font-semibold"
-                >
-                  Close
-                </Button>
               )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSending}
+                className="h-11 cursor-pointer rounded-lg font-semibold"
+              >
+                Close
+              </Button>
             </div>
           </form>
         </div>

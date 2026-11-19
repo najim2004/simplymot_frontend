@@ -75,7 +75,7 @@ export { AuditLogsTable } from "./components/RbacManagement/AuditLogsTable";
 export { InviteStaffDialog } from "./components/RbacManagement/InviteStaffDialog";
 export { CreateRoleDialog } from "./components/RbacManagement/CreateRoleDialog";
 export { PERMISSION_GROUPS, ALL_PERMISSION_KEYS, DEFAULT_ROLES, RBAC_STATS, INITIAL_STAFF_MEMBERS, INITIAL_AUDIT_LOGS } from "./components/RbacManagement/data";
-export type { PermissionKey, StaffMember, RoleItem, RbacAuditLog, RbacStat, PermissionGroup, PermissionDefinition, InviteCandidate } from "./components/RbacManagement/types";
+export type { PermissionKey, StaffMember, RoleItem, RbacAuditLog, PermissionGroup, PermissionDefinition, InviteCandidate } from "./components/RbacManagement/types";
 
 export { AdminPromoCodesPage } from "./components/PromoCodeManagement/AdminPromoCodesPage";
 export { CouponDialog } from "./components/PromoCodeManagement/CouponDialog";

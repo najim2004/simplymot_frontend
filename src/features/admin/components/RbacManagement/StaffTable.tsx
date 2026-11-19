@@ -1,22 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  MoreHorizontal,
+  MoreVertical,
   ShieldCheck,
   UserCheck,
   UserX,
   Lock,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Download,
-  UserPlus,
+  Eye,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -34,19 +29,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
 import type { StaffMember, RoleItem } from "./types";
 
 interface StaffTableProps {
   staffList: StaffMember[];
   roles: RoleItem[];
-  onOpenInviteDialog: () => void;
+  searchQuery: string;
+  roleFilter: string;
+  onViewStaff: (staff: StaffMember) => void;
   onToggleStaffStatus: (staff: StaffMember) => void;
   onChangeStaffRole: (staff: StaffMember, roleId: string) => void;
   onRemoveStaff: (staff: StaffMember) => void;
@@ -55,18 +46,22 @@ interface StaffTableProps {
 export function StaffTable({
   staffList,
   roles,
-  onOpenInviteDialog,
+  searchQuery,
+  roleFilter,
+  onViewStaff,
   onToggleStaffStatus,
   onChangeStaffRole,
   onRemoveStaff,
 }: StaffTableProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter]);
+
   const filteredStaff = staffList.filter((s) => {
-    const matchesRole = roleFilter === "All" || s.roleId === roleFilter;
+    const matchesRole = roleFilter === "all" || s.roleId === roleFilter;
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !query ||
@@ -83,120 +78,59 @@ export function StaffTable({
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+  const hasPagination = filteredStaff.length > 0;
 
-  const startItem =
-    filteredStaff.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, filteredStaff.length);
-
-  return (
-    <div className="space-y-0">
-      {/* Table Filter & Search Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-4">
-        {/* Search */}
-        <div className="relative min-w-64 flex-1">
-          <Search
-            size={16}
-            className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-          />
-          <Input
-            placeholder="Search by staff name, email, department..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-10 rounded-md pl-9 text-sm focus-visible:border-[#19CA32] focus-visible:ring-[#19CA32]/20"
-          />
-        </div>
-
-        {/* Filter by Role & Export Button */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={roleFilter}
-            onValueChange={(val) => {
-              setRoleFilter(val);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="h-10 w-48 rounded-md border-gray-200 bg-white text-sm font-medium text-gray-900 focus:ring-[#19CA32]/20">
-              <SelectValue placeholder="All Roles" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="All" className="text-xs">
-                All Roles ({staffList.length})
-              </SelectItem>
-              {roles.map((r) => (
-                <SelectItem key={r.id} value={r.id} className="text-xs">
-                  {r.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-10 rounded-md border-gray-200 text-sm font-medium hover:bg-green-50"
-          >
-            <Download size={14} className="mr-1.5" /> Export Team
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={onOpenInviteDialog}
-            className="h-10 cursor-pointer rounded-md bg-[#19CA32] text-sm font-semibold text-white shadow-xs hover:bg-green-600"
-          >
-            <UserPlus size={14} className="mr-1.5" /> Add Staff
-          </Button>
+  if (filteredStaff.length === 0) {
+    return (
+      <div className="flex min-h-100 items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">No team members found</p>
+          <p className="mt-2 text-sm text-gray-500">
+            Adjust your filters or invite a new staff member
+          </p>
         </div>
       </div>
+    );
+  }
 
-      {/* Staff Table */}
-      <Table>
-        <TableHeader className="bg-gray-50">
-          <TableRow className="border-gray-100 hover:bg-transparent">
-            <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Staff Member
-            </TableHead>
-            <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Assigned Role
-            </TableHead>
-            <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Department
-            </TableHead>
-            <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Status
-            </TableHead>
-            <TableHead className="px-4 py-3.5 text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Last Active
-            </TableHead>
-            <TableHead className="px-4 py-3.5 text-right text-xs font-semibold tracking-wider uppercase text-gray-500">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody className="divide-y divide-gray-100">
-          {paginatedStaff.length === 0 ? (
+  return (
+    <div>
+      <div
+        className={`overflow-x-auto border border-gray-300 bg-white ${
+          hasPagination ? "rounded-t-lg" : "rounded-lg"
+        }`}
+      >
+        <Table>
+          <TableHeader className="bg-gray-50">
             <TableRow>
-              <TableCell
-                colSpan={6}
-                className="h-32 text-center text-sm text-gray-500"
-              >
-                No team members found matching your search.
-              </TableCell>
+              <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Staff Member
+              </TableHead>
+              <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Assigned Role
+              </TableHead>
+              <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Department
+              </TableHead>
+              <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Status
+              </TableHead>
+              <TableHead className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Last Active
+              </TableHead>
+              <TableHead className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                Actions
+              </TableHead>
             </TableRow>
-          ) : (
-            paginatedStaff.map((staff) => {
+          </TableHeader>
+
+          <TableBody className="divide-y divide-gray-200">
+            {paginatedStaff.map((staff) => {
               const roleObj = roles.find((r) => r.id === staff.roleId);
 
               return (
-                <TableRow
-                  key={staff.id}
-                  className="border-gray-100 transition-colors hover:bg-green-50/40"
-                >
-                  {/* Member Name + Avatar */}
-                  <TableCell className="px-4 py-3.5">
+                <TableRow key={staff.id} className="hover:bg-gray-50">
+                  <TableCell className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#DDF7E0] text-xs font-bold text-[#19CA32]">
                         {staff.avatar || staff.name.slice(0, 2).toUpperCase()}
@@ -205,15 +139,12 @@ export function StaffTable({
                         <div className="text-sm font-medium text-gray-900">
                           {staff.name}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {staff.email}
-                        </div>
+                        <div className="text-xs text-gray-500">{staff.email}</div>
                       </div>
                     </div>
                   </TableCell>
 
-                  {/* Assigned Role */}
-                  <TableCell className="px-4 py-3.5">
+                  <TableCell className="px-6 py-4">
                     <Badge
                       variant="outline"
                       className={`rounded-md border px-2.5 py-0.5 text-xs font-medium ${
@@ -225,42 +156,40 @@ export function StaffTable({
                     </Badge>
                   </TableCell>
 
-                  {/* Department */}
-                  <TableCell className="px-4 py-3.5 text-sm text-gray-500">
+                  <TableCell className="px-6 py-4 text-sm text-gray-500">
                     {staff.department}
                   </TableCell>
 
-                  {/* Status */}
-                  <TableCell className="px-4 py-3.5">
+                  <TableCell className="px-6 py-4">
                     <Badge
                       variant="outline"
-                      className={`rounded-md border px-2.5 py-0.5 text-xs font-medium ${
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                         staff.status === "Active"
-                          ? "border-emerald-200/80 bg-emerald-50 text-emerald-700"
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
                           : staff.status === "Invited"
-                            ? "border-blue-200/80 bg-blue-50 text-blue-700"
-                            : "border-zinc-200/80 bg-zinc-100 text-zinc-700"
+                            ? "border-blue-200 bg-blue-100 text-blue-800"
+                            : "border-gray-200 bg-gray-100 text-gray-600"
                       }`}
                     >
                       {staff.status}
                     </Badge>
                   </TableCell>
 
-                  {/* Last Login */}
-                  <TableCell className="px-4 py-3.5 text-sm text-gray-500">
+                  <TableCell className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {staff.lastLogin}
                   </TableCell>
 
-                  {/* 3-Dot Dropdown Actions */}
-                  <TableCell className="px-4 py-3.5 text-right">
+                  <TableCell className="px-6 py-4 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
-                          title="Actions"
-                          className="rounded-md p-1.5 text-gray-500 outline-hidden transition-colors hover:bg-green-50 hover:text-gray-900"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 cursor-pointer text-gray-500 hover:text-gray-900"
                         >
-                          <MoreHorizontal size={16} />
-                        </button>
+                          <MoreVertical size={16} />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
@@ -271,8 +200,28 @@ export function StaffTable({
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
 
-                        {/* Change Role */}
-                        <div className="px-2 py-1 text-[11px] font-semibold uppercase text-gray-500">
+                        <DropdownMenuItem
+                          onClick={() => onViewStaff(staff)}
+                          className="cursor-pointer text-xs font-medium"
+                        >
+                          <Eye size={14} className="mr-2" />
+                          View User
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            navigator.clipboard.writeText(staff.email);
+                            toast.success("Email copied to clipboard");
+                          }}
+                          className="cursor-pointer text-xs font-medium"
+                        >
+                          <Copy size={14} className="mr-2" />
+                          Copy Email
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <div className="px-2 py-1 text-[11px] font-semibold text-gray-500 uppercase">
                           Change Role to:
                         </div>
                         {roles.map((r) => (
@@ -292,7 +241,6 @@ export function StaffTable({
 
                         <DropdownMenuSeparator />
 
-                        {/* Toggle Status */}
                         <DropdownMenuItem
                           onClick={() => onToggleStaffStatus(staff)}
                           className="cursor-pointer text-xs"
@@ -320,7 +268,6 @@ export function StaffTable({
                           )}
                         </DropdownMenuItem>
 
-                        {/* Remove Access */}
                         <DropdownMenuItem
                           onClick={() => onRemoveStaff(staff)}
                           className="cursor-pointer text-xs text-rose-600 focus:bg-rose-50 focus:text-rose-600"
@@ -333,108 +280,22 @@ export function StaffTable({
                   </TableCell>
                 </TableRow>
               );
-            })
-          )}
-        </TableBody>
-      </Table>
-
-      {/* Pagination */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 p-4 text-xs text-gray-500">
-        <div>
-          Showing <span className="font-medium text-gray-900">{startItem}</span> to{" "}
-          <span className="font-medium text-gray-900">{endItem}</span> of{" "}
-          <span className="font-medium text-gray-900">{filteredStaff.length}</span>{" "}
-          staff members
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span>Rows per page:</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(val) => {
-                setPageSize(Number(val));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 w-18 rounded-md border-gray-200 bg-white text-xs text-gray-900 focus:ring-[#19CA32]/20">
-                <SelectValue placeholder={String(pageSize)} />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {[5, 10, 20].map((size) => (
-                  <SelectItem
-                    key={size}
-                    value={String(size)}
-                    className="text-xs"
-                  >
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 rounded-md border-gray-200 p-0 hover:bg-green-50 disabled:opacity-40"
-              title="First Page"
-            >
-              <ChevronsLeft size={14} />
-            </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 rounded-md border-gray-200 p-0 hover:bg-green-50 disabled:opacity-40"
-              title="Previous Page"
-            >
-              <ChevronLeft size={14} />
-            </Button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`h-8 min-w-8 cursor-pointer rounded-md px-2.5 text-xs font-medium transition-colors ${
-                  currentPage === page
-                    ? "bg-[#19CA32] font-semibold text-white shadow-xs"
-                    : "border border-gray-200 text-gray-500 hover:bg-green-50 hover:text-gray-900"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= totalPages || totalPages === 0}
-              className="h-8 w-8 rounded-md border-gray-200 p-0 hover:bg-green-50 disabled:opacity-40"
-              title="Next Page"
-            >
-              <ChevronRight size={14} />
-            </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage >= totalPages || totalPages === 0}
-              className="h-8 w-8 rounded-md border-gray-200 p-0 hover:bg-green-50 disabled:opacity-40"
-              title="Last Page"
-            >
-              <ChevronsRight size={14} />
-            </Button>
-          </div>
-        </div>
+            })}
+          </TableBody>
+        </Table>
       </div>
+
+      <ReusablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={pageSize}
+        totalItems={filteredStaff.length}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={(limit) => {
+          setPageSize(limit);
+          setCurrentPage(1);
+        }}
+      />
     </div>
   );
 }

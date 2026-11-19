@@ -6,4 +6,5 @@ export * from "./RolesMatrix";
 export * from "./AuditLogsTable";
 export * from "./InviteStaffDialog";
 export * from "./CreateRoleDialog";
+export * from "./ViewStaffModal";
 export * from "./AdminRbacPage";

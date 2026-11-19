@@ -13,7 +13,6 @@ import type {
   RoleItem,
   StaffMember,
   RbacAuditLog,
-  RbacStat,
   PermissionKey,
   InviteCandidate,
 } from "./types";
@@ -502,39 +501,34 @@ export const INITIAL_AUDIT_LOGS: RbacAuditLog[] = [
   },
 ];
 
-export const RBAC_STATS: RbacStat[] = [
+export const RBAC_STATS = [
   {
     label: "Admin & Staff Members",
-    value: "7",
-    change: "+2 this quarter",
-    up: true,
+    value: 7,
     icon: Users,
-    subtext: "Across 5 operational departments",
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
   },
   {
     label: "Configured Roles",
-    value: "6",
-    change: "100% role coverage",
-    up: true,
+    value: 6,
     icon: ShieldCheck,
-    accent: true,
-    subtext: "Granular access matrices active",
+    bgColor: "bg-green-100",
+    iconColor: "text-green-600",
   },
   {
     label: "Active Team Members",
-    value: "6 / 7",
-    change: "86% operational",
-    up: true,
+    value: 6,
     icon: UserCheck,
-    subtext: "6 active, 1 pending invitation",
+    bgColor: "bg-amber-100",
+    iconColor: "text-amber-600",
   },
   {
     label: "Audit Logs Logged",
     value: "1,248",
-    change: "0 security breaches",
-    up: true,
     icon: ShieldAlert,
-    subtext: "Complete immutable audit trail",
+    bgColor: "bg-purple-100",
+    iconColor: "text-purple-600",
   },
 ];
 

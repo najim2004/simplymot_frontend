@@ -168,30 +168,30 @@ export function BookingManagementTable({
       }`}
     >
       <Table className="w-full">
-        <TableHeader>
-          <TableRow className="border-b border-gray-200 bg-gray-50/50 hover:bg-gray-50/50">
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+        <TableHeader className="bg-gray-50">
+          <TableRow>
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Booking #
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Customer
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Garage
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Garage Owner
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Vehicle
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Slot
             </TableHead>
-            <TableHead className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
               Status
             </TableHead>
-            <TableHead className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+            <TableHead className="px-6 py-3 whitespace-nowrap text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
               Actions
             </TableHead>
           </TableRow>

@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useGetUserByIdQuery } from "@/features/admin";
+import React, { Suspense, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useGetUserByIdQuery, CreateNewUser } from "@/features/admin";
 import {
   ArrowLeft,
   Mail,
@@ -18,17 +18,35 @@ import {
   Warehouse,
   Car,
   Clock,
+  Pencil,
 } from "lucide-react";
 import Image from "next/image";
 import { UserPlatformActivity } from "@/features/admin";
+import { Button } from "@/components/ui/button";
 
-export default function UserDetails() {
+function UserDetailsContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const userId = params.id as string;
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: response, isLoading, error } = useGetUserByIdQuery(userId);
-  const user = response?.data;
+  const user = response?.data as any;
+  const userKind = String(user?.kind || user?.type || "").toUpperCase();
+
+  useEffect(() => {
+    if (searchParams.get("edit") === "true") {
+      setEditOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+    if (searchParams.get("edit") === "true") {
+      router.replace(`/admin/users-management/${userId}`);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -113,21 +131,31 @@ export default function UserDetails() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        <button
-          onClick={() => router.back()}
-          className="p-1.5 sm:p-2 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
-            User Details
-          </h1>
-          <p className="text-gray-600 text-xs sm:text-sm mt-0.5 sm:mt-1 hidden sm:block">
-            Complete information about this user
-          </p>
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <button
+            onClick={() => router.push("/admin/users-management")}
+            className="shrink-0 cursor-pointer rounded-lg bg-gray-50 p-1.5 transition-colors hover:bg-gray-100 sm:p-2"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-bold text-gray-900 sm:text-xl lg:text-2xl">
+              User Details
+            </h1>
+            <p className="mt-0.5 hidden text-xs text-gray-600 sm:mt-1 sm:block sm:text-sm">
+              Complete information about this user
+            </p>
+          </div>
         </div>
+
+        <Button
+          onClick={() => setEditOpen(true)}
+          className="h-10 shrink-0 cursor-pointer bg-[#19CA32] px-3 text-sm font-semibold text-white hover:bg-green-600 sm:px-4"
+        >
+          <Pencil className="mr-1.5 h-4 w-4" />
+          Edit User
+        </Button>
       </div>
 
       {/* User Profile Card */}
@@ -188,59 +216,64 @@ export default function UserDetails() {
                     )}
 
                     {/* Garage Badge */}
-                    {user.type === "GARAGE" && (
-                      <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-linear-to-r from-emerald-500 to-green-600 text-white text-xs font-semibold rounded-full ">
-                        <Warehouse className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                        <span className="">GARAGE</span>
+                    {userKind === "GARAGE" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-linear-to-r from-emerald-500 to-green-600 px-2 py-1 text-xs font-semibold text-white sm:px-3">
+                        <Warehouse className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
+                        <span>GARAGE</span>
                       </span>
                     )}
 
                     {/* Driver Badge */}
-                    {user.type === "DRIVER" && (
-                      <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-linear-to-r from-blue-500 to-indigo-600 text-white text-xs font-semibold rounded-full">
-                        <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                        <span className="">DRIVER</span>
+                    {(userKind === "DRIVER" || userKind === "USER") && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-linear-to-r from-blue-500 to-indigo-600 px-2 py-1 text-xs font-semibold text-white sm:px-3">
+                        <Car className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
+                        <span>CUSTOMER/DRIVER</span>
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span
-                    className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full ${
-                      user.type === "DRIVER"
-                        ? "bg-blue-100 text-blue-800 border border-blue-200"
-                        : user.type === "GARAGE"
-                          ? "bg-green-100 text-green-800 border border-green-200"
-                          : user.type === "ADMIN"
-                            ? "bg-purple-100 text-purple-800 border border-purple-200"
-                            : "bg-gray-100 text-gray-800 border border-gray-200"
+                    className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                      userKind === "DRIVER" || userKind === "USER"
+                        ? "border-blue-200 bg-blue-100 text-blue-800"
+                        : userKind === "GARAGE"
+                          ? "border-green-200 bg-green-100 text-green-800"
+                          : userKind === "ADMIN"
+                            ? "border-purple-200 bg-purple-100 text-purple-800"
+                            : "border-gray-200 bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {user.type?.charAt(0) + user.type?.slice(1).toLowerCase() ||
-                      "Unknown"}
+                    {userKind === "DRIVER" || userKind === "USER"
+                      ? "Customer/Driver"
+                      : userKind
+                        ? userKind.charAt(0) + userKind.slice(1).toLowerCase()
+                        : "Unknown"}
                   </span>
                   <span
-                    className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-full ${
-                      user.status === "Active"
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : user.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                          : "bg-red-100 text-red-800 border border-red-200"
+                    className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                      String(user.status).toUpperCase() === "ACTIVE" ||
+                      String(user.status).toUpperCase() === "APPROVED"
+                        ? "border-green-200 bg-green-100 text-green-800"
+                        : String(user.status).toUpperCase() === "PENDING"
+                          ? "border-yellow-200 bg-yellow-100 text-yellow-800"
+                          : "border-red-200 bg-red-100 text-red-800"
                     }`}
                   >
-                    {user.status === "Active" ? (
+                    {String(user.status).toUpperCase() === "ACTIVE" ||
+                    String(user.status).toUpperCase() === "APPROVED" ? (
                       <>
-                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                        <CheckCircle className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-4 sm:w-4" />
                         Active
                       </>
-                    ) : user.status === "Pending" ? (
+                    ) : String(user.status).toUpperCase() === "PENDING" ? (
                       <>
-                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                        <Clock className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-4 sm:w-4" />
                         Pending
                       </>
                     ) : (
                       <>
-                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                        <XCircle className="mr-1 h-3 w-3 sm:mr-1.5 sm:h-4 sm:w-4" />
                         Banned
                       </>
                     )}
@@ -327,7 +360,7 @@ export default function UserDetails() {
       </div>
 
       {/* Stats Cards - Only show for ADMIN users */}
-      {user.type === "ADMIN" && (
+      {userKind === "ADMIN" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="bg-white rounded-xl  p-4 sm:p-6">
             <div className="flex items-center justify-between">
@@ -379,18 +412,31 @@ export default function UserDetails() {
 
       <UserPlatformActivity userId={userId} />
 
-      {/* Roles Section - Only show for ADMIN users */}
-      {user.type === "ADMIN" && (
-        <div className="bg-white rounded-xl  p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">
-              Assigned Roles
-            </h3>
-            <span className="ml-1 sm:ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
-              {(user.roles || []).length}
-            </span>
+      {/* Roles Section - read-only; manage from RBAC */}
+      {userKind === "ADMIN" && (
+        <div className="rounded-xl bg-white p-4 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-purple-600 sm:h-5 sm:w-5" />
+              <h3 className="text-base font-bold text-gray-900 sm:text-lg">
+                Assigned Roles
+              </h3>
+              <span className="ml-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800 sm:ml-2">
+                {(user.roles || []).length}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 cursor-pointer text-xs"
+              onClick={() => router.push("/admin/rbac?tab=roles")}
+            >
+              Manage in RBAC
+            </Button>
           </div>
+          <p className="mb-4 text-xs text-gray-500">
+            Roles are managed from the RBAC page. This section is read-only.
+          </p>
           {(user.roles || []).length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {(user.roles || []).map((role) => {
@@ -443,7 +489,7 @@ export default function UserDetails() {
       )}
 
       {/* Permission Summary - Only show for ADMIN users */}
-      {user.type === "ADMIN" && user.permission_summary && (
+      {userKind === "ADMIN" && user.permission_summary && (
         <div className="bg-white rounded-xl  p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
@@ -477,14 +523,14 @@ export default function UserDetails() {
       )}
 
       {/* Detailed Permissions - Only show for ADMIN users */}
-      {user.type === "ADMIN" && (
-        <div className="bg-white rounded-xl  p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            <h3 className="text-base sm:text-lg font-bold text-gray-900">
+      {userKind === "ADMIN" && (
+        <div className="rounded-xl bg-white p-4 sm:p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Lock className="h-4 w-4 text-blue-600 sm:h-5 sm:w-5" />
+            <h3 className="text-base font-bold text-gray-900 sm:text-lg">
               Detailed Permissions
             </h3>
-            <span className="ml-1 sm:ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+            <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 sm:ml-2">
               {(user.permissions || []).length}
             </span>
           </div>
@@ -494,10 +540,10 @@ export default function UserDetails() {
                 ([subject, permissions]: [string, any]) => (
                   <div
                     key={subject}
-                    className="border border-gray-200 rounded-lg p-3 sm:p-4"
+                    className="rounded-lg border border-gray-200 p-3 sm:p-4"
                   >
-                    <h4 className="font-semibold text-gray-900 mb-3 flex flex-wrap items-center gap-2">
-                      <span className="px-2 sm:px-3 py-1 bg-indigo-100 text-indigo-800 text-xs sm:text-sm rounded-full">
+                    <h4 className="mb-3 flex flex-wrap items-center gap-2 font-semibold text-gray-900">
+                      <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs text-indigo-800 sm:px-3 sm:text-sm">
                         {subject}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -509,9 +555,9 @@ export default function UserDetails() {
                       {permissions.map((permission: any) => (
                         <span
                           key={permission.id}
-                          className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-lg border ${
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium sm:px-3 sm:py-1.5 ${
                             actionColorMap[permission.action] ||
-                            "bg-gray-50 text-gray-700 border-gray-200"
+                            "border-gray-200 bg-gray-50 text-gray-700"
                           }`}
                         >
                           {permission.action}
@@ -523,13 +569,36 @@ export default function UserDetails() {
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Lock className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-30" />
+            <div className="py-8 text-center text-gray-500">
+              <Lock className="mx-auto mb-2 h-10 w-10 opacity-30 sm:h-12 sm:w-12" />
               <p className="text-sm">No permissions assigned</p>
             </div>
           )}
         </div>
       )}
+
+      <CreateNewUser
+        open={editOpen}
+        onClose={handleCloseEdit}
+        editUserId={userId}
+      />
     </div>
+  );
+}
+
+export default function UserDetails() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-green-600"></div>
+          <span className="ml-3 font-medium text-gray-600">
+            Loading user details...
+          </span>
+        </div>
+      }
+    >
+      <UserDetailsContent />
+    </Suspense>
   );
 }

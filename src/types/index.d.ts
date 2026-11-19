@@ -11,13 +11,17 @@ export interface User {
     email: string;
     phone_number: string | null;
     address: string | null;
-    type: string;
+    type?: string;
+    kind?: string;
     status: string;
     approved_at: string;
     email_verified_at: string | null;
     created_at: string;
-    updated_at: string;
+    updated_at?: string;
+    last_active_at?: string | null;
+    last_login_at?: string | null;
     avatar_url?: string | null;
+    avatar?: string | null;
     roles?: any[];
 }
 
@@ -84,7 +88,8 @@ export interface UserDetails {
     id: string;
     name: string;
     email: string;
-    type: string;
+    type?: string;
+    kind?: string;
     status: string;
     phone_number: string | null;
     approved_at: string | null;

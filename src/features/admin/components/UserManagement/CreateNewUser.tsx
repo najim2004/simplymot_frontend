@@ -4,10 +4,18 @@ import React, { useState, useEffect, useRef } from "react";
 import CustomReusableModal from "@/components/reusable/Dashboard/Modal/CustomReusableModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { useCreateUserMutation, useUpdateUserMutation, useGetUserByIdQuery, useGetRolesQuery } from "@/features/admin";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import RoleList from "./RoleList";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useGetUserByIdQuery,
+} from "@/features/admin";
 import { Eye, EyeOff, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import ProfileImageUpload from "@/components/reusable/Common/CommonImage";
@@ -18,44 +26,53 @@ interface CreateNewUserProps {
   editUserId?: string | null;
 }
 
-const USER_TYPES = [
+const USER_KINDS = [
   { value: "ADMIN", label: "Admin" },
   { value: "GARAGE", label: "Garage" },
-  { value: "DRIVER", label: "Driver" },
+  { value: "DRIVER", label: "Customer/Driver" },
 ];
 
-export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUserProps) {
+export default function CreateNewUser({
+  open,
+  onClose,
+  editUserId,
+}: CreateNewUserProps) {
   const isEditMode = Boolean(editUserId);
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone_number: "", type: "ADMIN" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phone_number: "",
+    type: "DRIVER",
+  });
   const [originalEmail, setOriginalEmail] = useState("");
   const [isEmailEditable, setIsEmailEditable] = useState(false);
-  const [roleIds, setRoleIds] = useState<string[]>([]);
-  const [rolesOpen, setRolesOpen] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [profileImage, setProfileImage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: rolesResp } = useGetRolesQuery();
-  const { data: userResponse, isLoading: loadingUser } = useGetUserByIdQuery(editUserId || "", {
-    skip: !editUserId,
-  });
+  const { data: userResponse, isLoading: loadingUser } = useGetUserByIdQuery(
+    editUserId || "",
+    {
+      skip: !editUserId,
+    },
+  );
   const [createUser, { isLoading: creating }] = useCreateUserMutation();
   const [updateUser, { isLoading: updating }] = useUpdateUserMutation();
 
   useEffect(() => {
     if (isEditMode && userResponse?.data && open) {
-      const userData = userResponse.data;
+      const userData = userResponse.data as any;
       setForm({
         name: userData.name || "",
         email: userData.email || "",
         password: "",
         phone_number: userData.phone_number || "",
-        type: userData.type || "ADMIN",
+        type: (userData.kind || userData.type || "DRIVER").toUpperCase(),
       });
       setOriginalEmail(userData.email || "");
       setIsEmailEditable(false);
-      setRoleIds((userData.roles || []).map((r: any) => r.id));
       setProfileImage(userData.avatar_url || userData.avatar || "");
       setSelectedFile(null);
     } else if (!open) {
@@ -63,15 +80,14 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
     }
   }, [isEditMode, userResponse, open]);
 
-  useEffect(() => {
-    if (form.type !== "ADMIN" && roleIds.length > 0) {
-      setRoleIds([]);
-    }
-  }, [form.type, roleIds.length]);
-
   const reset = () => {
-    setForm({ name: "", email: "", password: "", phone_number: "", type: "ADMIN" });
-    setRoleIds([]);
+    setForm({
+      name: "",
+      email: "",
+      password: "",
+      phone_number: "",
+      type: "DRIVER",
+    });
     setOriginalEmail("");
     setIsEmailEditable(false);
     setProfileImage("");
@@ -91,14 +107,20 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
   const handleSubmit = async () => {
     try {
       if (isEditMode && editUserId) {
-        const userData = userResponse?.data;
+        const userData = userResponse?.data as any;
         if (!userData) return;
+
+        const currentKind = (
+          userData.kind ||
+          userData.type ||
+          ""
+        ).toUpperCase();
 
         let hasChanges =
           form.name !== userData.name ||
           form.email !== originalEmail ||
           form.phone_number !== (userData.phone_number || "") ||
-          form.type !== userData.type ||
+          form.type !== currentKind ||
           Boolean(selectedFile);
 
         if (!hasChanges) {
@@ -113,15 +135,20 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
           formData.append("id", editUserId);
           formData.append("type", form.type);
           if (form.name !== userData.name) formData.append("name", form.name);
-          if (form.email !== originalEmail) formData.append("email", form.email);
-          if (form.phone_number !== (userData.phone_number || "")) formData.append("phone_number", form.phone_number);
+          if (form.email !== originalEmail)
+            formData.append("email", form.email);
+          if (form.phone_number !== (userData.phone_number || "")) {
+            formData.append("phone_number", form.phone_number);
+          }
           formData.append("image", selectedFile);
           res = await updateUser(formData).unwrap();
         } else {
           const updatePayload: any = { id: editUserId, type: form.type };
           if (form.name !== userData.name) updatePayload.name = form.name;
           if (form.email !== originalEmail) updatePayload.email = form.email;
-          if (form.phone_number !== (userData.phone_number || "")) updatePayload.phone_number = form.phone_number;
+          if (form.phone_number !== (userData.phone_number || "")) {
+            updatePayload.phone_number = form.phone_number;
+          }
           res = await updateUser(updatePayload).unwrap();
         }
 
@@ -132,7 +159,11 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
           onClose();
         }
       } else {
-        await createUser({ ...form, role_ids: roleIds }).unwrap();
+        if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+          toast.error("Name, email, and password are required");
+          return;
+        }
+        await createUser({ ...form, role_ids: [] }).unwrap();
         toast.success("User created successfully");
         onClose();
       }
@@ -153,13 +184,17 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
         if (!creating && !updating) onClose();
       }}
       showHeader
-      className="!max-w-lg"
+      className="max-w-lg!"
       title={isEditMode ? "Edit User" : "Create New User"}
-      description={isEditMode ? "Update user information." : "Fill in the details to create a user."}
+      description={
+        isEditMode
+          ? "Update user information. Roles are managed from RBAC."
+          : "Fill in the details to create a user. Roles are managed from RBAC."
+      }
     >
       {loadingUser && isEditMode ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <div className="flex items-center justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-green-600"></div>
           <span className="ml-3 text-gray-600">Loading user...</span>
         </div>
       ) : (
@@ -175,7 +210,9 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Name
+            </label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -184,7 +221,9 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <div className="relative">
               <Input
                 type="email"
@@ -192,122 +231,92 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="email@example.com"
                 disabled={isEditMode && !isEmailEditable}
-                className={isEditMode && !isEmailEditable ? "bg-gray-50 pr-10" : ""}
+                className={
+                  isEditMode && !isEmailEditable ? "bg-gray-50 pr-10" : ""
+                }
               />
               {isEditMode && (
                 <button
                   type="button"
                   onClick={() => setIsEmailEditable(!isEmailEditable)}
-                  className="absolute inset-y-0 right-2 my-auto h-8 w-8 flex items-center justify-center text-gray-500 hover:text-green-600 cursor-pointer transition-colors"
+                  className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 cursor-pointer items-center justify-center text-gray-500 transition-colors hover:text-green-600"
                   title={isEmailEditable ? "Lock email" : "Edit email"}
                 >
-                  <Pencil className={`w-4 h-4 ${isEmailEditable ? "text-green-600" : ""}`} />
+                  <Pencil
+                    className={`h-4 w-4 ${isEmailEditable ? "text-green-600" : ""}`}
+                  />
                 </button>
               )}
             </div>
-            {isEditMode && !isEmailEditable && (
-              <p className="text-xs text-gray-500 mt-1">
-                Click <Pencil className="inline w-3 h-3" /> to edit email
-              </p>
-            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
             <Input
               type="tel"
               value={form.phone_number}
-              onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, phone_number: e.target.value })
+              }
               placeholder="+44 123 456 7890"
             />
           </div>
 
           {!isEditMode && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Password
+              </label>
               <div className="relative">
                 <Input
                   type={showPwd ? "text" : "password"}
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd((v) => !v)}
-                  className="absolute inset-y-0 right-2 my-auto h-8 w-8 flex items-center justify-center text-gray-500 hover:text-gray-700 cursor-pointer"
+                  className="absolute inset-y-0 right-2 my-auto flex h-8 w-8 cursor-pointer items-center justify-center text-gray-500 hover:text-gray-700"
                 >
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPwd ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Kind / Type
+            </label>
+            <Select
+              value={form.type}
+              onValueChange={(v) => setForm({ ...form, type: v })}
+            >
               <SelectTrigger className="cursor-pointer">
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Select kind" />
               </SelectTrigger>
               <SelectContent>
-                {USER_TYPES.map((type) => (
-                  <SelectItem key={type.value} className="cursor-pointer" value={type.value}>
-                    {type.label}
+                {USER_KINDS.map((kind) => (
+                  <SelectItem
+                    key={kind.value}
+                    className="cursor-pointer"
+                    value={kind.value}
+                  >
+                    {kind.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          {form.type === "ADMIN" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
-              <Popover open={rolesOpen} onOpenChange={setRolesOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full h-10 rounded-md border border-gray-300 px-3 cursor-pointer text-left text-sm flex items-center justify-between"
-                  >
-                    <span className="truncate">
-                      {roleIds.length === 0 ? "Select roles" : `${roleIds.length} role(s) selected`}
-                    </span>
-                    <svg className="w-4 h-4 opacity-60" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="p-2 overflow-auto">
-                  <RoleList
-                    roles={rolesResp?.data?.roles || []}
-                    selectedIds={roleIds}
-                    onToggle={(id) =>
-                      setRoleIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
-                    }
-                    isDisabled={(r) => r.name === "super_admin"}
-                  />
-                  <div className="pt-3 flex justify-between gap-2">
-                    <Button
-                      variant="outline"
-                      className="!h-7 px-2 !text-sm cursor-pointer"
-                      onClick={() => setRoleIds([])}
-                    >
-                      Clear
-                    </Button>
-                    <Button
-                      className="!h-7 px-3 bg-emerald-600 hover:bg-emerald-700 !text-sm cursor-pointer"
-                      onClick={() => setRolesOpen(false)}
-                    >
-                      Done
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
@@ -319,7 +328,7 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+              className="cursor-pointer bg-emerald-600 hover:bg-emerald-700"
               disabled={creating || updating || loadingUser}
               onClick={handleSubmit}
             >
@@ -328,8 +337,8 @@ export default function CreateNewUser({ open, onClose, editUserId }: CreateNewUs
                   ? "Updating..."
                   : "Creating..."
                 : isEditMode
-                ? "Update"
-                : "Create"}
+                  ? "Update"
+                  : "Create"}
             </Button>
           </div>
         </div>

@@ -11,14 +11,79 @@ import {
 } from "@/features/admin";
 import ReusableTable from "@/components/reusable/Dashboard/Table/ReuseableTable";
 import ReusablePagination from "@/components/reusable/Dashboard/Table/ReusablePagination";
-import { Plus } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import {
   UserStatsCards as StatsCards,
-  UserFilterSearch as FilterSearch,
   CreateNewUser,
   UserTableAction as TableAction,
+  setSearchFilter,
+  setTypeFilter,
+  setStatusFilter,
 } from "@/features/admin";
+import { useDebounce } from "@/hooks/useDebounce";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function getKind(row: any): string {
+  return String(row?.kind || row?.type || "").toUpperCase();
+}
+
+function getStatus(row: any): string {
+  return String(row?.status || "").toUpperCase();
+}
+
+function kindLabel(kind: string) {
+  if (kind === "DRIVER" || kind === "USER") return "Customer/Driver";
+  if (kind === "GARAGE") return "Garage";
+  if (kind === "ADMIN") return "Admin";
+  return kind || "Unknown";
+}
+
+function kindBadgeClass(kind: string) {
+  if (kind === "DRIVER" || kind === "USER")
+    return "bg-blue-100 text-blue-800 border-blue-200";
+  if (kind === "GARAGE") return "bg-green-100 text-green-800 border-green-200";
+  if (kind === "ADMIN")
+    return "bg-purple-100 text-purple-800 border-purple-200";
+  return "bg-gray-100 text-gray-800 border-gray-200";
+}
+
+function statusBadgeClass(status: string) {
+  if (status === "ACTIVE" || status === "APPROVED")
+    return "bg-green-100 text-green-800 border-green-200";
+  if (status === "PENDING")
+    return "bg-amber-100 text-amber-800 border-amber-200";
+  if (status === "BANNED") return "bg-red-100 text-red-800 border-red-200";
+  if (status === "INACTIVE")
+    return "bg-gray-100 text-gray-600 border-gray-200";
+  return "bg-gray-100 text-gray-800 border-gray-200";
+}
+
+function statusLabel(status: string) {
+  if (status === "ACTIVE" || status === "APPROVED") return "Active";
+  if (status === "PENDING") return "Pending";
+  if (status === "BANNED") return "Banned";
+  if (status === "INACTIVE") return "Inactive";
+  return status || "Unknown";
+}
 
 export default function UserManagement() {
   const dispatch = useAppDispatch();
@@ -26,7 +91,14 @@ export default function UserManagement() {
     (state) => state.usersManagement,
   );
 
-  // Fetch users data
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState(filters.search || "");
+  const debouncedSearch = useDebounce(searchTerm, 400);
+
+  useEffect(() => {
+    dispatch(setSearchFilter(debouncedSearch));
+  }, [debouncedSearch, dispatch]);
+
   const {
     data: usersData,
     isLoading,
@@ -40,13 +112,11 @@ export default function UserManagement() {
       page: pagination.currentPage,
       limit: pagination.itemsPerPage,
     },
-
     {
       refetchOnMountOrArgChange: true,
     },
   );
 
-  // Update Redux state when API data changes
   useEffect(() => {
     if (usersData) {
       dispatch(
@@ -62,31 +132,27 @@ export default function UserManagement() {
     }
   }, [usersData, dispatch]);
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     dispatch(setUsersCurrentPage(page));
   };
 
-  // Handle items per page change
   const handleItemsPerPageChange = (itemsPerPage: number) => {
     dispatch(setUsersItemsPerPage(itemsPerPage));
   };
 
-  // Table columns configuration
   const columns = [
     {
       key: "name",
       label: "Name",
-      width: "16%",
       render: (value: string, row: any) => (
         <div className="flex items-center">
           {row.avatar_url ? (
-            <div className="relative h-10 w-10 mr-3">
+            <div className="relative mr-3 h-10 w-10">
               <Image
                 width={40}
                 height={40}
                 src={row.avatar_url}
-                alt={value}
+                alt={value || "User"}
                 className="h-10 w-10 rounded-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
@@ -97,227 +163,211 @@ export default function UserManagement() {
                   if (fallbackDiv) fallbackDiv.style.display = "flex";
                 }}
               />
-              <div className="avatar-fallback h-10 w-10 rounded-full bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center absolute top-0 left-0 hidden">
-                <span className="text-sm font-bold text-white">
+              <div className="avatar-fallback absolute top-0 left-0 hidden h-10 w-10 items-center justify-center rounded-full bg-[#DDF7E0]">
+                <span className="text-sm font-bold text-[#19CA32]">
                   {value?.charAt(0)?.toUpperCase() || "U"}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="h-10 w-10 rounded-full bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center mr-3">
-              <span className="text-sm font-bold text-white">
+            <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#DDF7E0]">
+              <span className="text-sm font-bold text-[#19CA32]">
                 {value?.charAt(0)?.toUpperCase() || "U"}
               </span>
             </div>
           )}
-          <div>
-            <div className="text-sm  text-gray-900">
-              {row.type === "GARAGE" && row.garage_name
-                ? row.garage_name
-                : value}
-            </div>
-            {/* <div className="text-xs text-gray-500">ID: {row.id.slice(0, 8)}...</div> */}
+          <div className="text-sm font-medium text-gray-900">
+            {value || "—"}
           </div>
         </div>
       ),
     },
-
     {
       key: "email",
       label: "Email",
-      width: "16%",
       render: (value: string) => (
-        <div className="text-sm text-gray-900 lowercase">{value}</div>
+        <div className="text-sm lowercase text-gray-900">{value || "—"}</div>
       ),
     },
     {
       key: "phone_number",
-      label: "Phone",
-      width: "16%",
+      label: "Phone Number",
       render: (value: string) => (
-        <div className="text-sm text-gray-900">{value || "N/A"}</div>
+        <div className="text-sm whitespace-nowrap text-gray-900">
+          {value || "—"}
+        </div>
       ),
     },
     {
-      key: "type",
-      label: "Type",
-      width: "16%",
-      render: (value: string) => (
-        <span
-          className={`inline-flex px-3 py-1 text-xs  rounded-full ${
-            value === "DRIVER"
-              ? "bg-blue-100 text-blue-800 border border-blue-200"
-              : value === "GARAGE"
-                ? "bg-green-100 text-green-800 border border-green-200"
-                : value === "ADMIN"
-                  ? "bg-purple-100 text-purple-800 border border-purple-200"
-                  : "bg-gray-100 text-gray-800 border border-gray-200"
-          }`}
-        >
-          {value?.charAt(0) + value?.slice(1).toLowerCase() || "Unknown"}
-        </span>
-      ),
-    },
-    {
-      key: "roles",
-      label: "Roles",
-      width: "16%",
-      render: (_: any, row: any) => {
-        const roles = Array.isArray(row.roles) ? row.roles : [];
-        if (roles.length === 0)
-          return <span className="text-xs text-gray-400">—</span>;
-
-        const colorByName: Record<string, { bg: string; text: string }> = {
-          super_admin: { bg: "bg-violet-50", text: "text-violet-700" },
-          support_admin: { bg: "bg-blue-50", text: "text-blue-700" },
-          financial_admin: { bg: "bg-amber-50", text: "text-amber-700" },
-        };
-
-        const visible = roles.slice(0, 2);
-        const restCount = roles.length - visible.length;
-        const restTitles =
-          restCount > 0
-            ? roles
-                .slice(2)
-                .map((r: any) => r.title)
-                .join(", ")
-            : "";
-
-        return (
-          <div className="flex flex-wrap items-center gap-1 max-w-[220px]">
-            {visible.map((role: any) => {
-              const c = colorByName[role.name] || {
-                bg: "bg-gray-50",
-                text: "text-gray-700",
-              };
-              return (
-                <span
-                  key={role.id}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-medium rounded-full ${c.bg} ${c.text} shadow-[0_0_0_1px_rgba(0,0,0,0.02)]`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${c.text.replace(
-                      "text-",
-                      "bg-",
-                    )}`}
-                  ></span>
-                  <span className="truncate max-w-[120px]">{role.title}</span>
-                </span>
-              );
-            })}
-            {restCount > 0 && (
-              <span
-                title={restTitles}
-                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-medium rounded-full bg-gray-50 text-gray-700 shadow-[0_0_0_1px_rgba(0,0,0,0.02)]"
-              >
-                +{restCount}
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: "approved_at",
-      label: "Status",
-      width: "16%",
-      render: (value: string, row: any) => {
-        const status = row.status || "Pending";
-
-        let label = status;
-        let colorClass =
-          "bg-yellow-100 text-yellow-800 border border-yellow-200";
-
-        if (status === "Active" || status === "Approved") {
-          label = "Active";
-          colorClass = "bg-green-100 text-green-800 border border-green-200";
-        } else if (status === "Banned") {
-          label = "Banned";
-          colorClass = "bg-red-100 text-red-800 border border-red-200";
-        }
-
+      key: "kind",
+      label: "Kind / Type",
+      render: (_: string, row: any) => {
+        const kind = getKind(row);
         return (
           <span
-            className={`inline-flex px-3 py-1 text-xs rounded-full ${colorClass}`}
+            className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${kindBadgeClass(kind)}`}
           >
-            {label}
+            {kindLabel(kind)}
           </span>
         );
       },
     },
     {
-      key: "created_at",
-      label: "Created",
-      width: "16%",
+      key: "status",
+      label: "Status",
+      render: (_: string, row: any) => {
+        const status = getStatus(row);
+        return (
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(status)}`}
+          >
+            {statusLabel(status)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "last_active_at",
+      label: "Last Active At",
+      render: (_: string, row: any) => (
+        <div className="text-sm whitespace-nowrap text-gray-900">
+          {formatDate(
+            row.last_active_at || row.last_login_at || row.updated_at,
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "email_verified_at",
+      label: "Verified At",
       render: (value: string) => (
-        <div className="text-sm text-gray-900">
-          {new Date(value).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
+        <div className="text-sm whitespace-nowrap text-gray-900">
+          {value ? formatDate(value) : "Not verified"}
+        </div>
+      ),
+    },
+    {
+      key: "created_at",
+      label: "Created At",
+      render: (value: string) => (
+        <div className="text-sm whitespace-nowrap text-gray-900">
+          {formatDate(value)}
         </div>
       ),
     },
   ];
 
-  // Action buttons configuration
   const actions = [
     {
       label: "Actions",
       variant: "primary" as const,
-      render: (row: any) => (
-        <TableAction
-          row={row}
-          onEditClick={(userId) => setEditUserId(userId)}
-        />
-      ),
+      render: (row: any) => <TableAction row={row} />,
     },
   ];
 
-  const [createOpen, setCreateOpen] = React.useState(false);
-  const [editUserId, setEditUserId] = React.useState<string | null>(null);
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row justify-between items-center gap-4">
-        <div>
-          <h1 className="lg:text-2xl text-xl font-bold text-gray-900">
-            User Management
-          </h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Manage all users, drivers, and garages
-          </p>
+    <div>
+      {/* Header — matches garage / booking / RBAC */}
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <h1 className="whitespace-nowrap text-2xl font-bold text-gray-900">
+          User Management
+        </h1>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="w-full sm:w-44">
+            <Select
+              value={filters.type || "all"}
+              onValueChange={(value) => {
+                dispatch(setTypeFilter(value === "all" ? "" : value));
+                dispatch(setUsersCurrentPage(1));
+              }}
+            >
+              <SelectTrigger className="h-11 w-full cursor-pointer border-gray-300 bg-white text-xs sm:text-sm">
+                <SelectValue placeholder="All Kinds" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Kinds</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="GARAGE">Garage</SelectItem>
+                <SelectItem value="DRIVER">Customer/Driver</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-full sm:w-44">
+            <Select
+              value={filters.status || "all"}
+              onValueChange={(value) => {
+                dispatch(setStatusFilter(value));
+                dispatch(setUsersCurrentPage(1));
+              }}
+            >
+              <SelectTrigger className="h-11 w-full cursor-pointer border-gray-300 bg-white text-xs sm:text-sm">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="banned">Banned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="relative w-full sm:w-auto">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                dispatch(setUsersCurrentPage(1));
+              }}
+              className="block h-11 w-full rounded-lg border border-gray-300 bg-white py-0 pr-9 pl-9 text-xs leading-5 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-primary focus:outline-none sm:w-64 sm:text-sm"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  dispatch(setUsersCurrentPage(1));
+                }}
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer p-1 text-gray-400 hover:text-gray-600"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="h-11 cursor-pointer bg-[#19CA32] px-4 text-sm font-semibold text-white hover:bg-green-600"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Create User
+          </Button>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="border border-green-600 hover:bg-green-600 bg-green-600 cursor-pointer text-white py-2 px-3 rounded-lg font-semibold transition duration-300 flex items-center space-x-2 hover:shadow-lg hover:text-white text-sm"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Create New User</span>
-        </button>
       </div>
 
-      {/* Stats Cards */}
-      <StatsCards statistics={usersData?.statistics} isLoading={isLoading} />
+      <div className="mb-6">
+        <StatsCards statistics={usersData?.statistics} isLoading={isLoading} />
+      </div>
 
-      {/* Filter & Search */}
-      <FilterSearch />
-
-      {/* Table */}
-      <div className="">
+      <div>
         {error ? (
-          <div className="text-center py-16">
-            <div className="text-red-600 mb-4 font-semibold">
-              Error loading users
+          <div className="flex min-h-100 items-center justify-center">
+            <div className="text-center">
+              <p className="font-medium text-red-600">Error loading users</p>
+              <Button
+                onClick={() => refetch()}
+                className="mt-4 cursor-pointer"
+              >
+                Try again
+              </Button>
             </div>
-            <button
-              onClick={() => refetch()}
-              className="text-green-600 hover:text-green-700 font-semibold px-4 py-2 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
-            >
-              Try again
-            </button>
           </div>
         ) : (
           <>
@@ -325,7 +375,7 @@ export default function UserManagement() {
               data={usersData?.data || []}
               columns={columns}
               actions={actions}
-              className="rounded-t-xl"
+              className="rounded-t-lg border border-gray-300"
               isLoading={isLoading}
               skeletonRows={pagination.itemsPerPage}
             />
@@ -344,14 +394,10 @@ export default function UserManagement() {
           </>
         )}
       </div>
-      {/* Create/Edit User Modal */}
+
       <CreateNewUser
-        open={createOpen || !!editUserId}
-        onClose={() => {
-          setCreateOpen(false);
-          setEditUserId(null);
-        }}
-        editUserId={editUserId}
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
       />
     </div>
   );

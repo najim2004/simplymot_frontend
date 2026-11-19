@@ -154,6 +154,7 @@ export const usersManagementApi = apiSlice.injectEndpoints({
           email?: string;
           phone_number?: string;
           type?: string;
+          kind?: string;
         }
       | FormData
     >({
@@ -161,13 +162,21 @@ export const usersManagementApi = apiSlice.injectEndpoints({
         if (arg instanceof FormData) {
           const id = arg.get("id") as string;
           arg.delete("id");
+          const typeValue = arg.get("type") as string | null;
+          if (typeValue && !arg.get("kind")) {
+            arg.set("kind", typeValue.toUpperCase());
+            arg.delete("type");
+          }
           return {
             url: `/api/admin/users/${id}`,
             method: "PATCH",
             body: arg,
           };
         }
-        const { id, ...body } = arg;
+        const { id, type, kind, ...rest } = arg;
+        const body: Record<string, unknown> = { ...rest };
+        const nextKind = (kind || type)?.toUpperCase();
+        if (nextKind) body.kind = nextKind;
         return {
           url: `/api/admin/users/${id}`,
           method: "PATCH",
@@ -196,6 +205,17 @@ export const usersManagementApi = apiSlice.injectEndpoints({
       query: (id) => ({
         url: `/api/admin/users/${id}/unban`,
         method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    deleteUser: builder.mutation<
+      { success?: boolean; message?: string } | void,
+      string
+    >({
+      query: (id) => ({
+        url: `/api/admin/users/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["User"],
     }),
@@ -231,6 +251,7 @@ export const {
   useGetUserActivityQuery,
   useBanUserMutation,
   useUnbanUserMutation,
+  useDeleteUserMutation,
   useAssignRoleToUserMutation,
   useRemoveRoleFromUserMutation,
 } = usersManagementApi;
